@@ -1,0 +1,19 @@
+/* admin/src/app/globals.css */
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+/* Optionnel : Ajoute un effet "Tableau de bord" aux chiffres */
+.font-mono {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  :root {
+    /* ... tes autres variables ... */
+    --primary: 226 70% 55%; /* Un bel Indigo */
+    --primary-foreground: 0 0% 100%;
+  }
+}
