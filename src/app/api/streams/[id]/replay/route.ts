@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { supabaseUser } from "../../../_utils/supabase";
 
-type Params = { params: { id: string } };
-
-export async function POST(req: Request, { params }: Params) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
   const tenantErr = requireTenant(ctx);
   if (tenantErr) return tenantErr;
+
+  const { id } = await context.params;
 
   const body = await req.json();
   const supa = supabaseUser(ctx.accessToken);
@@ -18,13 +18,13 @@ export async function POST(req: Request, { params }: Params) {
     .from("streams")
     .update({ status: "ENDED", updated_at: new Date().toISOString() })
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id);
+    .eq("id", id);
 
   const { data, error } = await supa
     .from("replays")
     .insert({
       tenant_id: ctx.tenantId,
-      stream_id: params.id,
+      stream_id: id,
       title: body.title,
       created_at: new Date().toISOString(),
     })

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getTenantContext, jsonError, requireTenantAdmin } from "../../_utils";
 
 export const dynamic = "force-dynamic";
@@ -6,7 +6,7 @@ export const revalidate = 0;
 
 // Révoquer une invitation (UI: bouton supprimer)
 // Appelle: DELETE /api/tenant/invites/:id
-export async function DELETE(_: Request, { params }: { params: Record<string, string> }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 

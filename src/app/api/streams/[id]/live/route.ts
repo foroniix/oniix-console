@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { supabaseUser } from "../../../_utils/supabase";
 
-type Params = { params: { id: string } };
-
-export async function POST(req: Request, { params }: Params) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
   const tenantErr = requireTenant(ctx);
   if (tenantErr) return tenantErr;
+
+  const { id } = await context.params;
 
   const { status } = await req.json(); // LIVE | OFFLINE
   const supa = supabaseUser(ctx.accessToken);
@@ -21,7 +21,7 @@ export async function POST(req: Request, { params }: Params) {
       updated_at: new Date().toISOString(),
     })
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id)
+    .eq("id", id)
     .select()
     .single();
 

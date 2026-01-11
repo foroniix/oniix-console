@@ -85,7 +85,7 @@ export default function ChannelsPage() {
   const [form, setForm] = useState<Partial<Channel>>({
     name: "",
     slug: "",
-    category: "Actualité",
+    category: "Autre",
     active: true,
     logo: ""
   });
@@ -136,7 +136,7 @@ export default function ChannelsPage() {
     setForm({
       name: "",
       slug: "",
-      category: "Actualité",
+      category: "Autre",
       active: true,
       logo: ""
     });

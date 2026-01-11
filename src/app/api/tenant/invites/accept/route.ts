@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getTenantContext, jsonError } from "../../_utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 

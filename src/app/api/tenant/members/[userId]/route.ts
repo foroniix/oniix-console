@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getTenantContext, jsonError, requireTenantAdmin } from "../../_utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function DELETE(_: Request, { params }: { params: { userId: string } }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params;
+
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 
@@ -13,7 +15,7 @@ export async function DELETE(_: Request, { params }: { params: { userId: string 
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
   if (!check.ok) return jsonError(check.error, check.error === "Forbidden" ? 403 : 400);
 
-  const targetUserId = params.userId;
+  const targetUserId = userId;
   if (!targetUserId) return jsonError("userId manquant", 400);
 
   if (targetUserId === ctx.user.id) {

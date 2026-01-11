@@ -1,13 +1,9 @@
 // admin/src/lib/data.ts
+
 // ==========================================
-// TYPES (nettoyés : plus de News/Films/Séries/MediaContent)
+// TYPES
 // ==========================================
 
-/**
- * Catégories encore utiles côté console.
- * On a retiré : "Actualité" et "Films et Séries".
- * On corrige aussi "Réligion" -> "Religion".
- */
 export type Category =
   | "Sports"
   | "Music"
@@ -106,14 +102,6 @@ export type Activity = {
   createdAt: string;
 };
 
-/**
- * Analytics aligné avec ton Dashboard actuel:
- * - live.activeUsers
- * - live.currentStreams
- * - traffic[]
- * - devices[] (si tu l’utilises encore, sinon tu peux supprimer)
- * - kpi.totalUsers / totalEvents / watchTime (minutes ou secondes selon ton backend)
- */
 export type AnalyticsStats = {
   live: { activeUsers: number; currentStreams: Record<string, number> };
   traffic: { time: string; viewers: number }[];
@@ -219,7 +207,7 @@ const mapVod = (v: any): Vod => ({
 
 // --- Channels ---
 export async function listChannels(): Promise<Channel[]> {
-  return j(await fetch("/api/channels", { cache: "no-store" }));
+  return (await j(await fetch("/api/channels", { cache: "no-store" }))) as Channel[];
 }
 
 export async function upsertChannel(input: Partial<Channel> & { id?: string }): Promise<Channel> {
@@ -245,11 +233,13 @@ export async function upsertChannel(input: Partial<Channel> & { id?: string }): 
 
 export async function toggleChannel(id: string, active: boolean): Promise<void> {
   const sid = guardId(id, "toggleChannel");
-  await fetch(`/api/channels/${encodeURIComponent(sid)}`, {
-    method: "PATCH",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ active }),
-  }).then(j);
+  await j(
+    await fetch(`/api/channels/${encodeURIComponent(sid)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ active }),
+    })
+  );
 }
 
 // --- Streams ---
@@ -355,10 +345,7 @@ export async function removeMarker(streamId: string, at: number | string) {
   );
 }
 
-export async function endLiveAndCreateReplay(
-  id: string,
-  opts?: { title?: string; durationSec?: number; thumb?: string }
-) {
+export async function endLiveAndCreateReplay(id: string, opts?: { title?: string; durationSec?: number; thumb?: string }) {
   const sid = guardId(id, "endLiveAndCreateReplay");
   return j(
     await fetch(`/api/streams/${encodeURIComponent(sid)}/end`, {
@@ -401,9 +388,9 @@ export async function upsertVod(v: Partial<Vod> & { id?: string }): Promise<Vod>
   return mapVod(row);
 }
 
-// --- Users (si tu utilises encore /api/users) ---
+// --- Users ---
 export async function listUsers(): Promise<User[]> {
-  return j(await fetch("/api/users", { cache: "no-store" }));
+  return (await j(await fetch("/api/users", { cache: "no-store" }))) as User[];
 }
 
 export async function upsertUser(u: Partial<User>) {
@@ -425,7 +412,7 @@ export async function setUserSuspended(userId: string, suspended: boolean) {
   return upsertUser({ id: userId, suspended });
 }
 
-// --- Analytics (aligné Dashboard) ---
+// --- Analytics ---
 export async function getAnalytics(period: string = "24h"): Promise<AnalyticsStats> {
   const res = await fetch(`/api/analytics/stats?period=${encodeURIComponent(period)}`, { cache: "no-store" });
   if (!res.ok) {
@@ -439,7 +426,6 @@ export async function getAnalytics(period: string = "24h"): Promise<AnalyticsSta
 
   const json = await res.json().catch(() => null);
 
-  // fallback ultra safe
   return {
     live: {
       activeUsers: Number(json?.live?.activeUsers ?? 0),
@@ -455,7 +441,7 @@ export async function getAnalytics(period: string = "24h"): Promise<AnalyticsSta
   };
 }
 
-// --- Activities (simple & pertinent maintenant : streams + vod) ---
+// --- Activities ---
 export async function listActivities(): Promise<Activity[]> {
   const [streams, vods] = await Promise.all([listStreams().catch(() => []), listVod().catch(() => [])]);
 
@@ -480,7 +466,7 @@ export async function listActivities(): Promise<Activity[]> {
   }));
 
   return [...A1, ...A2]
-    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
+    .sort((a, b) => (a.createdAt === b.createdAt ? 0 : a.createdAt > b.createdAt ? -1 : 1))
     .slice(0, 60);
 }
 

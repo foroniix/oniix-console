@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import { getTenantContext, jsonError, requireTenantAdmin } from "../_utils";
 
@@ -33,7 +33,7 @@ export async function GET() {
   return NextResponse.json({ ok: true, invites }, { status: 200 });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 

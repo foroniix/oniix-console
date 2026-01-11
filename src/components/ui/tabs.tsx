@@ -3,6 +3,10 @@
 import { cn } from "@/lib/utils";
 import * as React from "react";
 
+function isElement<P = any>(node: unknown): node is React.ReactElement<P> {
+  return React.isValidElement(node);
+}
+
 type TabsContext = {
   value: string;
   setValue: (v: string) => void;
@@ -22,27 +26,35 @@ export function Tabs({ defaultValue, value, onValueChange, className, children }
   const [internal, setInternal] = React.useState<string>(defaultValue ?? "");
   const controlled = value !== undefined;
   const current = controlled ? (value as string) : internal;
+
   const setValue = (v: string) => {
     if (!controlled) setInternal(v);
     onValueChange?.(v);
   };
+
   const id = React.useId();
 
   React.useEffect(() => {
     if (!current) {
       // pick first TabsTrigger child value if not set
       const first = (() => {
-        const arr = React.Children.toArray(children) as React.ReactElement[];
+        const arr = React.Children.toArray(children);
+
         for (const el of arr) {
-          if (!el || typeof el !== "object") continue;
+          if (!isElement(el)) continue;
+
+          // TabsList
           if ((el as any).type?.displayName === "TabsList") {
-            const listKids = React.Children.toArray(el.props.children) as React.ReactElement[];
-            const trig = listKids.find((k: any) => k?.type?.displayName === "TabsTrigger");
-            if (trig?.props?.value) return trig.props.value as string;
+            const listKids = React.Children.toArray((el as React.ReactElement<any>).props.children).filter(isElement);
+            const trig = listKids.find((k: any) => (k as any)?.type?.displayName === "TabsTrigger");
+            const v = trig ? (trig.props as any)?.value : undefined;
+            if (v) return String(v);
           }
         }
+
         return "";
       })();
+
       if (first) setValue(first);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,12 +91,17 @@ export function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     e.preventDefault();
+
     const container = (e.currentTarget.parentElement as HTMLElement) || null;
     if (!container) return;
+
     const buttons = Array.from(container.querySelectorAll("[role=tab]")) as HTMLButtonElement[];
     const idx = buttons.indexOf(e.currentTarget);
-    const nextIdx = e.key === "ArrowRight" ? (idx + 1) % buttons.length : (idx - 1 + buttons.length) % buttons.length;
+    const nextIdx =
+      e.key === "ArrowRight" ? (idx + 1) % buttons.length : (idx - 1 + buttons.length) % buttons.length;
+
     buttons[nextIdx]?.focus();
+
     const nextVal = (buttons[nextIdx] as any)?.dataset?.value as string | undefined;
     if (nextVal) ctx.setValue(nextVal);
   };
@@ -130,7 +147,3 @@ export function TabsContent({ className, value, ...props }: TabsContentProps) {
   );
 }
 TabsContent.displayName = "TabsContent";
-
-
-
-

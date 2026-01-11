@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import { getTenantContext, jsonError, requireTenantAdmin } from "../../../_utils";
 
@@ -10,7 +10,7 @@ export const revalidate = 0;
 // - remet status = pending
 // - (optionnel) peut étendre expires_at si ta DB n'a pas de trigger
 // Appelle: POST /api/tenant/invites/:id/resend
-export async function POST(_: Request, { params }: { params: Record<string, string> }) {
+export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 

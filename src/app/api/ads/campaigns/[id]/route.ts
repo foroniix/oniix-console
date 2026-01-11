@@ -1,26 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, requireTenant, requireRole } from "../../../_utils/auth";
 import { supabaseUser } from "../../../_utils/supabase";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const CAMPAIGNS_RW_ROLES = ["owner", "admin", "tenant_admin", "superadmin"];
+const CAMPAIGNS_RW_ROLES = ["owner", "admin", "tenant_admin", "superadmin"] as const;
 
-type Params = { id: string };
-
-export async function PATCH(req: Request, { params }: { params: Params }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
+
   const tRes = requireTenant(auth.ctx);
   if (tRes) return tRes;
-  const rRes = requireRole(auth.ctx, CAMPAIGNS_RW_ROLES);
+
+  const rRes = requireRole(auth.ctx, CAMPAIGNS_RW_ROLES as unknown as string[]);
   if (rRes) return rRes;
 
-  const id = params.id;
+  const { id } = await context.params;
   if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
 
-  const body = (await req.json().catch(() => null)) as any;
+  const body = (await request.json().catch(() => null)) as any;
   if (!body) return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
 
   const sb = supabaseUser(auth.ctx.accessToken);
@@ -52,15 +55,20 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
   return NextResponse.json({ ok: true, campaign: data }, { status: 200 });
 }
 
-export async function DELETE(_req: Request, { params }: { params: Params }) {
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
+
   const tRes = requireTenant(auth.ctx);
   if (tRes) return tRes;
-  const rRes = requireRole(auth.ctx, CAMPAIGNS_RW_ROLES);
+
+  const rRes = requireRole(auth.ctx, CAMPAIGNS_RW_ROLES as unknown as string[]);
   if (rRes) return rRes;
 
-  const id = params.id;
+  const { id } = await context.params;
   if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
 
   const sb = supabaseUser(auth.ctx.accessToken);
