@@ -1,26 +1,26 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-import {
-  Activity,
-  Banknote,
-  LayoutDashboard,
-  LogOut,
-  Radio,
-  Settings,
-  Signal,
-  Tv,
-  Users,
-  Megaphone,
-  Target,
-  RefreshCw,
-  ChevronRight,
-} from "lucide-react";
+import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import {
+  LayoutDashboard,
+  Activity,
+  Tv,
+  Signal,
+  Megaphone,
+  Target,
+  Banknote,
+  Users,
+  Settings,
+  LogOut,
+  Radio,
+} from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
 type Role = string;
 
@@ -44,14 +44,14 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "BROADCAST",
+    title: "Broadcast",
     items: [
       { href: "/channels", label: "Chaînes TV", icon: Tv },
       { href: "/streams", label: "Flux & Signaux", icon: Signal },
     ],
   },
   {
-    title: "MONÉTISATION",
+    title: "Monétisation",
     items: [
       {
         href: "/ads",
@@ -74,7 +74,7 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "ADMINISTRATION",
+    title: "Administration",
     items: [
       {
         href: "/users",
@@ -99,7 +99,6 @@ type MeResponse =
         id: string;
         email?: string | null;
         role?: string | null;
-        tenant_id?: string | null;
         full_name?: string | null;
         avatar_url?: string | null;
       };
@@ -110,12 +109,6 @@ type TenantResponse =
   | { ok: true; tenant: { id: string; name: string } }
   | { ok: false; error?: string };
 
-function shortId(id: string, start = 6, end = 4) {
-  if (!id) return "—";
-  if (id.length <= start + end + 1) return id;
-  return `${id.slice(0, start)}…${id.slice(-end)}`;
-}
-
 function initialsFromNameOrEmail(name?: string | null, email?: string | null) {
   const base = (name && name.trim().length ? name : email || "Utilisateur").trim();
   const parts = base.split(/\s+/).filter(Boolean);
@@ -125,96 +118,70 @@ function initialsFromNameOrEmail(name?: string | null, email?: string | null) {
 }
 
 type SidebarProps = {
-  /** Quand utilisé dans un drawer mobile */
   inDrawer?: boolean;
-  /** Afficher/masquer le header interne du sidebar (utile si le drawer a déjà un header) */
-  showHeader?: boolean;
-  /** Callback appelé lors d’une navigation (utile pour fermer un drawer) */
   onNavigate?: () => void;
 };
 
-export default function Sidebar({
-  inDrawer = false,
-  showHeader = true,
-  onNavigate,
-}: SidebarProps) {
+export default function Sidebar({ inDrawer = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [userId, setUserId] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [fullName, setFullName] = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [role, setRole] = React.useState("");
+  const [fullName, setFullName] = React.useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+  const [userEmail, setUserEmail] = React.useState("");
+  const [tenantName, setTenantName] = React.useState("");
 
-  const [tenantName, setTenantName] = useState<string>("");
-  const [meLoaded, setMeLoaded] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const currentRole = React.useMemo(() => (role || "member").toLowerCase(), [role]);
+  const initials = React.useMemo(
+    () => initialsFromNameOrEmail(fullName, userEmail),
+    [fullName, userEmail]
+  );
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-  const currentRole = useMemo(() => (role || "member").toLowerCase(), [role]);
 
-  const displayName = useMemo(() => {
-    if (fullName && fullName.trim().length) return fullName.trim();
-    if (userEmail) return userEmail;
-    return meLoaded ? "Utilisateur" : "Chargement…";
-  }, [fullName, userEmail, meLoaded]);
+  const visibleSections = React.useMemo(() => {
+    return SECTIONS.map((s) => ({
+      ...s,
+      items: s.items.filter((item) => {
+        if (!item.allowedRoles || item.allowedRoles.length === 0) return true;
+        return item.allowedRoles.map((r) => String(r).toLowerCase()).includes(currentRole);
+      }),
+    })).filter((s) => s.items.length > 0);
+  }, [currentRole]);
 
-  const initials = useMemo(() => initialsFromNameOrEmail(fullName, userEmail), [fullName, userEmail]);
-
-  const loadMe = async () => {
-    setRefreshing(true);
-    try {
-      const [meRes, tenantRes] = await Promise.all([
-        fetch("/api/auth/me", { method: "GET", cache: "no-store" }),
-        fetch("/api/settings/tenant", { method: "GET", cache: "no-store" }),
-      ]);
-
-      const meJson = (await meRes.json().catch(() => null)) as MeResponse | null;
-      const tenantJson = (await tenantRes.json().catch(() => null)) as TenantResponse | null;
-
-      if (meRes.ok && meJson && "ok" in meJson && meJson.ok) {
-        setUserId(meJson.user.id || "");
-        setUserEmail(meJson.user.email || "");
-        setRole(meJson.user.role || "");
-        setFullName(meJson.user.full_name ?? null);
-        setAvatarUrl(meJson.user.avatar_url ?? null);
-      } else {
-        setUserId("");
-        setUserEmail("");
-        setRole("");
-        setFullName(null);
-        setAvatarUrl(null);
-      }
-
-      if (tenantRes.ok && tenantJson && "ok" in tenantJson && tenantJson.ok) {
-        setTenantName(tenantJson.tenant?.name ?? "");
-      } else {
-        setTenantName("");
-      }
-    } catch {
-      setUserId("");
-      setUserEmail("");
-      setRole("");
-      setFullName(null);
-      setAvatarUrl(null);
-      setTenantName("");
-    } finally {
-      setMeLoaded(true);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
+  React.useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!mounted) return;
-      await loadMe();
+      try {
+        const [meRes, tenantRes] = await Promise.all([
+          fetch("/api/auth/me", { cache: "no-store" }),
+          fetch("/api/settings/tenant", { cache: "no-store" }),
+        ]);
+
+        const meJson = (await meRes.json().catch(() => null)) as MeResponse | null;
+        const tenantJson = (await tenantRes.json().catch(() => null)) as TenantResponse | null;
+
+        if (!mounted) return;
+
+        if (meRes.ok && meJson && "ok" in meJson && meJson.ok) {
+          setUserEmail(meJson.user.email || "");
+          setRole(meJson.user.role || "");
+          setFullName(meJson.user.full_name ?? null);
+          setAvatarUrl(meJson.user.avatar_url ?? null);
+        }
+
+        if (tenantRes.ok && tenantJson && "ok" in tenantJson && tenantJson.ok) {
+          setTenantName(tenantJson.tenant?.name ?? "");
+        }
+      } catch {
+        // ignore
+      }
     })();
+
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogout = async () => {
@@ -223,161 +190,98 @@ export default function Sidebar({
       onNavigate?.();
       router.push("/login");
       router.refresh();
-    } catch (error) {
-      console.error("Erreur déconnexion", error);
+    } catch (e) {
+      console.error(e);
     }
-  };
-
-  const copyUserId = async () => {
-    if (!userId) return;
-    try {
-      await navigator.clipboard.writeText(userId);
-    } catch {}
   };
 
   return (
     <aside
       className={cn(
-        "flex h-full flex-col bg-zinc-950 text-zinc-100 font-sans",
+        // ✅ Grid = footer garanti visible
+        "grid h-dvh w-[240px] grid-rows-[auto,1fr,auto] bg-zinc-950 text-zinc-100",
         !inDrawer && "border-r border-white/5"
       )}
     >
-      {/* HEADER */}
-      {showHeader ? (
-        <div className="h-16 shrink-0 border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl px-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-indigo-600 shadow-[0_0_0_1px_rgba(99,102,241,0.25),0_12px_22px_rgba(79,70,229,0.20)] flex items-center justify-center">
-              <Radio className="h-5 w-5 text-white" />
-            </div>
-
-            <div className="leading-tight">
-              <div className="text-sm font-semibold tracking-wide text-white">
-                ONIIX <span className="text-indigo-300">PARTNER</span>
-              </div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Control Center</div>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            onClick={loadMe}
-            className="h-9 w-9 p-0 text-zinc-400 hover:text-zinc-100 hover:bg-white/5"
-            title="Rafraîchir"
-          >
-            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-          </Button>
+      {/* HEADER (plus compact) */}
+      <div className="h-12 px-3 flex items-center gap-3 border-b border-white/5">
+        <div className="h-8 w-8 rounded-xl bg-indigo-600/90 ring-1 ring-white/10 flex items-center justify-center">
+          <Radio className="h-4 w-4 text-white" />
         </div>
-      ) : null}
+        <div className="min-w-0 leading-tight">
+          <div className="text-sm font-semibold truncate">ONIIX Partner</div>
+          <div className="text-[10px] text-zinc-500 truncate">Control Center</div>
+        </div>
+      </div>
 
-      {/* NAV (scrollable) */}
-      <div className={cn("flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-6", !showHeader && "pt-4")}>
-        {SECTIONS.map((section, idx) => {
-          const visibleItems = section.items.filter((item) => {
-            if (!item.allowedRoles || item.allowedRoles.length === 0) return true;
-            return item.allowedRoles.map((r) => String(r).toLowerCase()).includes(currentRole);
-          });
-
-          if (visibleItems.length === 0) return null;
-
-          return (
-            <div key={idx}>
+      {/* MENU (contraint, pas de scroll, ne pousse jamais le footer) */}
+      <div className="min-h-0 overflow-hidden px-2 py-2">
+        <div className="space-y-2">
+          {visibleSections.map((section, idx) => (
+            <div key={idx} className="space-y-1">
               {section.title ? (
-                <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
                   {section.title}
                 </div>
               ) : null}
 
               <nav className="space-y-1">
-                {visibleItems.map((item) => {
+                {section.items.map((item) => {
                   const active = isActive(item.href);
+                  const Icon = item.icon;
+
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => onNavigate?.()}
                       className={cn(
-                        "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
+                        // ✅ moins haut, moins d’espace
+                        "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition",
                         active
-                          ? "bg-indigo-500/10 text-indigo-200"
-                          : "text-zinc-300/80 hover:text-zinc-100 hover:bg-white/5"
+                          ? "bg-white/10 text-white ring-1 ring-white/10"
+                          : "text-zinc-300/85 hover:text-white hover:bg-white/5"
                       )}
                     >
-                      <span
-                        className={cn(
-                          "absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full transition-opacity",
-                          active ? "bg-indigo-400 opacity-100" : "opacity-0"
-                        )}
-                      />
-
-                      <item.icon
-                        className={cn(
-                          "h-4 w-4 transition-colors",
-                          active ? "text-indigo-300" : "text-zinc-500 group-hover:text-zinc-300"
-                        )}
-                      />
-
+                      <Icon className={cn("h-4 w-4", active ? "text-indigo-200" : "text-zinc-500")} />
                       <span className="truncate font-medium">{item.label}</span>
-
-                      <ChevronRight
-                        className={cn(
-                          "ml-auto h-4 w-4 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity",
-                          active && "text-indigo-300 opacity-100"
-                        )}
-                      />
                     </Link>
                   );
                 })}
               </nav>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      {/* FOOTER */}
-      <div className="shrink-0 border-t border-white/5 bg-zinc-950/70 backdrop-blur-xl p-4 space-y-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      {/* FOOTER (toujours visible) */}
+      <div className="px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <Separator className="bg-white/5 my-2" />
+
+        <div className="rounded-xl border border-white/10 bg-white/5 px-2 py-2">
           <div className="flex items-center gap-3">
-            <div className="relative shrink-0">
-              <Avatar className="h-10 w-10 border border-white/10">
-                {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-                <AvatarFallback className="bg-zinc-900 text-zinc-200 text-xs font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-zinc-950" />
-            </div>
+            <Avatar className="h-8 w-8 border border-white/10">
+              {avatarUrl ? <AvatarImage src={avatarUrl} alt={userEmail || "User"} /> : null}
+              <AvatarFallback className="bg-zinc-900 text-zinc-200 text-[11px] font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
 
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-white truncate">{tenantName || "Organisation —"}</div>
-
+              <div className="text-[13px] font-semibold truncate">{tenantName || "Organisation"}</div>
               <div className="text-[11px] text-zinc-500 truncate">{userEmail || "—"}</div>
-
-              <button
-                type="button"
-                onClick={copyUserId}
-                className={cn(
-                  "mt-1 inline-flex items-center gap-2 text-[10px] font-mono text-zinc-500 hover:text-zinc-200 transition-colors",
-                  userId ? "cursor-pointer" : "cursor-default"
-                )}
-                title={userId ? "Cliquer pour copier l'ID" : ""}
-              >
-                <span className="text-zinc-600">ID</span>
-                <span className="rounded-md border border-white/10 bg-zinc-950/30 px-2 py-0.5 text-zinc-200">
-                  {shortId(userId)}
-                </span>
-              </button>
             </div>
           </div>
-        </div>
 
-        <Button
-          variant="ghost"
-          onClick={handleLogout}
-          className="w-full justify-start text-rose-300 hover:text-rose-200 hover:bg-rose-500/10"
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Se déconnecter
-        </Button>
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            className="mt-2 h-8 w-full justify-start px-2 text-rose-300 hover:text-rose-200 hover:bg-rose-500/10"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Déconnexion
+          </Button>
+        </div>
       </div>
     </aside>
   );
