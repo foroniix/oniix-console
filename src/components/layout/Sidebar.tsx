@@ -16,7 +16,7 @@ import {
   Megaphone,
   Target,
   RefreshCw,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -40,15 +40,15 @@ const SECTIONS: NavSection[] = [
   {
     items: [
       { href: "/", label: "Vue d'ensemble", icon: LayoutDashboard },
-      { href: "/activities", label: "Activités", icon: Activity }
-    ]
+      { href: "/activities", label: "Activités", icon: Activity },
+    ],
   },
   {
     title: "BROADCAST",
     items: [
       { href: "/channels", label: "Chaînes TV", icon: Tv },
-      { href: "/streams", label: "Flux & Signaux", icon: Signal }
-    ]
+      { href: "/streams", label: "Flux & Signaux", icon: Signal },
+    ],
   },
   {
     title: "MONÉTISATION",
@@ -57,21 +57,21 @@ const SECTIONS: NavSection[] = [
         href: "/ads",
         label: "Publicités",
         icon: Megaphone,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"]
+        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
       },
       {
         href: "/ads/campaigns",
         label: "Campagnes",
         icon: Target,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"]
+        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
       },
       {
         href: "/revenue",
         label: "Revenus",
         icon: Banknote,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"]
-      }
-    ]
+        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
+      },
+    ],
   },
   {
     title: "ADMINISTRATION",
@@ -80,16 +80,16 @@ const SECTIONS: NavSection[] = [
         href: "/users",
         label: "Utilisateurs",
         icon: Users,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"]
+        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
       },
       {
         href: "/settings",
         label: "Configuration",
         icon: Settings,
-        allowedRoles: ["member", "admin", "owner", "tenant_admin", "superadmin"]
-      }
-    ]
-  }
+        allowedRoles: ["member", "admin", "owner", "tenant_admin", "superadmin"],
+      },
+    ],
+  },
 ];
 
 type MeResponse =
@@ -124,7 +124,20 @@ function initialsFromNameOrEmail(name?: string | null, email?: string | null) {
   return (a + b).trim();
 }
 
-export default function Sidebar() {
+type SidebarProps = {
+  /** Quand utilisé dans un drawer mobile */
+  inDrawer?: boolean;
+  /** Afficher/masquer le header interne du sidebar (utile si le drawer a déjà un header) */
+  showHeader?: boolean;
+  /** Callback appelé lors d’une navigation (utile pour fermer un drawer) */
+  onNavigate?: () => void;
+};
+
+export default function Sidebar({
+  inDrawer = false,
+  showHeader = true,
+  onNavigate,
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -138,29 +151,23 @@ export default function Sidebar() {
   const [meLoaded, setMeLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
-
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   const currentRole = useMemo(() => (role || "member").toLowerCase(), [role]);
 
-  // (optionnel) Toujours utile pour l'alt du badge / avatar
   const displayName = useMemo(() => {
     if (fullName && fullName.trim().length) return fullName.trim();
     if (userEmail) return userEmail;
     return meLoaded ? "Utilisateur" : "Chargement…";
   }, [fullName, userEmail, meLoaded]);
 
-  const initials = useMemo(
-    () => initialsFromNameOrEmail(fullName, userEmail),
-    [fullName, userEmail]
-  );
+  const initials = useMemo(() => initialsFromNameOrEmail(fullName, userEmail), [fullName, userEmail]);
 
   const loadMe = async () => {
     setRefreshing(true);
     try {
       const [meRes, tenantRes] = await Promise.all([
         fetch("/api/auth/me", { method: "GET", cache: "no-store" }),
-        fetch("/api/settings/tenant", { method: "GET", cache: "no-store" })
+        fetch("/api/settings/tenant", { method: "GET", cache: "no-store" }),
       ]);
 
       const meJson = (await meRes.json().catch(() => null)) as MeResponse | null;
@@ -213,6 +220,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      onNavigate?.();
       router.push("/login");
       router.refresh();
     } catch (error) {
@@ -228,42 +236,45 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex h-screen w-72 flex-col border-r border-white/5 bg-zinc-950 text-zinc-100 font-sans">
+    <aside
+      className={cn(
+        "flex h-full flex-col bg-zinc-950 text-zinc-100 font-sans",
+        !inDrawer && "border-r border-white/5"
+      )}
+    >
       {/* HEADER */}
-      <div className="h-16 shrink-0 border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl px-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-indigo-600 shadow-[0_0_0_1px_rgba(99,102,241,0.25),0_12px_22px_rgba(79,70,229,0.20)] flex items-center justify-center">
-            <Radio className="h-5 w-5 text-white" />
+      {showHeader ? (
+        <div className="h-16 shrink-0 border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl px-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-indigo-600 shadow-[0_0_0_1px_rgba(99,102,241,0.25),0_12px_22px_rgba(79,70,229,0.20)] flex items-center justify-center">
+              <Radio className="h-5 w-5 text-white" />
+            </div>
+
+            <div className="leading-tight">
+              <div className="text-sm font-semibold tracking-wide text-white">
+                ONIIX <span className="text-indigo-300">PARTNER</span>
+              </div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Control Center</div>
+            </div>
           </div>
 
-          <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-wide text-white">
-              ONIIX <span className="text-indigo-300">PARTNER</span>
-            </div>
-            <div className="text-[10px] text-zinc-500 uppercase tracking-wider">
-              Control Center
-            </div>
-          </div>
+          <Button
+            variant="ghost"
+            onClick={loadMe}
+            className="h-9 w-9 p-0 text-zinc-400 hover:text-zinc-100 hover:bg-white/5"
+            title="Rafraîchir"
+          >
+            <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+          </Button>
         </div>
-
-        <Button
-          variant="ghost"
-          onClick={loadMe}
-          className="h-9 w-9 p-0 text-zinc-400 hover:text-zinc-100 hover:bg-white/5"
-          title="Rafraîchir"
-        >
-          <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-        </Button>
-      </div>
+      ) : null}
 
       {/* NAV (scrollable) */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-6">
+      <div className={cn("flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-6", !showHeader && "pt-4")}>
         {SECTIONS.map((section, idx) => {
           const visibleItems = section.items.filter((item) => {
             if (!item.allowedRoles || item.allowedRoles.length === 0) return true;
-            return item.allowedRoles
-              .map((r) => String(r).toLowerCase())
-              .includes(currentRole);
+            return item.allowedRoles.map((r) => String(r).toLowerCase()).includes(currentRole);
           });
 
           if (visibleItems.length === 0) return null;
@@ -283,6 +294,7 @@ export default function Sidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={() => onNavigate?.()}
                       className={cn(
                         "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
                         active
@@ -300,9 +312,7 @@ export default function Sidebar() {
                       <item.icon
                         className={cn(
                           "h-4 w-4 transition-colors",
-                          active
-                            ? "text-indigo-300"
-                            : "text-zinc-500 group-hover:text-zinc-300"
+                          active ? "text-indigo-300" : "text-zinc-500 group-hover:text-zinc-300"
                         )}
                       />
 
@@ -338,15 +348,9 @@ export default function Sidebar() {
             </div>
 
             <div className="min-w-0 flex-1">
-              {/* LIGNE 1: Nom du tenant */}
-              <div className="text-sm font-semibold text-white truncate">
-                {tenantName || "Organisation —"}
-              </div>
+              <div className="text-sm font-semibold text-white truncate">{tenantName || "Organisation —"}</div>
 
-              {/* LIGNE 2: Email */}
-              <div className="text-[11px] text-zinc-500 truncate">
-                {userEmail || "—"}
-              </div>
+              <div className="text-[11px] text-zinc-500 truncate">{userEmail || "—"}</div>
 
               <button
                 type="button"

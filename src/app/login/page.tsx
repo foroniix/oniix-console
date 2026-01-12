@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, Mail, Lock, ShieldCheck, Tv2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Slide = {
   title: string;
@@ -54,11 +54,12 @@ function AuthSlideshow() {
 
   return (
     <div
-      className="mt-8 rounded-3xl border border-white/10 bg-zinc-900/20 p-3"
+      className="mt-6 rounded-3xl border border-white/10 bg-zinc-900/20 p-3"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative h-[320px] overflow-hidden rounded-2xl">
+      {/* ✅ Hauteur responsive */}
+      <div className="relative h-[220px] xs:h-[240px] sm:h-[300px] md:h-[320px] overflow-hidden rounded-2xl">
         {SLIDES.map((s, i) => (
           <div
             key={s.imageSrc}
@@ -73,7 +74,8 @@ function AuthSlideshow() {
               fill
               priority={i === 0}
               className="object-cover"
-              sizes="(max-width: 768px) 0px, 520px"
+              // ✅ important: visible sur mobile => 100vw
+              sizes="(max-width: 768px) 100vw, 520px"
             />
 
             {/* Overlays */}
@@ -121,10 +123,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Optionnel pour le signup uniquement (si tu veux le garder)
   const [orgName, setOrgName] = useState("");
-
   const [remember, setRemember] = useState(true);
+
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -173,7 +174,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 font-sans">
+    <div className="min-h-dvh bg-zinc-950 font-sans">
       {/* Background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-24 -left-24 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-[110px]" />
@@ -181,9 +182,10 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%)]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-4 py-10">
-        <div className="grid w-full grid-cols-1 overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/30 shadow-2xl backdrop-blur-xl md:grid-cols-2">
-          {/* Left panel */}
+      {/* ✅ mobile: items-stretch + padding plus “safe” */}
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-6xl items-stretch md:items-center justify-center px-4 py-6 sm:py-10">
+        <div className="grid w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/30 shadow-2xl backdrop-blur-xl md:grid-cols-2">
+          {/* Left panel (desktop only) */}
           <div className="hidden flex-col justify-between p-10 md:flex">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900/60">
@@ -200,7 +202,6 @@ export default function LoginPage() {
                 Console de gestion professionnelle pour plateformes OTT.
               </h2>
 
-              {/* Slideshow */}
               <AuthSlideshow />
             </div>
 
@@ -210,25 +211,25 @@ export default function LoginPage() {
           {/* Right panel */}
           <div className="p-6 sm:p-10">
             <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-zinc-900/50 md:hidden">
                     <ShieldCheck className="h-5 w-5 text-indigo-400" />
                   </div>
-                  <h1 className="text-xl font-semibold text-white">{title}</h1>
+                  <h1 className="text-xl font-semibold text-white truncate">{title}</h1>
                 </div>
                 <p className="mt-2 text-sm text-zinc-500">{subtitle}</p>
               </div>
 
               {/* Mode switch */}
-              <div className="rounded-2xl border border-white/10 bg-zinc-900/30 p-1">
+              <div className="rounded-2xl border border-white/10 bg-zinc-900/30 p-1 shrink-0">
                 <div className="grid grid-cols-2 gap-1">
                   <button
                     type="button"
                     onClick={() => setMode("login")}
                     disabled={isLoading}
                     className={[
-                      "h-9 rounded-xl px-3 text-xs font-medium transition",
+                      "h-10 rounded-xl px-3 text-xs font-medium transition",
                       mode === "login" ? "bg-white text-zinc-950" : "text-zinc-300 hover:bg-white/5",
                     ].join(" ")}
                   >
@@ -239,7 +240,7 @@ export default function LoginPage() {
                     onClick={() => setMode("signup")}
                     disabled={isLoading}
                     className={[
-                      "h-9 rounded-xl px-3 text-xs font-medium transition",
+                      "h-10 rounded-xl px-3 text-xs font-medium transition",
                       mode === "signup" ? "bg-white text-zinc-950" : "text-zinc-300 hover:bg-white/5",
                     ].join(" ")}
                   >
@@ -308,7 +309,11 @@ export default function LoginPage() {
                     Rester connecté
                   </label>
 
-                  <button type="button" className="text-xs text-zinc-400 hover:text-white transition" disabled={isLoading}>
+                  <button
+                    type="button"
+                    className="text-xs text-zinc-400 hover:text-white transition"
+                    disabled={isLoading}
+                  >
                     Mot de passe oublié ?
                   </button>
                 </div>
@@ -338,6 +343,14 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
+
+            {/* ✅ Slideshow visible sur mobile */}
+            <div className="md:hidden">
+              <AuthSlideshow />
+              <div className="mt-4 text-center text-[11px] text-zinc-600">
+                © {new Date().getFullYear()} Oniix
+              </div>
+            </div>
           </div>
         </div>
       </div>

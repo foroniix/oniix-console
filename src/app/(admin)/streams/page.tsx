@@ -222,7 +222,6 @@ export default function StreamsPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
               <div>
-                <label className="text-xs text-zinc-400">Statut</label>
                 <div className="mt-1 inline-flex rounded-xl border border-white/10 bg-zinc-950/40 p-1">
                   <StatusPill active={statusFilter === "ALL"} onClick={() => setStatusFilter("ALL")}>
                     Tous
