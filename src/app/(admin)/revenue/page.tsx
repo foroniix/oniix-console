@@ -100,7 +100,7 @@ export default function RevenuePage() {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-950 text-zinc-500 font-mono text-xs tracking-widest">
         <Loader2 className="h-4 w-4 animate-spin mr-3 text-indigo-500" />
-        LOADING_REVENUE...
+        Chargement des revenus...
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function RevenuePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Revenus</h1>
-            <p className="text-xs text-zinc-500">Multi-tenant : revenus isolés par tenant.</p>
+            <p className="text-xs text-zinc-500">Revenus visibles uniquement au sein de votre organisation.</p>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ export default function RevenuePage() {
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center text-zinc-600 text-xs font-mono tracking-widest">
-                NO_REVENUE_DATA
+                Aucun revenu à afficher pour la période sélectionnée.
               </div>
             )}
           </div>

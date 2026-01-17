@@ -188,7 +188,7 @@ export default function CampaignsPage() {
           <div>
             <CardTitle className="text-white">Campagnes</CardTitle>
             <p className="text-sm text-zinc-500 mt-1">
-              Gestion multi-tenant : ces campagnes sont isolées par <span className="font-mono">tenant_id</span>.
+              Campagnes de votre organisation, visibles uniquement par votre équipe.
             </p>
           </div>
 
@@ -326,7 +326,7 @@ export default function CampaignsPage() {
             <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
               <div>
                 <div className="text-sm font-semibold">Active</div>
-                <div className="text-xs text-zinc-500">La campagne peut être sélectionnée par le decision endpoint.</div>
+                <div className="text-xs text-zinc-500">La campagne peut être sélectionnée automatiquement selon vos règles.</div>
               </div>
               <Switch checked={active} onCheckedChange={setActive} />
             </div>

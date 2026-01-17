@@ -51,10 +51,14 @@ function timeLabel(t: string) {
   return t;
 }
 
-function shortId(id: string, start = 6, end = 4) {
-  if (!id) return "—";
-  if (id.length <= start + end + 1) return id;
-  return `${id.slice(0, start)}…${id.slice(-end)}`;
+function eventLabel(event: string) {
+  const key = (event || "").toUpperCase();
+  if (key === "IMPRESSION") return "Impression";
+  if (key === "CLICK") return "Clic";
+  if (key === "START") return "Debut";
+  if (key === "COMPLETE") return "Fin";
+  if (key === "SKIP") return "Ignore";
+  return "Activite";
 }
 
 export default function AdsDashboardPremium(props: { accessToken: string | null; tenantId: string | null }) {
@@ -181,18 +185,21 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
   }, [summary]);
 
   const scopeLabel = useMemo(() => {
-    if (selectedStreamId) return `Stream • ${shortId(selectedStreamId)}`;
+    if (selectedStreamId) {
+      const s = streams.find((x) => x.id === selectedStreamId);
+      return s?.title ? `Diffusion - ${s.title}` : "Diffusion selectionnee";
+    }
     if (selectedChannelId) {
       const c = channels.find((x) => x.id === selectedChannelId);
-      return c ? `Chaîne • ${c.name}` : `Chaîne • ${shortId(selectedChannelId)}`;
+      return c ? `Chaine - ${c.name}` : "Chaine selectionnee";
     }
-    return "Tenant • toutes les chaînes";
-  }, [selectedChannelId, selectedStreamId, channels]);
+    return "Organisation - toutes les chaines";
+  }, [selectedChannelId, selectedStreamId, channels, streams]);
 
   if (!accessToken || !tenantId) {
     return (
       <div className="p-6 text-zinc-500 text-sm">
-        Session manquante. Reconnecte-toi pour activer le dashboard.
+        Session expiree. Veuillez vous reconnecter pour acceder au tableau de bord.
       </div>
     );
   }
@@ -210,9 +217,9 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
                 <span className="animate-ping absolute h-full w-full rounded-full bg-rose-400 opacity-60"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
               </span>
-              <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Live</span>
+              <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">En direct</span>
               <span className="text-[10px] text-zinc-400">
-                +{fmt(liveImp)} imp • +{fmt(liveClk)} clics
+                +{fmt(liveImp)} impressions - +{fmt(liveClk)} clics
               </span>
             </div>
 
@@ -222,7 +229,7 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
           </div>
 
           <p className="text-sm text-zinc-500">
-            KPI + Graph + Top campagnes + feed temps réel (Supabase Realtime). Filtrable par chaîne/stream.
+            Suivez la performance publicitaire en temps reel, avec filtres par chaine et diffusion.
           </p>
         </div>
 
@@ -261,14 +268,14 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full lg:w-[560px]">
               {/* Channel select */}
               <div className="space-y-1">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500">Chaîne</div>
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500">Chaine</div>
                 <select
                   value={selectedChannelId}
                   onChange={(e) => setSelectedChannelId(e.target.value)}
                   disabled={loadingFilters}
                   className="h-10 w-full rounded-md bg-zinc-950/60 border border-white/10 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60"
                 >
-                  <option value="">Toutes les chaînes</option>
+                  <option value="">Toutes les chaines</option>
                   {channels.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -279,17 +286,17 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
 
               {/* Stream select */}
               <div className="space-y-1">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500">Stream</div>
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500">Diffusion</div>
                 <select
                   value={selectedStreamId}
                   onChange={(e) => setSelectedStreamId(e.target.value)}
                   disabled={loadingFilters || visibleStreams.length === 0}
                   className="h-10 w-full rounded-md bg-zinc-950/60 border border-white/10 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60"
                 >
-                  <option value="">Tous les streams</option>
+                  <option value="">Toutes les diffusions</option>
                   {visibleStreams.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.title} ({shortId(s.id)})
+                      {s.title || "Diffusion"}
                     </option>
                   ))}
                 </select>
@@ -297,13 +304,13 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
                 <div className="text-[10px] text-zinc-600">
                   {selectedStreamId ? (
                     <span>
-                      Presence :{" "}
+                      Audience :{" "}
                       <span className="text-zinc-300">
-                        {liveStatus === "live" ? `${fmt(liveViewers)} viewers` : "connexion..."}
+                        {liveStatus === "live" ? `${fmt(liveViewers)} spectateurs` : "connexion..."}
                       </span>
                     </span>
                   ) : (
-                    <span>Choisis un stream pour activer le compteur presence.</span>
+                    <span>Choisissez une diffusion pour activer le compteur d'audience.</span>
                   )}
                 </div>
               </div>
@@ -314,13 +321,13 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
 
       {/* KPI ROW */}
       <div className="grid gap-4 md:grid-cols-4">
-        <KpiCard title="Impressions" value={fmt(totalImp)} sub={`Live +${fmt(liveImp)}`} icon={Eye} />
-        <KpiCard title="Clics" value={fmt(totalClk)} sub={`Live +${fmt(liveClk)}`} icon={MousePointerClick} />
-        <KpiCard title="CTR" value={`${ctr.toFixed(2)}%`} sub="Clics / Impressions" icon={TrendingUp} />
+        <KpiCard title="Impressions" value={fmt(totalImp)} sub={`En direct +${fmt(liveImp)}`} icon={Eye} />
+        <KpiCard title="Clics" value={fmt(totalClk)} sub={`En direct +${fmt(liveClk)}`} icon={MousePointerClick} />
+        <KpiCard title="Taux de clic" value={`${ctr.toFixed(2)}%`} sub="Clics / Impressions" icon={TrendingUp} />
         <KpiCard
-          title="Viewers (presence)"
-          value={selectedStreamId ? fmt(liveViewers) : "—"}
-          sub={selectedStreamId ? (liveStatus === "live" ? "presence live" : "connexion...") : "sélectionne un stream"}
+          title="Audience en direct"
+          value={selectedStreamId ? fmt(liveViewers) : "-"}
+          sub={selectedStreamId ? (liveStatus === "live" ? "audience en direct" : "connexion...") : "selectionnez une diffusion"}
           icon={Radio}
           highlight
         />
@@ -399,17 +406,17 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-white truncate">{c.name}</div>
-                        <div className="text-[10px] text-zinc-500 truncate">{c.type} • prio {c.priority}</div>
+                        <div className="text-[10px] text-zinc-500 truncate">Type : {c.type} - Priorite : {c.priority}</div>
                       </div>
                       <div className="text-[10px] text-zinc-400 font-mono">{c.ctr.toFixed(2)}%</div>
                     </div>
 
                     <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-zinc-400">
                       <div className="rounded-md bg-white/5 border border-white/10 px-2 py-1">
-                        IMP <span className="text-white font-semibold">{fmt(c.impressions)}</span>
+                        Impressions <span className="text-white font-semibold">{fmt(c.impressions)}</span>
                       </div>
                       <div className="rounded-md bg-white/5 border border-white/10 px-2 py-1">
-                        CLK <span className="text-white font-semibold">{fmt(c.clicks)}</span>
+                        Clics <span className="text-white font-semibold">{fmt(c.clicks)}</span>
                       </div>
                     </div>
                   </div>
@@ -425,15 +432,15 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
       {/* Live events feed */}
       <Card className="bg-zinc-900/40 border-white/5">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm uppercase tracking-widest text-white">Feed temps réel</CardTitle>
+          <CardTitle className="text-sm uppercase tracking-widest text-white">Activite en direct</CardTitle>
           <div className="text-[10px] text-zinc-500">
-            {events.length > 0 ? `Dernier: ${new Date(events[0].created_at).toLocaleTimeString()}` : "—"}
+            {events.length > 0 ? `Derniere activite : ${new Date(events[0].created_at).toLocaleTimeString()}` : "—"}
           </div>
         </CardHeader>
 
         <CardContent>
           {events.length === 0 ? (
-            <div className="text-zinc-600 text-sm py-6 text-center">Aucun event live pour le moment.</div>
+            <div className="text-zinc-600 text-sm py-6 text-center">Aucune activite recente pour le moment.</div>
           ) : (
             <div className="space-y-2">
               {events.slice(0, 25).map((e) => (
@@ -442,15 +449,7 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
                   className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 px-3 py-2"
                 >
                   <div className="text-xs text-zinc-200">
-                    <span className="font-bold text-white">{e.event}</span>
-                    {e.campaign_id ? (
-                      <span className="text-zinc-500"> • camp {String(e.campaign_id).slice(0, 8)}…</span>
-                    ) : null}
-                    {e.stream_id ? (
-                      <span className="text-zinc-500"> • stream {String(e.stream_id).slice(0, 8)}…</span>
-                    ) : selectedChannelId ? (
-                      <span className="text-zinc-500"> • channel {shortId(selectedChannelId)}</span>
-                    ) : null}
+                    <span className="font-bold text-white">{eventLabel(e.event)}</span>
                   </div>
                   <div className="text-[11px] text-zinc-500">{new Date(e.created_at).toLocaleTimeString()}</div>
                 </div>
