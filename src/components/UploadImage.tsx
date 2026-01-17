@@ -27,7 +27,6 @@ export default function UploadImage({
       const ct = res.headers.get("content-type") || "";
       const json = ct.includes("application/json") ? await res.json().catch(() => null) : null;
       if (!res.ok || !json?.url) {
-        console.error("Upload failed", { status: res.status });
         throw new Error("Le chargement du fichier est indisponible pour le moment.");
       }
       onChange(json.url);

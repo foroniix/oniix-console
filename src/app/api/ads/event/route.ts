@@ -96,9 +96,7 @@ export async function POST(req: Request) {
   // Supabase client with user token (RLS applies)
   const sb = supabaseUser(ctx.accessToken);
 
-  // tenant_id from your auth ctx (names differ across projects)
-  const tenant_id = (ctx as any).tenantId || (ctx as any).tenant_id || (ctx as any).tenantID;
-  if (!tenant_id) return bad("Missing tenant_id in auth context", 401);
+  const tenant_id = ctx.tenantId as string;
 
   const user_id = await safeGetUserId(sb);
 

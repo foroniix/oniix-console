@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import type { User } from "@supabase/supabase-js";
 import { supabaseUser } from "./supabase";
 
 export const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
@@ -11,12 +12,20 @@ export type AuthContext = {
   userId: string;
   tenantId: string | null;
   role: string | null;
+  user: User;
 };
 
 const getUserForToken = cache(async (accessToken: string) => {
   const sb = supabaseUser(accessToken);
   return sb.auth.getUser();
 });
+
+function unauthorizedResponse() {
+  return NextResponse.json(
+    { error: "Votre session a expiré. Veuillez vous reconnecter." },
+    { status: 401 }
+  );
+}
 
 /**
  * Require an authenticated user based on the access token cookie.
@@ -27,13 +36,15 @@ export async function requireAuth(): Promise<{ ctx: AuthContext } | { res: NextR
   const accessToken = cookieStore.get(ACCESS_COOKIE)?.value;
 
   if (!accessToken) {
-    return { res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    console.warn("Missing access token cookie");
+    return { res: unauthorizedResponse() };
   }
 
   try {
     const { data, error } = await getUserForToken(accessToken);
     if (error || !data?.user) {
-      return { res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+      console.warn("Invalid session", { error: error?.message });
+      return { res: unauthorizedResponse() };
     }
 
     const user = data.user;
@@ -41,18 +52,17 @@ export async function requireAuth(): Promise<{ ctx: AuthContext } | { res: NextR
     const tenantId =
       (user.app_metadata as any)?.tenant_id ?? (user.user_metadata as any)?.tenant_id ?? null;
 
-    return { ctx: { accessToken, userId: user.id, tenantId, role } };
+    return { ctx: { accessToken, userId: user.id, tenantId, role, user } };
   } catch {
-    return { res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    console.warn("Auth check failed");
+    return { res: unauthorizedResponse() };
   }
 }
 
 export function requireTenant(ctx: AuthContext): NextResponse | null {
   if (!ctx.tenantId) {
-    return NextResponse.json(
-      { error: "Tenant not set for this user (missing tenant_id claim)." },
-      { status: 403 }
-    );
+    console.warn("Missing tenant_id in auth context", { userId: ctx.userId });
+    return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
   }
   return null;
 }
@@ -60,7 +70,8 @@ export function requireTenant(ctx: AuthContext): NextResponse | null {
 export function requireRole(ctx: AuthContext, allowed: string[]): NextResponse | null {
   const r = (ctx.role || "").toLowerCase();
   if (!allowed.map(a => a.toLowerCase()).includes(r)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    console.warn("Forbidden role", { userId: ctx.userId, role: ctx.role });
+    return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
   }
   return null;
 }

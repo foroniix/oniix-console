@@ -27,8 +27,7 @@ export async function GET(req: Request) {
   const channel_id = url.searchParams.get("channel_id")?.trim() || null;
   const stream_id = url.searchParams.get("stream_id")?.trim() || null;
 
-  const tenant_id = (ctx as any).tenantId || (ctx as any).tenant_id || (ctx as any).tenantID;
-  if (!tenant_id) return NextResponse.json({ ok: false, error: "Missing tenant_id" }, { status: 401 });
+  const tenant_id = ctx.tenantId as string;
 
   const sb = supabaseUser(ctx.accessToken);
 

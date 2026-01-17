@@ -13,7 +13,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ use
   if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
 
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
-  if (!check.ok) return jsonError(check.error, check.error === "Forbidden" ? 403 : 400);
+  if (!check.ok) return jsonError(check.error, check.error === "Accès refusé." ? 403 : 400);
 
   const targetUserId = userId;
   if (!targetUserId) return jsonError("userId manquant", 400);

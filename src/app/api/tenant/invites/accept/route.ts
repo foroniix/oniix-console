@@ -12,9 +12,7 @@ export async function POST(req: NextRequest) {
   const code = typeof body.code === "string" ? body.code.trim() : "";
   if (!code) return jsonError("Code manquant", 400);
 
-  const { data: u } = await ctx.sb.auth.getUser();
-  const user = u?.user;
-  if (!user) return jsonError("Invalid session", 401);
+  const user = ctx.user;
 
   const email = (user.email || "").toLowerCase();
 

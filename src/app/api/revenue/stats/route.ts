@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { requireAuth } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
-
-const ACCESS_COOKIE_NAME = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,22 +27,13 @@ export async function GET(req: Request) {
     const period = (url.searchParams.get("period") || "24h") as "24h" | "7d" | "30d";
     const { start, end } = periodToRange(period);
 
-    const cookieStore = await cookies();
-    const token = cookieStore.get(ACCESS_COOKIE_NAME)?.value;
-    if (!token) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+    const auth = await requireAuth();
+    if ("res" in auth) return auth.res;
+    const { ctx } = auth;
 
-    const sb = supabaseUser(token);
+    const sb = supabaseUser(ctx.accessToken);
 
-    const { data: u, error: uErr } = await sb.auth.getUser();
-    if (uErr || !u?.user) {
-      return NextResponse.json({ ok: false, error: uErr?.message || "Invalid session" }, { status: 401 });
-    }
-
-    const user = u.user;
-    const tenant_id =
-      (user.app_metadata as any)?.tenant_id ??
-      (user.user_metadata as any)?.tenant_id ??
-      null;
+    const tenant_id = ctx.tenantId;
 
     if (!tenant_id) {
       // si tu passes plutôt par tenant_memberships, remplace ici par une requête membership

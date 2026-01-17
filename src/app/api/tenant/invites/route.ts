@@ -19,7 +19,7 @@ export async function GET() {
   if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
 
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
-  if (!check.ok) return jsonError(check.error, check.error === "Forbidden" ? 403 : 400);
+  if (!check.ok) return jsonError(check.error, check.error === "Accès refusé." ? 403 : 400);
 
   const { data, error } = await ctx.sb
     .from("tenant_invites")
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
 
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
-  if (!check.ok) return jsonError(check.error, check.error === "Forbidden" ? 403 : 400);
+  if (!check.ok) return jsonError(check.error, check.error === "Accès refusé." ? 403 : 400);
 
   const body = await req.json().catch(() => ({}));
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";

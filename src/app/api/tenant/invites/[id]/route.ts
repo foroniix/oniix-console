@@ -13,7 +13,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
 
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
-  if (!check.ok) return jsonError(check.error, check.error === "Forbidden" ? 403 : 400);
+  if (!check.ok) return jsonError(check.error, check.error === "Accès refusé." ? 403 : 400);
 
   const id = (params as any)?.id ?? Object.values(params ?? {})[0];
   if (!id) return jsonError("id manquant", 400);
@@ -27,7 +27,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
 
   if (invErr) return jsonError(invErr.message, 400);
   if (!inv) return jsonError("Invite inconnue", 404);
-  if ((inv as any).tenant_id !== ctx.tenant_id) return jsonError("Forbidden", 403);
+  if ((inv as any).tenant_id !== ctx.tenant_id) return jsonError("Accès refusé.", 403);
 
   if ((inv as any).status === "accepted") {
     return jsonError("Impossible : invite déjà acceptée", 400);

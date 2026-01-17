@@ -54,8 +54,7 @@ export async function GET(req: Request) {
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
   const sb = supabaseUser(ctx.accessToken);
 
-  const tenant_id = (ctx as any).tenantId || (ctx as any).tenant_id || (ctx as any).tenantID;
-  if (!tenant_id) return NextResponse.json({ ok: false, error: "Missing tenant_id" }, { status: 401 });
+  const tenant_id = ctx.tenantId as string;
 
   let q = sb
     .from("ad_events")
