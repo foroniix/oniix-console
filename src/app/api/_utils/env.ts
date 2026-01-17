@@ -1,7 +1,8 @@
 export function requireEnv(name: string): string {
   const v = process.env[name];
   if (!v || v.trim().length < 10) {
-    throw new Error(`Missing or invalid env var: ${name}`);
+    console.error("Missing or invalid env var", { name });
+    throw new Error("Configuration indisponible.");
   }
   return v;
 }

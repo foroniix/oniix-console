@@ -52,7 +52,14 @@ function statusBadge(inv: Invite) {
   if (s.includes("pending")) return <Badge>En attente</Badge>;
   if (s.includes("revoked") || s.includes("canceled")) return <Badge variant="outline">Révoquée</Badge>;
 
-  return <Badge variant="outline">{inv.status || "—"}</Badge>;
+  return <Badge variant="outline">{inv.status || "-"}</Badge>;
+}
+
+function roleLabel(role?: string | null) {
+  const r = (role || "").toLowerCase();
+  if (r === "admin") return "Administrateur";
+  if (r === "member") return "Membre";
+  return role || "-";
 }
 
 export default function UsersPage() {
@@ -130,14 +137,25 @@ export default function UsersPage() {
     const q = qMembers.trim().toLowerCase();
     const list = [...members].sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
     if (!q) return list;
-    return list.filter((m) => (m.email || m.user_id).toLowerCase().includes(q) || (m.role || "").toLowerCase().includes(q));
+    return list.filter((m) => {
+      const email = (m.email || "").toLowerCase();
+      const role = (m.role || "").toLowerCase();
+      const label = roleLabel(m.role).toLowerCase();
+      return email.includes(q) || role.includes(q) || label.includes(q);
+    });
   }, [members, qMembers]);
 
   const filteredInvites = useMemo(() => {
     const q = qInvites.trim().toLowerCase();
     const list = [...invites].sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
     if (!q) return list;
-    return list.filter((i) => i.email.toLowerCase().includes(q) || (i.role || "").toLowerCase().includes(q) || (i.status || "").toLowerCase().includes(q));
+    return list.filter((i) => {
+      const email = i.email.toLowerCase();
+      const role = (i.role || "").toLowerCase();
+      const label = roleLabel(i.role).toLowerCase();
+      const status = (i.status || "").toLowerCase();
+      return email.includes(q) || role.includes(q) || label.includes(q) || status.includes(q);
+    });
   }, [invites, qInvites]);
 
   const membersPages = Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE));
@@ -220,7 +238,7 @@ export default function UsersPage() {
     try {
       const res = await fetch(`/api/tenant/invites/${encodeURIComponent(inviteId)}`, { method: "DELETE" });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "Endpoint revoke manquant (DELETE /api/tenant/invites/:id ?)");
+      if (!res.ok || !json.ok) throw new Error("Action indisponible pour le moment.");
 
       toast.success("Invitation révoquée");
       await load();
@@ -237,7 +255,7 @@ export default function UsersPage() {
     try {
       const res = await fetch(`/api/tenant/invites/${encodeURIComponent(inviteId)}/resend`, { method: "POST" });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "Endpoint resend manquant (POST /api/tenant/invites/:id/resend ?)");
+      if (!res.ok || !json.ok) throw new Error("Action indisponible pour le moment.");
 
       toast.success("Invitation renvoyée");
       if (json.invite_url) await copy(json.invite_url, "Lien d’invite copié");
@@ -263,7 +281,7 @@ export default function UsersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Utilisateurs</h1>
-          <p className="text-sm text-zinc-500">Inviter et gérer les membres du tenant.</p>
+          <p className="text-sm text-zinc-500">Inviter et gérer les membres de l'organisation.</p>
         </div>
 
         <div className="flex gap-2">
@@ -284,7 +302,7 @@ export default function UsersPage() {
             <CardTitle className="text-2xl">{stats.members}</CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-zinc-500 flex items-center gap-2">
-            <Shield className="h-4 w-4" /> {stats.admins} admin(s)
+            <Shield className="h-4 w-4" /> {stats.admins} administrateurs
           </CardContent>
         </Card>
 
@@ -349,7 +367,7 @@ export default function UsersPage() {
                       setQMembers(e.target.value);
                       setMembersPage(1);
                     }}
-                    placeholder="Rechercher par email, id ou rôle…"
+                    placeholder="Rechercher par email ou rôle…"
                     className="pl-9 bg-zinc-950/50 border-white/10"
                   />
                 </div>
@@ -384,12 +402,13 @@ export default function UsersPage() {
                         <TableRow key={m.user_id} className="border-white/10">
                           <TableCell>
                             <div className="min-w-0">
-                              <div className="text-sm text-white truncate">{m.email ?? m.user_id}</div>
-                              <div className="text-[10px] text-zinc-500 font-mono truncate">{m.user_id}</div>
+                              <div className="text-sm text-white truncate">{m.email ?? "Compte sans email"}</div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={String(m.role).toLowerCase() === "admin" ? "secondary" : "outline"}>{m.role}</Badge>
+                            <Badge variant={String(m.role).toLowerCase() === "admin" ? "secondary" : "outline"}>
+                              {roleLabel(m.role)}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-zinc-400 text-sm">{fmtDate(m.created_at)}</TableCell>
                           <TableCell className="text-right">
@@ -474,7 +493,9 @@ export default function UsersPage() {
                           <TableRow key={inv.id} className="border-white/10">
                             <TableCell className="text-white">{inv.email}</TableCell>
                             <TableCell>
-                              <Badge variant={String(inv.role).toLowerCase() === "admin" ? "secondary" : "outline"}>{inv.role}</Badge>
+                              <Badge variant={String(inv.role).toLowerCase() === "admin" ? "secondary" : "outline"}>
+                                {roleLabel(inv.role)}
+                              </Badge>
                             </TableCell>
                             <TableCell>{statusBadge(inv)}</TableCell>
                             <TableCell className="text-zinc-400 text-sm">{fmtDate(inv.created_at)}</TableCell>
@@ -553,12 +574,13 @@ export default function UsersPage() {
                           <SelectValue placeholder="Choisir un rôle" />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-white/10">
-                          <SelectItem value="member">Member</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="member">Membre</SelectItem>
+                          <SelectItem value="admin">Administrateur</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-zinc-500">
-                        Astuce : garde <span className="text-zinc-300">member</span> par défaut, admin seulement si nécessaire.
+                        Astuce : gardez le rôle <span className="text-zinc-300">Membre</span> par défaut,
+                        <span className="text-zinc-300"> Administrateur</span> seulement si nécessaire.
                       </p>
                     </div>
 
@@ -575,20 +597,17 @@ export default function UsersPage() {
 
                 <Card className="bg-zinc-950/30 border-white/10">
                   <CardHeader>
-                    <CardTitle>Ce que l’écran gère</CardTitle>
-                    <CardDescription className="text-zinc-500">Fonctionnalités “complètes” côté admin.</CardDescription>
+                    <CardTitle>Bonnes pratiques d'équipe</CardTitle>
+                    <CardDescription className="text-zinc-500">
+                      Des accès clairs et maîtrisés pour votre organisation.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="text-sm text-zinc-300 space-y-2">
-                    <div>• Onglets (Membres / Invitations / Inviter)</div>
-                    <div>• Recherche, tri par date, pagination</div>
-                    <div>• Badges de statut + expiration</div>
-                    <div>• Copie rapide (toast)</div>
-                    <div>• Confirmation avant suppression</div>
-                    <div className="text-xs text-zinc-500 pt-2">
-                      Pour activer “Renvoyer” et “Révoquer”, ajoute :
-                      <span className="font-mono text-zinc-300"> POST /api/tenant/invites/:id/resend</span> et{" "}
-                      <span className="font-mono text-zinc-300">DELETE /api/tenant/invites/:id</span>.
-                    </div>
+                    <div>- Invitez les bonnes personnes au bon moment.</div>
+                    <div>- Attribuez un rôle adapté à chaque besoin.</div>
+                    <div>- Suivez les invitations en attente ou expirées.</div>
+                    <div>- Révisez régulièrement les accès de l'équipe.</div>
+                    <div>- Gardez la liste des membres claire et à jour.</div>
                   </CardContent>
                 </Card>
               </div>
@@ -602,17 +621,16 @@ export default function UsersPage() {
         <DialogContent className="bg-zinc-950 border-white/10 text-zinc-100">
           <DialogHeader>
             <DialogTitle>Supprimer ce membre ?</DialogTitle>
-            <DialogDescription className="text-zinc-500">
-              Cette action est définitive. Le membre perdra l’accès au tenant.
-            </DialogDescription>
-          </DialogHeader>
+          <DialogDescription className="text-zinc-500">
+              Cette action est définitive. Le membre perdra l’accès à l’organisation.
+          </DialogDescription>
+        </DialogHeader>
 
-          {confirmMember && (
-            <div className="rounded-lg border border-white/10 bg-zinc-900/30 p-3">
-              <div className="text-sm text-white truncate">{confirmMember.email ?? confirmMember.user_id}</div>
-              <div className="text-[10px] text-zinc-500 font-mono truncate">{confirmMember.user_id}</div>
-            </div>
-          )}
+        {confirmMember && (
+          <div className="rounded-lg border border-white/10 bg-zinc-900/30 p-3">
+            <div className="text-sm text-white truncate">{confirmMember.email ?? "Compte sans email"}</div>
+          </div>
+        )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)} className="h-9">

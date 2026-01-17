@@ -1,46 +1,61 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { supabaseAnon, supabaseAdmin } from "../../_utils/supabase";
 import { setAuthCookies } from "../../_utils/cookies";
+import { parseJson } from "../../_utils/validate";
+import { enforceRateLimit, getRateLimitConfig } from "../../_utils/rate-limit";
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
 async function tableExists(admin: ReturnType<typeof supabaseAdmin>, tableName: string) {
-  // test simple : une requête SELECT 0 ligne, si ça fail -> table absente ou pas d’accès
   const { error } = await admin.from(tableName).select("*").limit(1);
   return !error;
 }
 
 export async function POST(req: Request) {
   try {
-    const { email, password, tenantName } = await req.json();
+    const parsed = await parseJson(
+      req,
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(8),
+        tenantName: z.string().max(120).optional(),
+      })
+    );
+    if (!parsed.ok) return parsed.res;
+    const { email, password, tenantName } = parsed.data;
 
-    if (!email || !password) return jsonError("Email et mot de passe requis", 400);
+    if (!email || !password) return jsonError("Email et mot de passe requis.", 400);
     if (typeof password !== "string" || password.length < 8) {
-      return jsonError("Mot de passe trop court (min 8 caractères)", 400);
+      return jsonError("Mot de passe trop court (min 8 caracteres).", 400);
     }
+
+    const rateLimit = getRateLimitConfig("AUTH", { limit: 10, windowMs: 60_000 });
+    const rateRes = await enforceRateLimit(req, rateLimit);
+    if (rateRes) return rateRes;
 
     const sbAnon = supabaseAnon();
     const sbAdmin = supabaseAdmin();
 
-    // 1) signup
     const { data: signUpData, error: signUpErr } = await sbAnon.auth.signUp({
       email,
       password,
     });
-    if (signUpErr) return jsonError(signUpErr.message, 401);
+    if (signUpErr) {
+      console.error("Signup error", { error: signUpErr.message });
+      return jsonError("Impossible de creer le compte.", 401);
+    }
 
-    // Si confirmation email ON : user peut être null
     const user = signUpData.user;
     if (!user) {
       return NextResponse.json(
-        { ok: true, message: "Compte créé. Vérifie ton email pour confirmer." },
+        { ok: true, message: "Compte cree. Verifiez votre email pour confirmer." },
         { status: 200 }
       );
     }
 
-    // 2) Tentative de création tenant + membership (si tables existent)
     let createdTenantId: string | null = null;
 
     const hasTenants = await tableExists(sbAdmin, "tenants");
@@ -50,7 +65,10 @@ export async function POST(req: Request) {
       const { data: tenantRow, error: tenantErr } = await sbAdmin
         .from("tenants")
         .insert({
-          name: typeof tenantName === "string" && tenantName.trim().length > 0 ? tenantName.trim() : "Mon tenant",
+          name:
+            typeof tenantName === "string" && tenantName.trim().length > 0
+              ? tenantName.trim()
+              : "Mon espace",
           created_by: user.id,
         })
         .select("id")
@@ -67,7 +85,6 @@ export async function POST(req: Request) {
           });
         }
 
-        // 3) Stocker tenant_id en app_metadata (pratique côté app)
         await sbAdmin.auth.admin.updateUserById(user.id, {
           app_metadata: {
             tenant_id: createdTenantId,
@@ -77,24 +94,24 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4) auto-login
     const { data: signInData, error: signInErr } = await sbAnon.auth.signInWithPassword({
       email,
       password,
     });
-    if (signInErr) return jsonError(signInErr.message, 401);
+    if (signInErr) {
+      console.error("Signin after signup error", { error: signInErr.message });
+      return jsonError("Impossible d'ouvrir la session.", 401);
+    }
 
     const access = signInData.session?.access_token;
     const refresh = signInData.session?.refresh_token;
-    if (!access || !refresh) return jsonError("Session introuvable", 500);
+    if (!access || !refresh) return jsonError("Session introuvable.", 500);
 
-    const res = NextResponse.json(
-      { ok: true, tenant_id: createdTenantId },
-      { status: 200 }
-    );
+    const res = NextResponse.json({ ok: true, tenant_id: createdTenantId }, { status: 200 });
     setAuthCookies(res, access, refresh);
     return res;
   } catch (e: any) {
-    return jsonError(e?.message || "Erreur serveur", 500);
+    console.error("Signup error", { error: e?.message });
+    return jsonError("Une erreur est survenue.", 500);
   }
 }

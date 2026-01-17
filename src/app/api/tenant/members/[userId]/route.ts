@@ -10,16 +10,14 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ use
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 
-  if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
-
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
-  if (!check.ok) return jsonError(check.error, check.error === "Accès refusé." ? 403 : 400);
+  if (!check.ok) return jsonError(check.error, check.error === "Acces refuse." ? 403 : 400);
 
   const targetUserId = userId;
-  if (!targetUserId) return jsonError("userId manquant", 400);
+  if (!targetUserId) return jsonError("Identifiant manquant.", 400);
 
   if (targetUserId === ctx.user.id) {
-    return jsonError("Impossible de vous retirer vous-même (pour l'instant).", 400);
+    return jsonError("Impossible de vous retirer vous-meme pour le moment.", 400);
   }
 
   const { error } = await ctx.sb
@@ -28,7 +26,10 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ use
     .eq("tenant_id", ctx.tenant_id)
     .eq("user_id", targetUserId);
 
-  if (error) return jsonError(error.message, 400);
+  if (error) {
+    console.error("Tenant member delete error", { error: error.message, tenantId: ctx.tenant_id, userId: targetUserId });
+    return jsonError("Une erreur est survenue.", 400);
+  }
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }

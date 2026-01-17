@@ -8,7 +8,7 @@ export async function GET(_: NextRequest, { params }: Params) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   const { id } = await params;
@@ -23,7 +23,12 @@ export async function GET(_: NextRequest, { params }: Params) {
     .eq("id", id)
     .single();
 
-  if (se || !stream) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (se || !stream) {
+    if (se) {
+      console.error("Stream stats lookup error", { error: se.message, tenantId: ctx.tenantId, id });
+    }
+    return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
+  }
 
   const { data, error } = await supa
     .from("stream_stats")

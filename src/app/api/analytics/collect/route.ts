@@ -1,7 +1,9 @@
 // src/app/api/analytics/collect/route.ts (multi-tenant)
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseJson } from "../../_utils/validate";
 
 interface AnalyticsPayload {
   sessionId: string;
@@ -17,14 +19,27 @@ export async function POST(req: Request) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   try {
-    const body: AnalyticsPayload = await req.json();
+    const parsed = await parseJson(
+      req,
+      z.object({
+        sessionId: z.string().min(1),
+        eventType: z.string().min(1),
+        userId: z.string().optional(),
+        streamId: z.string().optional(),
+        deviceType: z.string().optional(),
+        os: z.string().optional(),
+        country: z.string().optional(),
+      })
+    );
+    if (!parsed.ok) return parsed.res;
+    const body: AnalyticsPayload = parsed.data;
 
     if (!body.sessionId || !body.eventType) {
-      return NextResponse.json({ error: "Les champs 'sessionId' et 'eventType' sont requis." }, { status: 400 });
+      return NextResponse.json({ error: "Donnees requises manquantes." }, { status: 400 });
     }
 
     const supa = supabaseUser(ctx.accessToken);
@@ -42,9 +57,9 @@ export async function POST(req: Request) {
 
     if (error) throw new Error(error.message);
 
-    return NextResponse.json({ ok: true, message: "Événement enregistré avec succès" });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error("Analytics Route Error:", err.message);
-    return NextResponse.json({ error: err.message || "Erreur interne du serveur" }, { status: 500 });
+    console.error("Analytics Route Error:", err?.message || err);
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 }

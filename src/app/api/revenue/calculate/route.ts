@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -9,15 +11,21 @@ export async function GET(req: Request) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   try {
     const supa = supabaseUser(ctx.accessToken);
-    const { searchParams } = new URL(req.url);
-
-    const startParam = searchParams.get("start");
-    const endParam = searchParams.get("end");
+    const query = parseQuery(
+      req,
+      z.object({
+        start: z.string().optional(),
+        end: z.string().optional(),
+      })
+    );
+    if (!query.ok) return query.res;
+    const startParam = query.data.start ?? null;
+    const endParam = query.data.end ?? null;
 
     const now = new Date();
     const start = startParam ? new Date(startParam) : new Date(now.getFullYear(), now.getMonth(), 1);
@@ -105,6 +113,6 @@ export async function GET(req: Request) {
     });
   } catch (err: any) {
     console.error("Critical API Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 }

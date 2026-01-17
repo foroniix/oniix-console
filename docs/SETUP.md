@@ -6,11 +6,14 @@
 - Ne jamais committer `.env.local`.
 
 ## Rotation des secrets (checklist)
-- Supabase: rotation des clés `service_role` et `anon`, puis mise à jour des environnements.
-- Révoquer les sessions actives si un accès est suspecté.
-- Vérifier les URLs publiques et les redirections autorisées.
-- Confirmer que les anciens secrets ne sont plus présents dans l'historique Git.
+- Supabase: rotation des cles `service_role` et `anon`, puis mise a jour des environnements.
+- Revoquer les sessions actives si un acces est suspecte.
+- Verifier les URLs publiques et les redirections autorisees.
+- Confirmer que les anciens secrets ne sont plus presents dans l'historique Git.
 
 ## Garde-fous
-- CI: scan automatique des secrets à chaque PR et push.
-- Pre-commit (recommandé): activer un hook de scan de secrets en local.
+- CI: scan automatique des secrets a chaque PR et push.
+- Pre-commit (recommande): activer un hook de scan de secrets en local.
+
+## Multi-tenant
+- Voir `docs/TENANCY.md` pour l'alignement RLS et la source de verite du tenant.

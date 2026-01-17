@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../_utils/auth";
 import { supabaseUser } from "../_utils/supabase";
+import { parseJson } from "../_utils/validate";
 
 export async function GET() {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   const supa = supabaseUser(ctx.accessToken);
@@ -17,7 +19,10 @@ export async function GET() {
     .eq("tenant_id", ctx.tenantId)
     .order("name", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Channels load error", { error: error.message, tenantId: ctx.tenantId });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
   return NextResponse.json(data);
 }
 
@@ -25,11 +30,22 @@ export async function POST(req: Request) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   try {
-    const body = await req.json();
+    const parsed = await parseJson(
+      req,
+      z.object({
+        name: z.string().min(1),
+        slug: z.string().optional(),
+        category: z.string().optional(),
+        active: z.boolean().optional(),
+        logo: z.string().nullable().optional(),
+      })
+    );
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
     const supa = supabaseUser(ctx.accessToken);
 
     const slug =
@@ -54,9 +70,12 @@ export async function POST(req: Request) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("Channel create error", { error: error.message, tenantId: ctx.tenantId });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
     return NextResponse.json(data, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 }

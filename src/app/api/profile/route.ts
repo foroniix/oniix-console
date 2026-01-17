@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "../_utils/auth";
+import { z } from "zod";
+import { requireAuth, requireTenant } from "../_utils/auth";
 import { supabaseUser } from "../_utils/supabase";
+import { parseJson } from "../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,16 +12,25 @@ export async function GET() {
     const auth = await requireAuth();
     if ("res" in auth) return auth.res;
     const { ctx } = auth;
+
+    const tenantErr = await requireTenant(ctx);
+    if (tenantErr) return tenantErr;
+
     const sb = supabaseUser(ctx.accessToken);
 
-    // Lire profile
     const { data: profile, error } = await sb
       .from("profiles")
       .select("user_id, tenant_id, full_name, avatar_url")
       .eq("user_id", ctx.userId)
       .maybeSingle();
 
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+    if (error) {
+      console.error("Profile load error", { error: error.message, userId: ctx.userId });
+      return NextResponse.json(
+        { ok: false, error: "Impossible de charger votre profil." },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
       {
@@ -34,7 +45,8 @@ export async function GET() {
       { status: 200 }
     );
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Server error" }, { status: 500 });
+    console.error("Profile GET error", { error: e?.message });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 }
 
@@ -43,13 +55,23 @@ export async function PATCH(req: Request) {
     const auth = await requireAuth();
     if ("res" in auth) return auth.res;
     const { ctx } = auth;
+
+    const tenantErr = await requireTenant(ctx);
+    if (tenantErr) return tenantErr;
+
     const sb = supabaseUser(ctx.accessToken);
 
-    const body = await req.json().catch(() => ({}));
-    const full_name = typeof body.full_name === "string" ? body.full_name.trim() : null;
-    const avatar_url = typeof body.avatar_url === "string" ? body.avatar_url.trim() : null;
+    const parsed = await parseJson(
+      req,
+      z.object({
+        full_name: z.string().optional(),
+        avatar_url: z.string().optional(),
+      })
+    );
+    if (!parsed.ok) return parsed.res;
+    const full_name = parsed.data.full_name?.trim() ?? null;
+    const avatar_url = parsed.data.avatar_url?.trim() ?? null;
 
-    // tenant_id depuis metadata user (optionnel)
     const payload: any = {
       user_id: ctx.userId,
       tenant_id: ctx.tenantId,
@@ -57,17 +79,23 @@ export async function PATCH(req: Request) {
       avatar_url: avatar_url && avatar_url.length ? avatar_url : null,
     };
 
-    // UPSERT
     const { data: profile, error } = await sb
       .from("profiles")
       .upsert(payload, { onConflict: "user_id" })
       .select("user_id, tenant_id, full_name, avatar_url")
       .single();
 
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+    if (error) {
+      console.error("Profile update error", { error: error.message, userId: ctx.userId });
+      return NextResponse.json(
+        { ok: false, error: "Impossible de mettre a jour votre profil." },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({ ok: true, profile }, { status: 200 });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Server error" }, { status: 500 });
+    console.error("Profile PATCH error", { error: e?.message });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 }

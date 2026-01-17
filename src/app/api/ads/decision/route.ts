@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,12 +22,19 @@ export async function GET(req: Request) {
   if ("res" in auth) return auth.res;
 
   const ctx = auth.ctx;
-  const tenantRes = requireTenant(ctx);
+  const tenantRes = await requireTenant(ctx);
   if (tenantRes) return tenantRes;
 
-  const url = new URL(req.url);
-  const channel_id = url.searchParams.get("channel_id")?.trim() || null;
-  const stream_id = url.searchParams.get("stream_id")?.trim() || null;
+  const query = parseQuery(
+    req,
+    z.object({
+      channel_id: z.string().optional(),
+      stream_id: z.string().optional(),
+    })
+  );
+  if (!query.ok) return query.res;
+  const channel_id = query.data.channel_id?.trim() || null;
+  const stream_id = query.data.stream_id?.trim() || null;
 
   const tenant_id = ctx.tenantId as string;
 
@@ -48,7 +57,10 @@ export async function GET(req: Request) {
   if (!stream_id && channel_id) cq = cq.or(`channel_id.eq.${channel_id},channel_id.is.null`);
 
   const { data: campaigns, error: cErr } = await cq;
-  if (cErr) return NextResponse.json({ ok: false, error: cErr.message }, { status: 400 });
+  if (cErr) {
+    console.error("Ad decision campaigns error", { error: cErr.message, tenantId: tenant_id });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
+  }
 
   const list = campaigns ?? [];
   if (list.length === 0) {
@@ -68,7 +80,10 @@ export async function GET(req: Request) {
     .eq("active", true)
     .limit(50);
 
-  if (crErr) return NextResponse.json({ ok: false, error: crErr.message }, { status: 400 });
+  if (crErr) {
+    console.error("Ad decision creatives error", { error: crErr.message, tenantId: tenant_id });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
+  }
 
   const cr = creatives ?? [];
   if (cr.length === 0) return NextResponse.json({ ok: true, ad: null }, { status: 200 });

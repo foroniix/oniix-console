@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "../../_utils/auth";
+import { z } from "zod";
+import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,32 +25,27 @@ function safeNumber(n: any) {
 
 export async function GET(req: Request) {
   try {
-    const url = new URL(req.url);
-    const period = (url.searchParams.get("period") || "24h") as "24h" | "7d" | "30d";
+    const query = parseQuery(
+      req,
+      z.object({
+        period: z.string().optional(),
+      })
+    );
+    if (!query.ok) return query.res;
+    const period = (query.data.period || "24h") as "24h" | "7d" | "30d";
     const { start, end } = periodToRange(period);
 
     const auth = await requireAuth();
     if ("res" in auth) return auth.res;
     const { ctx } = auth;
 
+    const tenantErr = await requireTenant(ctx);
+    if (tenantErr) return tenantErr;
+
     const sb = supabaseUser(ctx.accessToken);
 
-    const tenant_id = ctx.tenantId;
+    const tenant_id = ctx.tenantId as string;
 
-    if (!tenant_id) {
-      // si tu passes plutôt par tenant_memberships, remplace ici par une requête membership
-      return NextResponse.json({ ok: true, period, currency: "XOF", totals: { totalRevenue: 0, totalTransactions: 0, arpu: 0 }, series: [] }, { status: 200 });
-    }
-
-    /**
-     * ✅ SOURCE REVENUE (à adapter)
-     * J'assume une table `celtiis_subscriptions` avec :
-     * - tenant_id (uuid)
-     * - amount (numeric/int)
-     * - created_at (timestamptz)
-     *
-     * Si ta table/colonnes diffèrent, dis-moi le schéma et je te l’aligne.
-     */
     const { data: rows, error: rErr } = await sb
       .from("celtiis_subscriptions")
       .select("amount, created_at")
@@ -57,7 +54,7 @@ export async function GET(req: Request) {
       .lte("created_at", end);
 
     if (rErr) {
-      // Important : on renvoie un payload stable, même en erreur data
+      console.error("Revenue stats error", { error: rErr.message, tenantId: tenant_id });
       return NextResponse.json(
         {
           ok: true,
@@ -65,7 +62,7 @@ export async function GET(req: Request) {
           currency: "XOF",
           totals: { totalRevenue: 0, totalTransactions: 0, arpu: 0 },
           series: [],
-          warning: rErr.message,
+          warning: "Donnees indisponibles pour le moment.",
         },
         { status: 200 }
       );
@@ -76,11 +73,9 @@ export async function GET(req: Request) {
     const totalRevenue = list.reduce((acc, r: any) => acc + safeNumber(r.amount), 0);
     const totalTransactions = list.length;
 
-    // ARPU : si tu as une table users par tenant, on peut mieux faire.
-    // Là : approximation = revenue / transactions (pas un vrai ARPU). Tu peux renommer en "Avg ticket".
+    // Approximation: revenue / transactions (use a better source if available).
     const arpu = totalTransactions > 0 ? Math.round(totalRevenue / totalTransactions) : 0;
 
-    // Série simple : bucket par jour (7d/30d) ou par heure (24h)
     const bucketKey = (iso: string) => {
       const d = new Date(iso);
       if (period === "24h") return `${String(d.getHours()).padStart(2, "0")}:00`;
@@ -117,6 +112,7 @@ export async function GET(req: Request) {
       { status: 200 }
     );
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Server error" }, { status: 500 });
+    console.error("Revenue stats crash", { error: e?.message });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 }

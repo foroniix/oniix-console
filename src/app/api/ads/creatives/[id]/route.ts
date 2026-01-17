@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant, requireRole } from "../../../_utils/auth";
 import { supabaseUser } from "../../../_utils/supabase";
+import { parseJson } from "../../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,21 +16,34 @@ export async function PATCH(
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
 
-  const tRes = requireTenant(auth.ctx);
+  const tRes = await requireTenant(auth.ctx);
   if (tRes) return tRes;
 
   const rRes = requireRole(auth.ctx, CREATIVES_RW_ROLES as unknown as string[]);
   if (rRes) return rRes;
 
   const { id } = await context.params;
-  if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  if (!id) return NextResponse.json({ ok: false, error: "Identifiant manquant." }, { status: 400 });
 
-  const body = (await request.json().catch(() => null)) as any;
-  if (!body) return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+  const parsed = await parseJson(
+    request,
+    z.object({
+      name: z.string().optional(),
+      type: z.string().optional(),
+      active: z.boolean().optional(),
+      url: z.string().optional(),
+      mime: z.string().optional(),
+      width: z.number().optional(),
+      height: z.number().optional(),
+      duration_ms: z.number().optional(),
+      metadata: z.record(z.any()).optional(),
+    })
+  );
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.data;
 
   const sb = supabaseUser(auth.ctx.accessToken);
 
-  // Adapte ces champs si ta table ad_creatives a un schéma différent
   const patch: any = {
     name: body.name,
     type: body.type,
@@ -41,7 +56,6 @@ export async function PATCH(
     metadata: body.metadata ?? undefined,
   };
 
-  // remove undefined
   Object.keys(patch).forEach((k) => patch[k] === undefined && delete patch[k]);
 
   const { data, error } = await sb
@@ -52,8 +66,11 @@ export async function PATCH(
     .select("*")
     .maybeSingle();
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
-  if (!data) return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  if (error) {
+    console.error("Ad creative update error", { error: error.message, tenantId: auth.ctx.tenantId, id });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
+  }
+  if (!data) return NextResponse.json({ ok: false, error: "Ressource introuvable." }, { status: 404 });
 
   return NextResponse.json({ ok: true, creative: data }, { status: 200 });
 }
@@ -65,24 +82,26 @@ export async function DELETE(
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
 
-  const tRes = requireTenant(auth.ctx);
+  const tRes = await requireTenant(auth.ctx);
   if (tRes) return tRes;
 
   const rRes = requireRole(auth.ctx, CREATIVES_RW_ROLES as unknown as string[]);
   if (rRes) return rRes;
 
   const { id } = await context.params;
-  if (!id) return NextResponse.json({ ok: false, error: "Missing id" }, { status: 400 });
+  if (!id) return NextResponse.json({ ok: false, error: "Identifiant manquant." }, { status: 400 });
 
   const sb = supabaseUser(auth.ctx.accessToken);
 
-  // Soft delete (archived/inactive) — adapte selon ton schéma
   const { error } = await sb
     .from("ad_creatives")
     .update({ status: "ARCHIVED", active: false })
     .eq("id", id)
     .eq("tenant_id", auth.ctx.tenantId);
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  if (error) {
+    console.error("Ad creative archive error", { error: error.message, tenantId: auth.ctx.tenantId, id });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
+  }
   return NextResponse.json({ ok: true }, { status: 200 });
 }

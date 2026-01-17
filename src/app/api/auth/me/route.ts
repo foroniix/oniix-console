@@ -23,7 +23,7 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: true,
-        access_token: ctx.accessToken, // ✅ nécessaire pour Supabase Realtime + RLS côté browser
+        access_token: ctx.accessToken,
         user: {
           id: user.id,
           email: user.email ?? null,
@@ -36,6 +36,7 @@ export async function GET() {
       { status: 200 }
     );
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Server error" }, { status: 500 });
+    console.error("Auth me error", { error: e?.message });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 }

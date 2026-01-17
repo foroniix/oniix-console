@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseJson } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -70,17 +72,31 @@ export async function POST(req: Request) {
   const ctx = auth.ctx;
 
   // Must have tenant in JWT (app_metadata.tenant_id)
-  const tenantRes = requireTenant(ctx);
+  const tenantRes = await requireTenant(ctx);
   if (tenantRes) return tenantRes;
 
-  const body = (await req.json().catch(() => null)) as Body | null;
-  if (!body) return bad("Invalid JSON body");
+  const parsed = await parseJson(
+    req,
+    z.object({
+      event: z.string().min(1),
+      placement: z.string().optional().nullable(),
+      campaign_id: z.string().optional().nullable(),
+      creative_id: z.string().optional().nullable(),
+      stream_id: z.string().optional().nullable(),
+      channel_id: z.string().optional().nullable(),
+      session_id: z.string().optional().nullable(),
+      device: z.string().optional().nullable(),
+      country: z.string().optional().nullable(),
+    })
+  );
+  if (!parsed.ok) return parsed.res;
+  const body: Body = parsed.data;
 
   const event = body.event;
-  if (!isEvent(event)) return bad("Invalid event");
+  if (!isEvent(event)) return bad("Donnees invalides.");
 
   const placement = body.placement ?? null;
-  if (placement && !isPlacement(placement)) return bad("Invalid placement");
+  if (placement && !isPlacement(placement)) return bad("Donnees invalides.");
 
   // Optional IDs
   const campaign_id = normStr(body.campaign_id, 80);
@@ -114,7 +130,10 @@ export async function POST(req: Request) {
     user_id,
   });
 
-  if (error) return bad(error.message, 400);
+  if (error) {
+    console.error("Ad event insert error", { error: error.message, tenantId: tenant_id });
+    return bad("Une erreur est survenue.", 400);
+  }
 
   return ok({ ok: true });
 }

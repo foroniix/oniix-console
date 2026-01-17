@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../../../_utils/auth";
 import { supabaseUser } from "../../../../_utils/supabase";
+import { parseJson } from "../../../../_utils/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -8,17 +10,22 @@ export async function POST(req: NextRequest, { params }: Params) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   const { id } = await params;
 
-  const body = await req.json();
+  const parsed = await parseJson(
+    req,
+    z.object({
+      viewers: z.number(),
+      bitrate: z.number(),
+      errors: z.number().optional(),
+    })
+  );
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.data;
   const supa = supabaseUser(ctx.accessToken);
-
-  if (typeof body.viewers !== "number" || typeof body.bitrate !== "number") {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-  }
 
   // Ensure stream belongs to tenant
   const { data: stream, error: se } = await supa
@@ -28,7 +35,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     .eq("id", id)
     .single();
 
-  if (se || !stream) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (se || !stream) {
+    if (se) {
+      console.error("Stream stats lookup error", { error: se.message, tenantId: ctx.tenantId, id });
+    }
+    return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
+  }
 
   const { error } = await supa.from("stream_stats").insert({
     tenant_id: ctx.tenantId,
@@ -38,6 +50,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     errors: body.errors ?? 0,
   });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Stream stats ingest error", { error: error.message, tenantId: ctx.tenantId, id });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
   return NextResponse.json({ ok: true }, { status: 201 });
 }

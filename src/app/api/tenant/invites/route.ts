@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "crypto";
+import { z } from "zod";
 import { getTenantContext, jsonError, requireTenantAdmin } from "../_utils";
+import { parseJson } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,10 +18,8 @@ export async function GET() {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 
-  if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
-
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
-  if (!check.ok) return jsonError(check.error, check.error === "Accès refusé." ? 403 : 400);
+  if (!check.ok) return jsonError(check.error, check.error === "Acces refuse." ? 403 : 400);
 
   const { data, error } = await ctx.sb
     .from("tenant_invites")
@@ -27,7 +27,10 @@ export async function GET() {
     .eq("tenant_id", ctx.tenant_id)
     .order("created_at", { ascending: false });
 
-  if (error) return jsonError(error.message, 400);
+  if (error) {
+    console.error("Tenant invites load error", { error: error.message, tenantId: ctx.tenant_id });
+    return jsonError("Une erreur est survenue.", 400);
+  }
 
   const invites = (data ?? []).map(withExpired);
   return NextResponse.json({ ok: true, invites }, { status: 200 });
@@ -37,19 +40,20 @@ export async function POST(req: NextRequest) {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 
-  if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
-
   const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
-  if (!check.ok) return jsonError(check.error, check.error === "Accès refusé." ? 403 : 400);
+  if (!check.ok) return jsonError(check.error, check.error === "Acces refuse." ? 403 : 400);
 
-  const body = await req.json().catch(() => ({}));
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  const role = typeof body.role === "string" ? body.role : "member";
+  const parsed = await parseJson(
+    req,
+    z.object({
+      email: z.string().email(),
+      role: z.enum(["member", "admin"]).optional(),
+    })
+  );
+  if (!parsed.ok) return parsed.res;
+  const email = parsed.data.email.trim().toLowerCase();
+  const role = parsed.data.role ?? "member";
 
-  if (!email || !email.includes("@")) return jsonError("Email invalide", 400);
-  if (!["member", "admin"].includes(role)) return jsonError("Role invalide", 400);
-
-  // Évite les doublons: si une invite "pending" active existe déjà, on la réutilise.
   const { data: existing } = await ctx.sb
     .from("tenant_invites")
     .select("id,email,role,code,status,created_at,expires_at")
@@ -89,7 +93,10 @@ export async function POST(req: NextRequest) {
     .select("id,email,role,code,status,created_at,expires_at")
     .single();
 
-  if (error) return jsonError(error.message, 400);
+  if (error) {
+    console.error("Tenant invite create error", { error: error.message, tenantId: ctx.tenant_id });
+    return jsonError("Une erreur est survenue.", 400);
+  }
 
   return NextResponse.json(
     {

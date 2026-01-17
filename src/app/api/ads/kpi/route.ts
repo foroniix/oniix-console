@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,11 +12,17 @@ export async function GET(req: Request) {
   if ("res" in auth) return auth.res;
 
   const ctx = auth.ctx;
-  const tenantRes = requireTenant(ctx);
+  const tenantRes = await requireTenant(ctx);
   if (tenantRes) return tenantRes;
 
-  const url = new URL(req.url);
-  const hours = Math.min(Math.max(Number(url.searchParams.get("hours") ?? "24"), 1), 168);
+  const query = parseQuery(
+    req,
+    z.object({
+      hours: z.coerce.number().optional(),
+    })
+  );
+  if (!query.ok) return query.res;
+  const hours = Math.min(Math.max(Number(query.data.hours ?? 24), 1), 168);
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
 
   const sb = supabaseUser(ctx.accessToken);

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { supabaseUser } from "../../../_utils/supabase";
+import { parseJson } from "../../../_utils/validate";
 
 export async function POST(
   req: NextRequest,
@@ -10,12 +12,21 @@ export async function POST(
   if ("res" in auth) return auth.res;
 
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   const { id } = await context.params;
 
-  const body = await req.json().catch(() => ({}));
+  const parsed = await parseJson(
+    req,
+    z.object({
+      title: z.string().optional(),
+      durationSec: z.number().int().optional(),
+      thumb: z.string().nullable().optional(),
+    })
+  );
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.data;
   const supa = supabaseUser(ctx.accessToken);
 
   const { data: stream, error: e1 } = await supa
@@ -26,7 +37,10 @@ export async function POST(
     .select()
     .single();
 
-  if (e1) return NextResponse.json({ error: e1.message }, { status: 500 });
+  if (e1) {
+    console.error("Stream end update error", { error: e1.message, tenantId: ctx.tenantId, id });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
 
   const { data: vod, error: e2 } = await supa
     .from("vods")
@@ -43,7 +57,10 @@ export async function POST(
     .select()
     .single();
 
-  if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+  if (e2) {
+    console.error("VOD create error", { error: e2.message, tenantId: ctx.tenantId, id });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
 
   return NextResponse.json({ stream, vod });
 }

@@ -1,19 +1,29 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { supabaseAdmin } from "../_utils/supabase";
 import { requireAuth, requireRole } from "../_utils/auth";
+import { parseJson } from "../_utils/validate";
+import { enforceRateLimit, getRateLimitConfig } from "../_utils/rate-limit";
 
 // --- GET: Lister les utilisateurs (superadmin only) ---
-export async function GET() {
+export async function GET(req: Request) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
   const roleErr = requireRole(ctx, ["superadmin"]);
   if (roleErr) return roleErr;
 
+  const rateLimit = getRateLimitConfig("ADMIN", { limit: 20, windowMs: 60_000 });
+  const rateRes = await enforceRateLimit(req, rateLimit, ctx.userId);
+  if (rateRes) return rateRes;
+
   const supa = supabaseAdmin();
 
   const { data, error } = await supa.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("User list error", { error: error.message });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
 
   const users = data.users.map((u) => ({
     id: u.id,
@@ -22,7 +32,7 @@ export async function GET() {
     phone: u.phone || u.user_metadata?.phone || null,
     createdAt: u.created_at,
     role: u.app_metadata?.role || "viewer",
-    tenantId: u.app_metadata?.tenant_id ?? u.user_metadata?.tenant_id ?? null,
+    tenantId: u.app_metadata?.tenant_id ?? null,
     suspended: !!u.app_metadata?.suspended,
   }));
 
@@ -30,7 +40,7 @@ export async function GET() {
   return NextResponse.json(users);
 }
 
-// --- POST: Créer (Inviter) ou Modifier (superadmin only) ---
+// --- POST: Creer (Inviter) ou Modifier (superadmin only) ---
 export async function POST(req: Request) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
@@ -39,7 +49,23 @@ export async function POST(req: Request) {
   if (roleErr) return roleErr;
 
   try {
-    const body = await req.json();
+    const rateLimit = getRateLimitConfig("ADMIN", { limit: 20, windowMs: 60_000 });
+    const rateRes = await enforceRateLimit(req, rateLimit, ctx.userId);
+    if (rateRes) return rateRes;
+
+    const parsed = await parseJson(
+      req,
+      z.object({
+        id: z.string().optional(),
+        email: z.string().email().optional(),
+        role: z.string().optional(),
+        suspended: z.boolean().optional(),
+        name: z.string().optional(),
+        phone: z.string().optional(),
+      })
+    );
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
     const supa = supabaseAdmin();
 
     if (body.id) {
@@ -48,11 +74,9 @@ export async function POST(req: Request) {
 
       if (body.role) appMetadataUpdates.role = body.role;
       if (typeof body.suspended === "boolean") appMetadataUpdates.suspended = body.suspended;
-      if (body.tenantId) appMetadataUpdates.tenant_id = body.tenantId;
 
       if (body.name !== undefined) userMetadataUpdates.name = body.name;
       if (body.phone !== undefined) userMetadataUpdates.phone = body.phone;
-      if (body.tenantId) userMetadataUpdates.tenant_id = body.tenantId;
 
       const { data, error } = await supa.auth.admin.updateUserById(body.id, {
         app_metadata: appMetadataUpdates,
@@ -62,10 +86,10 @@ export async function POST(req: Request) {
       if (error) throw error;
       return NextResponse.json({ id: data.user.id, status: "updated" });
     } else {
-      if (!body.email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+      if (!body.email) return NextResponse.json({ error: "Email requis." }, { status: 400 });
 
       const { data, error } = await supa.auth.admin.inviteUserByEmail(body.email, {
-        data: { name: body.name || "", role: body.role || "viewer", tenant_id: body.tenantId || null },
+        data: { name: body.name || "", role: body.role || "viewer" },
         redirectTo: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
       });
 
@@ -76,7 +100,6 @@ export async function POST(req: Request) {
           app_metadata: {
             role: body.role || "viewer",
             suspended: !!body.suspended,
-            tenant_id: body.tenantId || null,
           },
         });
       }
@@ -85,6 +108,6 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("User API Error:", err);
-    return NextResponse.json({ error: err.message || "Internal Error" }, { status: 500 });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 }

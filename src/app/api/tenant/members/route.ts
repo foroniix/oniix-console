@@ -8,16 +8,17 @@ export async function GET() {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 
-  if (!ctx.tenant_id) return jsonError("No tenant_id on user", 400);
-
-  // Membres du tenant (RLS appliqué)
+  // Membres du tenant (RLS applique)
   const { data: members, error } = await ctx.sb
     .from("tenant_memberships")
     .select("user_id, role, created_at")
     .eq("tenant_id", ctx.tenant_id)
     .order("created_at", { ascending: true });
 
-  if (error) return jsonError(error.message, 400);
+  if (error) {
+    console.error("Tenant members load error", { error: error.message, tenantId: ctx.tenant_id });
+    return jsonError("Une erreur est survenue.", 400);
+  }
 
   // Enrichir avec email via service role (server only)
   const enriched = await Promise.all(

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseJson } from "../../_utils/validate";
 
 // MODIFICATION (PATCH)
 export async function PATCH(
@@ -10,12 +12,23 @@ export async function PATCH(
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   try {
     const { id } = await params;
-    const body = await req.json();
+    const parsed = await parseJson(
+      req,
+      z.object({
+        title: z.string().optional(),
+        hlsUrl: z.string().optional(),
+        status: z.string().optional(),
+        channelId: z.string().optional(),
+        description: z.string().optional(),
+      })
+    );
+    if (!parsed.ok) return parsed.res;
+    const body = parsed.data;
     const supa = supabaseUser(ctx.accessToken);
 
     const payload: any = {};
@@ -34,10 +47,13 @@ export async function PATCH(
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("Stream update error", { error: error.message, tenantId: ctx.tenantId, id });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 }
 
@@ -49,7 +65,7 @@ export async function DELETE(
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   try {
@@ -62,9 +78,12 @@ export async function DELETE(
       .eq("tenant_id", ctx.tenantId)
       .eq("id", id);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("Stream delete error", { error: error.message, tenantId: ctx.tenantId, id });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 }

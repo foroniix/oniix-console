@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,15 +43,24 @@ export async function GET(req: Request) {
   if ("res" in auth) return auth.res;
 
   const ctx = auth.ctx;
-  const tenantRes = requireTenant(ctx);
+  const tenantRes = await requireTenant(ctx);
   if (tenantRes) return tenantRes;
 
-  const url = new URL(req.url);
-  const hours = clamp(Number(url.searchParams.get("hours") ?? "24"), 1, 168);
-  const bucket = (url.searchParams.get("bucket") === "minute" ? "minute" : "hour") as Bucket;
+  const query = parseQuery(
+    req,
+    z.object({
+      hours: z.coerce.number().optional(),
+      bucket: z.string().optional(),
+      channelId: z.string().optional(),
+      streamId: z.string().optional(),
+    })
+  );
+  if (!query.ok) return query.res;
+  const hours = clamp(Number(query.data.hours ?? 24), 1, 168);
+  const bucket = (query.data.bucket === "minute" ? "minute" : "hour") as Bucket;
 
-  const channelId = url.searchParams.get("channelId")?.trim() || null;
-  const streamId = url.searchParams.get("streamId")?.trim() || null;
+  const channelId = query.data.channelId?.trim() || null;
+  const streamId = query.data.streamId?.trim() || null;
 
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
   const sb = supabaseUser(ctx.accessToken);
@@ -67,7 +78,10 @@ export async function GET(req: Request) {
 
   const { data: events, error } = await q.order("created_at", { ascending: false }).limit(5000);
 
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  if (error) {
+    console.error("Ads summary error", { error: error.message, tenantId: tenant_id });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
+  }
 
   const list = events ?? [];
 

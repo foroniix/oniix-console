@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseJson } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -138,16 +140,28 @@ export async function POST(req: Request) {
   if ("res" in auth) return auth.res;
 
   const ctx = auth.ctx;
-  const tenantRes = requireTenant(ctx);
+  const tenantRes = await requireTenant(ctx);
   if (tenantRes) return tenantRes;
 
-  const body = (await req.json().catch(() => null)) as DecideRequest | null;
-  if (!body) return badRequest("Invalid JSON body");
+  const parsed = await parseJson(
+    req,
+    z.object({
+      placement: z.string().min(1),
+      stream_id: z.string().optional().nullable(),
+      channel_id: z.string().optional().nullable(),
+      device: z.string().optional().nullable(),
+      country: z.string().optional().nullable(),
+      session_id: z.string().optional().nullable(),
+      format: z.string().optional().nullable(),
+    })
+  );
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.data as DecideRequest;
 
   const placement = body.placement as Placement;
-  if (!placement) return badRequest("placement is required");
+  if (!placement) return badRequest("Donnees invalides.");
   if (!["PLAYER_START", "EVERY_X_MIN", "ON_EVENT", "MANUAL_TRIGGER"].includes(placement)) {
-    return badRequest("Invalid placement");
+    return badRequest("Donnees invalides.");
   }
 
   const stream_id = normalizeId(body.stream_id);
@@ -170,7 +184,8 @@ export async function POST(req: Request) {
     .limit(200);
 
   if (campErr) {
-    return NextResponse.json({ show: false, reason: campErr.message } satisfies DecideResponse, { status: 200 });
+    console.error("Ad decide campaigns error", { error: campErr.message, tenantId: ctx.tenantId });
+    return NextResponse.json({ show: false, reason: "indisponible" } satisfies DecideResponse, { status: 200 });
   }
 
   const activeCampaigns = (campaigns ?? []).filter(
@@ -178,7 +193,10 @@ export async function POST(req: Request) {
   );
 
   if (activeCampaigns.length === 0) {
-    return NextResponse.json({ show: false, reason: "no_active_campaign" } satisfies DecideResponse, { status: 200 });
+    return NextResponse.json(
+      { show: false, reason: "Aucune campagne active." } satisfies DecideResponse,
+      { status: 200 }
+    );
   }
 
   const campaignIds = activeCampaigns.map((c: any) => c.id);
@@ -192,7 +210,8 @@ export async function POST(req: Request) {
     .limit(500);
 
   if (ruleErr) {
-    return NextResponse.json({ show: false, reason: ruleErr.message } satisfies DecideResponse, { status: 200 });
+    console.error("Ad decide rules error", { error: ruleErr.message, tenantId: ctx.tenantId });
+    return NextResponse.json({ show: false, reason: "indisponible" } satisfies DecideResponse, { status: 200 });
   }
 
   // 3) Active creatives for campaigns
@@ -205,7 +224,8 @@ export async function POST(req: Request) {
     .limit(1000);
 
   if (creErr) {
-    return NextResponse.json({ show: false, reason: creErr.message } satisfies DecideResponse, { status: 200 });
+    console.error("Ad decide creatives error", { error: creErr.message, tenantId: ctx.tenantId });
+    return NextResponse.json({ show: false, reason: "indisponible" } satisfies DecideResponse, { status: 200 });
   }
 
   const creativesByCampaign = new Map<string, any[]>();
@@ -272,5 +292,8 @@ export async function POST(req: Request) {
     return NextResponse.json(res, { status: 200 });
   }
 
-  return NextResponse.json({ show: false, reason: "no_match" } satisfies DecideResponse, { status: 200 });
+  return NextResponse.json(
+    { show: false, reason: "Aucune creation disponible." } satisfies DecideResponse,
+    { status: 200 }
+  );
 }

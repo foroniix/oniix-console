@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "../../_utils/auth";
+import { requireAuth, requireTenant } from "../../_utils/auth";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -7,6 +7,9 @@ export async function GET() {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
+
+  const tenantErr = await requireTenant(ctx);
+  if (tenantErr) return tenantErr;
 
   return NextResponse.json(
     {

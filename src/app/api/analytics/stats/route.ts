@@ -1,7 +1,9 @@
 // src/app/api/analytics/stats/route.ts (multi-tenant)
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,12 +20,18 @@ export async function GET(req: Request) {
   const auth = await requireAuth();
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   try {
-    const { searchParams } = new URL(req.url);
-    const period = searchParams.get("period") || "24h";
+    const query = parseQuery(
+      req,
+      z.object({
+        period: z.string().optional(),
+      })
+    );
+    if (!query.ok) return query.res;
+    const period = query.data.period || "24h";
 
     const supa = supabaseUser(ctx.accessToken);
     const now = new Date();
@@ -49,8 +57,14 @@ export async function GET(req: Request) {
         .gte("created_at", liveThreshold),
     ]);
 
-    if (historicalRes.error) throw new Error(historicalRes.error.message);
-    if (liveRes.error) throw new Error(liveRes.error.message);
+    if (historicalRes.error || liveRes.error) {
+      console.error("Analytics stats error", {
+        historical: historicalRes.error?.message,
+        live: liveRes.error?.message,
+        tenantId: ctx.tenantId,
+      });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
 
     const events = (historicalRes.data || []) as AnalyticsEvent[];
     const liveEvents = (liveRes.data || []) as Partial<AnalyticsEvent>[];
@@ -125,6 +139,6 @@ export async function GET(req: Request) {
     });
   } catch (error: any) {
     console.error("API Analytics Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 }

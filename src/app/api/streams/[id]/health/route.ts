@@ -13,7 +13,7 @@ export async function GET(
   if ("res" in auth) return auth.res;
 
   const { ctx } = auth;
-  const tenantErr = requireTenant(ctx);
+  const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
 
   const { id } = await context.params;
@@ -28,6 +28,9 @@ export async function GET(
     .order("ts", { ascending: false })
     .limit(200);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Stream health load error", { error: error.message, tenantId: ctx.tenantId, id });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
   return NextResponse.json(data ?? []);
 }
