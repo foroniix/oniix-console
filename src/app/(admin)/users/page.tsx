@@ -607,7 +607,7 @@ export default function UsersPage() {
                     <div>- Attribuez un rôle adapté à chaque besoin.</div>
                     <div>- Suivez les invitations en attente ou expirées.</div>
                     <div>- Révisez régulièrement les accès de l'équipe.</div>
-                    <div>- Gardez la liste des membres claire et à jour.</div>
+                    <div>- Gardez la liste des membres claire et à jour. </div>
                   </CardContent>
                 </Card>
               </div>
