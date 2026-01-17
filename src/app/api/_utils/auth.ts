@@ -1,25 +1,10 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { supabaseUser } from "./supabase";
 
 export const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 export const REFRESH_COOKIE = process.env.REFRESH_TOKEN_COOKIE_NAME || "oniix-refresh-token";
-
-/**
- * Decode a JWT without verifying signature (we rely on httpOnly cookies + HTTPS).
- * This is used only to extract claims (sub, app_metadata, user_metadata).
- */
-export function decodeJwt<T = any>(token: string): T | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = payload + "=".repeat((4 - (payload.length % 4)) % 4);
-    const jsonStr = Buffer.from(padded, "base64").toString("utf-8");
-    return JSON.parse(jsonStr) as T;
-  } catch {
-    return null;
-  }
-}
 
 export type AuthContext = {
   accessToken: string;
@@ -27,6 +12,11 @@ export type AuthContext = {
   tenantId: string | null;
   role: string | null;
 };
+
+const getUserForToken = cache(async (accessToken: string) => {
+  const sb = supabaseUser(accessToken);
+  return sb.auth.getUser();
+});
 
 /**
  * Require an authenticated user based on the access token cookie.
@@ -40,16 +30,21 @@ export async function requireAuth(): Promise<{ ctx: AuthContext } | { res: NextR
     return { res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 
-  const claims: any = decodeJwt(accessToken);
-  const userId = claims?.sub;
-  const role = claims?.app_metadata?.role ?? claims?.user_metadata?.role ?? null;
-  const tenantId = claims?.app_metadata?.tenant_id ?? claims?.user_metadata?.tenant_id ?? null;
+  try {
+    const { data, error } = await getUserForToken(accessToken);
+    if (error || !data?.user) {
+      return { res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    }
 
-  if (!userId) {
+    const user = data.user;
+    const role = (user.app_metadata as any)?.role ?? (user.user_metadata as any)?.role ?? null;
+    const tenantId =
+      (user.app_metadata as any)?.tenant_id ?? (user.user_metadata as any)?.tenant_id ?? null;
+
+    return { ctx: { accessToken, userId: user.id, tenantId, role } };
+  } catch {
     return { res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
-
-  return { ctx: { accessToken, userId, tenantId, role } };
 }
 
 export function requireTenant(ctx: AuthContext): NextResponse | null {

@@ -484,10 +484,3 @@ export async function listHealthSamples(streamId: string): Promise<HealthSample[
     err: r.err,
   }));
 }
-
-export async function validateHls(
-  url: string
-): Promise<{ ok: boolean; status: number; bitrateKbps?: number; err?: string }> {
-  const res = await j(await fetch(`/api/utils/validate-hls?url=${encodeURIComponent(url)}`, { cache: "no-store" }));
-  return { ok: !!res.ok, status: Number(res.status ?? 0), bitrateKbps: res.bitrateKbps, err: res.err };
-}

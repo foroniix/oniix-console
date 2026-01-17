@@ -8,6 +8,7 @@ export default function UploadImage({
 }: { value?: string; onChange: (url: string) => void; label?: string; accept?: string }) {
   const [busy, setBusy] = useState(false);
   const [local, setLocal] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const selectFile = () => inputRef.current?.click();
@@ -15,6 +16,7 @@ export default function UploadImage({
   const onFile = async (f: File | null) => {
     if (!f) return;
     setBusy(true);
+    setError(null);
     try {
       // preview immédiate
       const obj = URL.createObjectURL(f);
@@ -22,11 +24,15 @@ export default function UploadImage({
       const fd = new FormData();
       fd.append("file", f);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || "upload");
+      const ct = res.headers.get("content-type") || "";
+      const json = ct.includes("application/json") ? await res.json().catch(() => null) : null;
+      if (!res.ok || !json?.url) {
+        console.error("Upload failed", { status: res.status });
+        throw new Error("Le chargement du fichier est indisponible pour le moment.");
+      }
       onChange(json.url);
     } catch {
-      // no-op
+      setError("Le chargement du fichier est indisponible pour le moment.");
     } finally {
       setBusy(false);
     }
@@ -69,6 +75,7 @@ export default function UploadImage({
         </div>
       </div>
       <div className="text-xs text-zinc-400">Recommandé: 1280×720, &lt; 1 Mo.</div>
+      {error ? <div className="text-xs text-rose-300">{error}</div> : null}
     </div>
   );
 }
