@@ -11,6 +11,14 @@ function fmt(n: number) {
   return (n ?? 0).toLocaleString();
 }
 
+function eventLabel(event: string) {
+  const key = (event || "").toLowerCase();
+  if (key.includes("click")) return "Clic";
+  if (key.includes("impression")) return "Impression";
+  if (key.includes("view")) return "Vue";
+  return "Activite";
+}
+
 export default function AdsLivePanel(props: {
   accessToken: string | null;
   tenantId: string | null;
@@ -45,7 +53,7 @@ export default function AdsLivePanel(props: {
   if (!accessToken || !tenantId) {
     return (
       <div className="p-6 text-zinc-500 text-sm">
-        Impossible de démarrer le live Ads (session/tenant manquant).
+        Impossible d'afficher les indicateurs. Session ou organisation manquante.
       </div>
     );
   }
@@ -67,14 +75,14 @@ export default function AdsLivePanel(props: {
           <CardHeader className="pb-2">
             <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500 flex items-center gap-2">
               <Eye className="h-4 w-4 text-zinc-600" />
-              Impressions (24h + live)
+              Impressions (24h + en direct)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-white">{fmt(totalImp)}</div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              Live: +{fmt(liveImp)}{" "}
-              {counters.lastEventAt ? `• ${new Date(counters.lastEventAt).toLocaleTimeString()}` : ""}
+              En direct : +{fmt(liveImp)}
+              {counters.lastEventAt ? ` - ${new Date(counters.lastEventAt).toLocaleTimeString()}` : ""}
             </div>
           </CardContent>
         </Card>
@@ -83,12 +91,12 @@ export default function AdsLivePanel(props: {
           <CardHeader className="pb-2">
             <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500 flex items-center gap-2">
               <MousePointerClick className="h-4 w-4 text-zinc-600" />
-              Clics (24h + live)
+              Clics (24h + en direct)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-white">{fmt(totalClk)}</div>
-            <div className="text-[11px] text-zinc-500 mt-1">Live: +{fmt(liveClk)}</div>
+            <div className="text-[11px] text-zinc-500 mt-1">En direct : +{fmt(liveClk)}</div>
           </CardContent>
         </Card>
 
@@ -96,13 +104,13 @@ export default function AdsLivePanel(props: {
           <CardHeader className="pb-2">
             <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500 flex items-center gap-2">
               <Activity className="h-4 w-4 text-zinc-600" />
-              CTR
+              Taux de clic
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-white">{ctr.toFixed(2)}%</div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              Base: {(kpi?.ctr ?? 0).toFixed(2)}% {loading ? "• sync..." : ""}
+              Base : {(kpi?.ctr ?? 0).toFixed(2)}% {loading ? "- actualisation..." : ""}
             </div>
           </CardContent>
         </Card>
@@ -111,19 +119,19 @@ export default function AdsLivePanel(props: {
       <Card className="bg-zinc-900/40 border-white/5">
         <CardHeader className="pb-2">
           <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500">
-            Events live (max 50)
+            Activite recente
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading && !kpi ? (
             <div className="flex items-center gap-2 text-zinc-500 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" /> Chargement KPI...
+              <Loader2 className="h-4 w-4 animate-spin" /> Chargement des indicateurs...
             </div>
           ) : null}
 
           <div className="space-y-2">
             {events.length === 0 ? (
-              <div className="text-zinc-600 text-sm py-6 text-center">Aucun event live pour le moment.</div>
+              <div className="text-zinc-600 text-sm py-6 text-center">Aucune activite recente pour le moment.</div>
             ) : (
               events.map((e) => (
                 <div
@@ -131,10 +139,7 @@ export default function AdsLivePanel(props: {
                   className="flex items-center justify-between rounded-lg bg-white/5 border border-white/5 px-3 py-2"
                 >
                   <div className="text-xs text-zinc-300">
-                    <span className="font-bold text-white">{e.event}</span>
-                    {e.stream_id ? (
-                      <span className="text-zinc-500"> • stream {String(e.stream_id).slice(0, 8)}…</span>
-                    ) : null}
+                    <span className="font-bold text-white">{eventLabel(e.event)}</span>
                   </div>
                   <div className="text-[11px] text-zinc-500">{new Date(e.created_at).toLocaleTimeString()}</div>
                 </div>

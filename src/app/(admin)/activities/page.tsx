@@ -193,10 +193,7 @@ function ActivityItem({ activity }: { activity: Activity }) {
           </Avatar>
           <div className="flex flex-col overflow-hidden">
             <span className="text-sm font-medium text-zinc-200 truncate">
-              {activity.userId ? 'Admin User' : 'System'}
-            </span>
-            <span className="text-[10px] text-zinc-500 font-mono truncate">
-              {activity.userId ? activity.userId.slice(0, 8) : 'AUTO'}
+              {activity.userId ? "Utilisateur" : "Systeme"}
             </span>
           </div>
         </div>

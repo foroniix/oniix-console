@@ -12,7 +12,6 @@ import {
 import {
   AlertTriangle,
   CheckCircle2,
-  Copy,
   KeyRound,
   Loader2,
   RefreshCw,
@@ -27,6 +26,13 @@ import { cn } from "@/lib/utils";
 type UserInfo = { id: string; email: string | null; tenant_id: string | null; role: string | null };
 type TenantInfo = { id: string; name: string; created_at: string; created_by: string | null };
 
+function roleLabel(role?: string | null) {
+  const r = (role || "").toLowerCase();
+  if (r === "admin") return "Administrateur";
+  if (r === "member") return "Membre";
+  return role || "-";
+}
+
 export default function SettingsPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
@@ -40,8 +46,6 @@ export default function SettingsPage() {
 
   const [msg, setMsg] = useState<string>("");
   const [err, setErr] = useState<string>("");
-
-  const [copied, setCopied] = useState<"" | "USER" | "TENANT">("");
 
   const pwdOk = useMemo(() => newPassword.length >= 8, [newPassword]);
 
@@ -114,15 +118,6 @@ export default function SettingsPage() {
     } finally {
       setSavingPwd(false);
     }
-  };
-
-  const copy = async (value: string, kind: "USER" | "TENANT") => {
-    if (!value) return;
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(kind);
-      window.setTimeout(() => setCopied(""), 1200);
-    } catch {}
   };
 
   const createdAtLabel = useMemo(() => {
@@ -208,31 +203,15 @@ export default function SettingsPage() {
                 Compte
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                Informations de l’utilisateur connecté.
+                Informations du compte.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-3">
               <div className="rounded-xl border border-white/10 bg-zinc-950/30 overflow-hidden">
-                <Row
-                  label="User ID"
-                  value={user?.id ?? "—"}
-                  mono
-                  action={
-                    user?.id ? (
-                      <InlineAction
-                        onClick={() => copy(user.id, "USER")}
-                        label={copied === "USER" ? "Copié" : "Copier"}
-                      />
-                    ) : null
-                  }
-                />
+                <Row label="Email" value={user?.email ?? "-"} />
                 <Divider />
-                <Row label="Email" value={user?.email ?? "—"} />
-                <Divider />
-                <Row label="Rôle" value={user?.role ?? "—"} mono />
-                <Divider />
-                <Row label="Tenant ID" value={user?.tenant_id ?? "—"} mono />
+                <Row label="Role" value={user?.role ? roleLabel(user.role) : "-"} />
               </div>
             </CardContent>
           </Card>
@@ -245,7 +224,7 @@ export default function SettingsPage() {
                 Organisation
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                Paramètres du tenant connecté.
+                Parametres de l'organisation.
               </CardDescription>
             </CardHeader>
 
@@ -266,20 +245,6 @@ export default function SettingsPage() {
               </div>
 
               <div className="rounded-xl border border-white/10 bg-zinc-950/30 overflow-hidden">
-                <Row
-                  label="Tenant ID"
-                  value={tenant?.id ?? "—"}
-                  mono
-                  action={
-                    tenant?.id ? (
-                      <InlineAction
-                        onClick={() => copy(tenant.id, "TENANT")}
-                        label={copied === "TENANT" ? "Copié" : "Copier"}
-                      />
-                    ) : null
-                  }
-                />
-                <Divider />
                 <Row label="Créé le" value={createdAtLabel} />
               </div>
 
@@ -394,17 +359,4 @@ function Row({
 
 function Divider() {
   return <div className="h-px w-full bg-white/10" />;
-}
-
-function InlineAction({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-zinc-200 hover:bg-white/10"
-    >
-      <Copy className="h-3.5 w-3.5" />
-      {label}
-    </button>
-  );
 }
