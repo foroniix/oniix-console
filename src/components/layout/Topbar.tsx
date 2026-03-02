@@ -37,17 +37,51 @@ type MeResponse =
         full_name?: string | null;
         role?: string | null;
         avatar_url?: string | null;
+        tenant_id?: string | null;
       };
     }
   | { ok: false; error?: string };
 
+type TenantResponse =
+  | {
+      ok: true;
+      tenant: {
+        id: string;
+        name: string;
+      };
+    }
+  | { ok: false; error?: string };
+
+const APP_ENV = (process.env.NEXT_PUBLIC_APP_ENV || process.env.NODE_ENV || "production").toLowerCase();
+
 function buildInitials(name?: string | null, email?: string | null) {
-  const source = String(name || email || "SA").trim();
-  if (!source) return "SA";
+  const source = String(name || email || "CE").trim();
+  if (!source) return "CE";
   const parts = source.split(/\s+/).filter(Boolean);
-  const a = (parts[0]?.[0] ?? "S").toUpperCase();
-  const b = (parts[1]?.[0] ?? parts[0]?.[1] ?? "A").toUpperCase();
+  const a = (parts[0]?.[0] ?? "C").toUpperCase();
+  const b = (parts[1]?.[0] ?? parts[0]?.[1] ?? "E").toUpperCase();
   return `${a}${b}`;
+}
+
+function formatRoleLabel(value: string) {
+  const role = value.trim().toLowerCase();
+  if (["superadmin", "admin", "owner", "tenant_admin"].includes(role)) return "Admin";
+  if (["editor", "editeur"].includes(role)) return "Editeur";
+  if (["analyst", "analyste"].includes(role)) return "Analyste";
+  return "Viewer";
+}
+
+function getEnvironmentMeta() {
+  if (APP_ENV.includes("stag")) {
+    return {
+      label: "Staging",
+      className: "border border-[#f59e0b]/30 bg-[#f59e0b]/10 text-[#f59e0b]",
+    };
+  }
+  return {
+    label: "Prod",
+    className: "border border-[#22c55e]/30 bg-[#22c55e]/10 text-[#22c55e]",
+  };
 }
 
 export default function Topbar() {
@@ -56,22 +90,38 @@ export default function Topbar() {
 
   const route = React.useMemo(() => resolveRoute(pathname), [pathname]);
   const [query, setQuery] = React.useState("");
-  const [name, setName] = React.useState("Super Admin");
+  const [name, setName] = React.useState("Admin Editeur");
   const [email, setEmail] = React.useState<string | null>(null);
-  const [role, setRole] = React.useState<string>("superadmin");
+  const [role, setRole] = React.useState<string>("admin");
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+  const [workspaceName, setWorkspaceName] = React.useState("Workspace");
+  const [workspaceId, setWorkspaceId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        const json = (await res.json().catch(() => null)) as MeResponse | null;
-        if (!mounted || !res.ok || !json || !("ok" in json) || !json.ok) return;
-        setName(json.user.full_name?.trim() || "Super Admin");
-        setEmail(json.user.email?.trim() || null);
-        setRole((json.user.role?.trim() || "superadmin").toLowerCase());
-        setAvatarUrl(json.user.avatar_url?.trim() || null);
+        const [meRes, tenantRes] = await Promise.all([
+          fetch("/api/auth/me", { cache: "no-store" }),
+          fetch("/api/settings/tenant", { cache: "no-store" }).catch(() => null),
+        ]);
+
+        const meJson = (await meRes.json().catch(() => null)) as MeResponse | null;
+        if (mounted && meRes.ok && meJson && "ok" in meJson && meJson.ok) {
+          setName(meJson.user.full_name?.trim() || "Admin Editeur");
+          setEmail(meJson.user.email?.trim() || null);
+          setRole((meJson.user.role?.trim() || "admin").toLowerCase());
+          setAvatarUrl(meJson.user.avatar_url?.trim() || null);
+          setWorkspaceId(meJson.user.tenant_id?.trim() || null);
+        }
+
+        if (!tenantRes) return;
+        const tenantJson = (await tenantRes.json().catch(() => null)) as TenantResponse | null;
+        if (!mounted) return;
+        if (tenantRes.ok && tenantJson && "ok" in tenantJson && tenantJson.ok) {
+          setWorkspaceName(tenantJson.tenant.name || "Workspace");
+          setWorkspaceId(tenantJson.tenant.id || null);
+        }
       } catch {
         // ignore profile fetch errors
       }
@@ -102,20 +152,22 @@ export default function Topbar() {
     }
   }, [router]);
 
+  const environment = getEnvironmentMeta();
+
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0b0f18]">
-      <div className="flex items-center gap-3 px-3 py-3 sm:px-5 lg:px-6">
+    <header className="sticky top-0 z-30 border-b border-[#262b38] bg-[#151821]/95 backdrop-blur">
+      <div className="flex h-14 items-center gap-3 px-3 sm:px-5 lg:px-6">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="lg:hidden">
+            <Button variant="outline" size="icon" className="border-[#262b38] bg-[#1b1f2a] lg:hidden">
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
 
-          <SheetContent side="left" className="w-[320px] border-white/10 bg-[#090c14] p-0">
-            <div className="border-b border-white/10 px-4 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Navigation</p>
-              <p className="mt-1 text-sm font-semibold text-white">Oniix Superadmin</p>
+          <SheetContent side="left" className="w-[320px] border-[#262b38] bg-[#151821] p-0">
+            <div className="border-b border-[#262b38] px-4 py-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8b93a7]">Navigation</p>
+              <p className="mt-1 text-sm font-semibold text-[#e6eaf2]">Console Editeur</p>
             </div>
             <SidebarNav />
           </SheetContent>
@@ -123,54 +175,59 @@ export default function Topbar() {
 
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm">
-            <span className="hidden text-zinc-500 sm:inline">Oniix</span>
-            <ChevronRight className="hidden size-4 text-zinc-700 sm:inline" />
-            <span className="truncate font-semibold text-white">{route.label}</span>
+            <span className="hidden text-[#8b93a7] sm:inline">Console Editeur</span>
+            <ChevronRight className="hidden size-4 text-[#8b93a7] sm:inline" />
+            <span className="truncate font-semibold text-[#e6eaf2]">{route.label}</span>
           </div>
-          <p className="hidden text-xs text-zinc-500 sm:block">{route.description}</p>
+          <p className="hidden text-xs text-[#8b93a7] sm:block">{route.description}</p>
         </div>
 
         <form onSubmit={onSearchSubmit} className="relative ml-auto hidden w-full max-w-[460px] md:block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8b93a7]" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Naviguer: tenants, streams, users, system..."
-            className="h-10 border-white/10 bg-white/5 pl-9 pr-16 text-sm"
+            placeholder="Rechercher: chaines, direct, programmation, replays..."
+            className="h-10 border-[#262b38] bg-[#1b1f2a] pl-9 pr-16 text-sm text-[#e6eaf2]"
           />
-          <span className="pointer-events-none absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-zinc-400">
+          <span className="pointer-events-none absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-md border border-[#262b38] bg-[#151821] px-2 py-1 text-[10px] text-[#8b93a7]">
             <Command className="size-3" />K
           </span>
         </form>
 
         <div className="flex items-center gap-2">
-          <Badge
-            variant="secondary"
-            className="hidden border border-emerald-500/25 bg-emerald-500/10 text-emerald-300 md:inline-flex"
-          >
-            Platform live
+          <Badge className="hidden border border-[#4c82fb]/30 bg-[#1c2a4a] text-[#4c82fb] lg:inline-flex">
+            {workspaceName}
           </Badge>
+          <Badge className="hidden border border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] md:inline-flex">
+            {formatRoleLabel(role)}
+          </Badge>
+          <Badge className={`hidden md:inline-flex ${environment.className}`}>{environment.label}</Badge>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="hidden sm:inline-flex">
+              <Button
+                variant="outline"
+                size="icon"
+                className="hidden border-[#262b38] bg-[#1b1f2a] sm:inline-flex"
+              >
                 <Plus className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56 border-[#262b38] bg-[#151821] text-[#e6eaf2]">
               <DropdownMenuItem asChild>
-                <Link href="/tenants">Nouveau tenant</Link>
+                <Link href="/channels">Nouvelle chaine</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/users">Inviter un utilisateur</Link>
+                <Link href="/streams">Nouveau direct</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/streams">Nouveau stream</Link>
+                <Link href="/programming">Programmer une diffusion</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" size="icon" className="hidden sm:inline-flex">
+          <Button variant="outline" size="icon" className="hidden border-[#262b38] bg-[#1b1f2a] sm:inline-flex">
             <Bell className="size-4" />
           </Button>
 
@@ -179,23 +236,26 @@ export default function Topbar() {
               <Button variant="ghost" className="h-10 gap-2 rounded-xl px-2 sm:px-3">
                 <Avatar className="size-8 border border-white/15">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
-                  <AvatarFallback className="bg-primary/20 text-primary">
+                  <AvatarFallback className="bg-[#1c2a4a] text-[#4c82fb]">
                     {buildInitials(name, email)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="hidden text-left sm:block">
-                  <span className="block text-xs font-semibold text-white">{name}</span>
-                  <span className="block text-[11px] text-zinc-500">{role}</span>
+                  <span className="block text-xs font-semibold text-[#e6eaf2]">{name}</span>
+                  <span className="block text-[11px] text-[#8b93a7]">
+                    {workspaceName}
+                    {workspaceId ? ` (${workspaceId.slice(0, 6)})` : ""}
+                  </span>
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuItem className="text-zinc-200">
+            <DropdownMenuContent align="end" className="w-56 border-[#262b38] bg-[#151821] text-[#e6eaf2]">
+              <DropdownMenuItem className="text-[#e6eaf2]">
                 <UserCircle2 className="mr-2 size-4" />
                 Mon profil
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-rose-300 focus:text-rose-200">
+              <DropdownMenuSeparator className="bg-[#262b38]" />
+              <DropdownMenuItem onClick={handleLogout} className="text-[#ef4444] focus:text-[#ef4444]">
                 <LogOut className="mr-2 size-4" />
                 Deconnexion
               </DropdownMenuItem>
@@ -206,4 +266,3 @@ export default function Topbar() {
     </header>
   );
 }
-

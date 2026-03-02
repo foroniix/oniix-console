@@ -349,8 +349,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchLive();
-    const t = setInterval(fetchLive, 5_000);
-    return () => clearInterval(t);
   }, [fetchLive]);
 
   // realtime subscription
@@ -499,13 +497,7 @@ export default function DashboardPage() {
       : channels.find((c) => c.id === channelFilter)?.name ?? "Chaine";
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Premium background (same visual language as Channels) */}
-      <div className="fixed inset-0 -z-10 bg-zinc-950" />
-      <div className="fixed inset-0 -z-10 opacity-70 [background:radial-gradient(900px_circle_at_15%_0%,rgba(99,102,241,0.14),transparent_55%),radial-gradient(900px_circle_at_85%_25%,rgba(16,185,129,0.08),transparent_55%)]" />
-      <div className="fixed inset-x-0 top-0 -z-10 h-24 bg-gradient-to-b from-black/35 to-transparent" />
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="space-y-6 text-zinc-100">
         {/* Topbar (compact + sticky) */}
         <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-zinc-950/70 backdrop-blur-xl border-b border-white/5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -884,7 +876,6 @@ export default function DashboardPage() {
             </Card>
           </div>
         </div>
-      </div>
     </div>
   );
 }

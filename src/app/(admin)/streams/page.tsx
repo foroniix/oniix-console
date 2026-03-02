@@ -1,22 +1,42 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, RadioTower, RefreshCw, TriangleAlert, Tv2 } from "lucide-react";
+
+import { DataTableShell } from "@/components/console/data-table-shell";
+import { FilterBar } from "@/components/console/filter-bar";
+import { KpiCard, KpiRow } from "@/components/console/kpi";
+import { PageHeader } from "@/components/console/page-header";
+import { PageShell } from "@/components/console/page-shell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   listChannels,
   listStreams,
   removeStream,
   setStreamStatus,
   type Channel,
-  type Stream
+  type Stream,
 } from "@/lib/data";
-import { Activity, AlertCircle, Layers, Plus, RefreshCw, Signal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 
 import StreamDialog from "./StreamDialog";
 import StreamsTable from "./StreamsTable";
 
 type StatusFilter = "ALL" | "LIVE" | "OFFLINE" | "ENDED";
+
+const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
+  { value: "ALL", label: "Tous" },
+  { value: "LIVE", label: "Live" },
+  { value: "OFFLINE", label: "Offline" },
+  { value: "ENDED", label: "Ended" },
+];
 
 export default function StreamsPage() {
   const [streams, setStreams] = useState<Stream[]>([]);
@@ -26,32 +46,32 @@ export default function StreamsPage() {
   const [editingStream, setEditingStream] = useState<Stream | null>(null);
 
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // UI state
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [channelFilter, setChannelFilter] = useState<string>("ALL");
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (soft = false) => {
+    if (!soft) setIsLoading(true);
+    setLoadError(null);
     try {
-      const [s, c] = await Promise.all([listStreams(), listChannels()]);
-      setStreams(s);
-      setChannels(c);
+      const [streamRows, channelRows] = await Promise.all([listStreams(), listChannels()]);
+      setStreams(streamRows);
+      setChannels(channelRows);
       setLastUpdated(new Date());
+    } catch {
+      setLoadError("Impossible de charger les flux. Verifiez la connexion puis reessayez.");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
+    void loadData(false);
   }, []);
 
-  // CRUD
   const handleCreateNew = () => {
     setEditingStream(null);
     setIsDialogOpen(true);
@@ -63,280 +83,179 @@ export default function StreamsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Voulez-vous vraiment supprimer ce flux ?")) return;
+    if (!confirm("Supprimer ce flux ? Cette action est irreversible.")) return;
     await removeStream(id);
-    loadData();
+    await loadData(true);
   };
 
   const handleToggleStatus = async (stream: Stream, newStatus: "LIVE" | "OFFLINE") => {
     await setStreamStatus(stream.id, newStatus);
-    loadData();
+    await loadData(true);
   };
 
-  // KPIs
   const stats = useMemo(() => {
-    const liveStreams = streams.filter((s) => s.status === "LIVE");
-    const liveCount = liveStreams.length;
-    const errorCount = streams.filter((s) => ["OFFLINE", "ENDED"].includes(s.status)).length;
-
-    let totalKbps = 0;
-    liveStreams.forEach(() => {
-      const baseBitrate = 4500;
-      const variance = Math.floor(Math.random() * 500) - 250;
-      totalKbps += baseBitrate + variance;
-    });
-
-    let bandwidthString = "0 Mbps";
-    if (totalKbps > 0) {
-      if (totalKbps >= 1000000) bandwidthString = (totalKbps / 1000000).toFixed(2) + " Gbps";
-      else bandwidthString = (totalKbps / 1000).toFixed(1) + " Mbps";
-    }
-
+    const live = streams.filter((stream) => stream.status === "LIVE").length;
+    const alerts = streams.filter((stream) => stream.status === "OFFLINE" || stream.status === "ENDED").length;
     return {
       total: streams.length,
-      live: liveCount,
-      errors: errorCount,
-      bandwidth: bandwidthString
+      live,
+      alerts,
+      updatedAt: lastUpdated ? lastUpdated.toLocaleTimeString() : "--:--",
     };
-  }, [streams]);
+  }, [lastUpdated, streams]);
 
-  // Filtering (safe: on ne dépend pas d’un schéma exact, on cherche “large”)
   const filteredStreams = useMemo(() => {
-    const q = query.trim().toLowerCase();
-
-    return streams.filter((s: any) => {
-      // status filter
-      if (statusFilter !== "ALL" && s.status !== statusFilter) return false;
-
-      // channel filter (assume possible fields: channelId / channel_id / channel?.id)
-      if (channelFilter !== "ALL") {
-        const streamChannelId =
-          s.channelId ?? s.channel_id ?? s.channel?.id ?? s.channel?.channelId ?? null;
-        if (String(streamChannelId ?? "") !== String(channelFilter)) return false;
-      }
-
-      // query search (assume possible fields: name, title, id, url, source)
-      if (!q) return true;
-      const hay = [
-        s.name,
-        s.title,
-        s.id,
-        s.url,
-        s.source,
-        s.inputUrl,
-        s.outputUrl,
-        s.key
-      ]
-        .filter(Boolean)
+    const normalizedQuery = query.trim().toLowerCase();
+    return streams.filter((stream) => {
+      if (statusFilter !== "ALL" && stream.status !== statusFilter) return false;
+      if (channelFilter !== "ALL" && String(stream.channelId ?? "") !== String(channelFilter)) return false;
+      if (!normalizedQuery) return true;
+      const haystack = [stream.id, stream.title, stream.hlsUrl, stream.description ?? ""]
         .join(" ")
         .toLowerCase();
-
-      return hay.includes(q);
+      return haystack.includes(normalizedQuery);
     });
-  }, [streams, query, statusFilter, channelFilter]);
+  }, [channelFilter, query, statusFilter, streams]);
+
+  const resetFilters = () => {
+    setQuery("");
+    setStatusFilter("ALL");
+    setChannelFilter("ALL");
+  };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* subtle background */}
-      <div className="fixed inset-0 -z-10 bg-zinc-950" />
-      <div className="fixed inset-0 -z-10 opacity-60 [background:radial-gradient(1000px_circle_at_20%_0%,rgba(99,102,241,0.14),transparent_55%),radial-gradient(900px_circle_at_80%_20%,rgba(16,185,129,0.08),transparent_55%)]" />
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Header */}
-        <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                <Signal className="h-5 w-5 text-indigo-300" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-white">
-                  Streams
-                </h1>
-                <p className="text-sm text-zinc-400">
-                  Gestion des flux & supervision opérationnelle
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 pt-2">
-              <Badge className="bg-white/5 border border-white/10 text-zinc-200">
-                {stats.total} flux
-              </Badge>
-              <Badge className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-200">
-                {stats.live} live
-              </Badge>
-              <Badge
-                className={
-                  stats.errors > 0
-                    ? "bg-rose-500/10 border border-rose-500/20 text-rose-200"
-                    : "bg-white/5 border border-white/10 text-zinc-300"
-                }
-              >
-                {stats.errors} alertes
-              </Badge>
-              <Badge className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-200">
-                {stats.bandwidth} estimés
-              </Badge>
-
-              <span className="text-xs text-zinc-500 ml-2 font-mono">
-                MAJ {lastUpdated ? lastUpdated.toLocaleTimeString() : "--:--:--"}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
+    <PageShell>
+      <PageHeader
+        title="Direct"
+        subtitle="Surveillez et pilotez vos flux HLS depuis un espace unique."
+        breadcrumbs={[
+          { label: "Console Editeur", href: "/dashboard" },
+          { label: "Direct" },
+        ]}
+        icon={<RadioTower className="size-5" />}
+        actions={
+          <>
             <Button
               variant="outline"
-              size="sm"
-              onClick={loadData}
-              className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+              onClick={() => void loadData(true)}
+              className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] hover:bg-[#1c2a4a]"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`mr-2 size-4 ${isLoading ? "animate-spin" : ""}`} />
               Actualiser
             </Button>
-
-            <Button
-              size="sm"
-              onClick={handleCreateNew}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_0_1px_rgba(99,102,241,0.30),0_12px_28px_rgba(79,70,229,0.20)]"
-            >
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={handleCreateNew} className="bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">
+              <Plus className="mr-2 size-4" />
               Nouveau flux
             </Button>
-          </div>
-        </header>
+          </>
+        }
+      />
 
-        {/* Filters */}
-        <section className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-          <div className="p-4 sm:p-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex-1">
-              <label className="text-xs text-zinc-400">Recherche</label>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Rechercher par nom, id, url…"
-                className="mt-1 w-full rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/10"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-              <div>
-                <div className="mt-1 inline-flex rounded-xl border border-white/10 bg-zinc-950/40 p-1">
-                  <StatusPill active={statusFilter === "ALL"} onClick={() => setStatusFilter("ALL")}>
-                    Tous
-                  </StatusPill>
-                  <StatusPill active={statusFilter === "LIVE"} onClick={() => setStatusFilter("LIVE")}>
-                    Live
-                  </StatusPill>
-                  <StatusPill active={statusFilter === "OFFLINE"} onClick={() => setStatusFilter("OFFLINE")}>
-                    Offline
-                  </StatusPill>
-                  <StatusPill active={statusFilter === "ENDED"} onClick={() => setStatusFilter("ENDED")}>
-                    Ended
-                  </StatusPill>
-                </div>
-              </div>
-
-              <div>
-                <select
-                  value={channelFilter}
-                  onChange={(e) => setChannelFilter(e.target.value)}
-                  className="mt-1 w-full sm:w-[150px] rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/10"
-                >
-                  <option value="ALL">Tous les canaux</option>
-                  {channels.map((c: any) => (
-                    <option key={c.id} value={String(c.id)}>
-                      {c.name ?? c.title ?? `Canal ${c.id}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="px-4 sm:px-5 pb-4">
-            <div className="h-px w-full bg-white/10" />
-            <div className="pt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-zinc-400" />
-                <span>
-                  Affichés : <span className="text-zinc-200">{filteredStreams.length}</span> /{" "}
-                  <span className="text-zinc-200">{streams.length}</span>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-emerald-300" />
-                  <span>LIVE: <span className="text-zinc-200">{stats.live}</span></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <AlertCircle className={`h-4 w-4 ${stats.errors > 0 ? "text-rose-300" : "text-zinc-500"}`} />
-                  <span>Alertes: <span className="text-zinc-200">{stats.errors}</span></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Table area */}
-        <section className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-          <div className="p-4 sm:p-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-white">Liste des flux</h2>
-              <p className="text-xs text-zinc-400 mt-1">
-                Actions : édition, suppression, play/stop
-              </p>
-            </div>
-          </div>
-
-          <div className="px-2 sm:px-4 pb-4">
-            <div className="rounded-xl border border-white/10 bg-zinc-950/30 overflow-hidden">
-              <StreamsTable
-                streams={filteredStreams}
-                channels={channels}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onToggleStatus={handleToggleStatus}
-              />
-            </div>
-          </div>
-        </section>
-
-        <StreamDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          streamToEdit={editingStream}
-          channels={channels}
-          onSuccess={loadData}
+      <KpiRow>
+        <KpiCard label="Flux total" value={stats.total} icon={<Tv2 className="size-4" />} loading={isLoading} />
+        <KpiCard
+          label="Flux live"
+          value={stats.live}
+          tone="success"
+          icon={<RadioTower className="size-4" />}
+          loading={isLoading}
         />
-      </div>
-    </div>
-  );
-}
+        <KpiCard
+          label="Alertes"
+          value={stats.alerts}
+          tone={stats.alerts > 0 ? "warning" : "neutral"}
+          icon={<TriangleAlert className="size-4" />}
+          hint={stats.alerts > 0 ? "Au moins un flux est degrade ou hors ligne." : "Aucune alerte active."}
+          loading={isLoading}
+        />
+        <KpiCard
+          label="Derniere sync"
+          value={stats.updatedAt}
+          tone="info"
+          hint="Mise a jour manuelle pour eviter le polling global."
+          loading={isLoading}
+        />
+      </KpiRow>
 
-function StatusPill({
-  active,
-  children,
-  onClick
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "px-3 py-1.5 text-xs rounded-lg transition-colors",
-        active
-          ? "bg-white/10 text-white"
-          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-      ].join(" ")}
-    >
-      {children}
-    </button>
+      <FilterBar
+        onReset={resetFilters}
+        resetDisabled={!query && statusFilter === "ALL" && channelFilter === "ALL"}
+      >
+        <div className="min-w-[220px] flex-1">
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Rechercher un flux (nom, ID, URL)"
+            className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+          />
+        </div>
+
+        <Select value={channelFilter} onValueChange={setChannelFilter}>
+          <SelectTrigger className="w-full border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] sm:w-[220px]">
+            <SelectValue placeholder="Toutes les chaines" />
+          </SelectTrigger>
+          <SelectContent className="border-[#262b38] bg-[#151821] text-[#e6eaf2]">
+            <SelectItem value="ALL">Toutes les chaines</SelectItem>
+            {channels.map((channel) => (
+              <SelectItem key={channel.id} value={String(channel.id)}>
+                {channel.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="inline-flex flex-wrap items-center gap-2">
+          {STATUS_FILTERS.map((filter) => (
+            <Button
+              key={filter.value}
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setStatusFilter(filter.value)}
+              className={
+                statusFilter === filter.value
+                  ? "border-[#4c82fb]/40 bg-[#1c2a4a] text-[#4c82fb]"
+                  : "border-[#262b38] bg-[#1b1f2a] text-[#8b93a7]"
+              }
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
+      </FilterBar>
+
+      <DataTableShell
+        title="Liste des flux"
+        description={`${filteredStreams.length} resultat(s) sur ${streams.length} flux.`}
+        loading={isLoading}
+        error={loadError}
+        onRetry={() => void loadData(false)}
+        isEmpty={!isLoading && !loadError && filteredStreams.length === 0}
+        emptyTitle="Aucun flux trouve"
+        emptyDescription="Ajustez les filtres ou creez votre premier flux HLS."
+        emptyAction={
+          <Button onClick={handleCreateNew} className="mt-2 bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">
+            <Plus className="mr-2 size-4" />
+            Creer votre premier flux
+          </Button>
+        }
+      >
+        <StreamsTable
+          streams={filteredStreams}
+          channels={channels}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
+        />
+      </DataTableShell>
+
+      <StreamDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        streamToEdit={editingStream}
+        channels={channels}
+        onSuccess={() => void loadData(true)}
+      />
+    </PageShell>
   );
 }

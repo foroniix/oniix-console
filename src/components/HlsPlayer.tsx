@@ -11,6 +11,7 @@ type Props = {
   muted?: boolean;
   controls?: boolean;
   className?: string;
+  onErrorChange?: (error: string | null) => void;
 };
 
 export default function HlsPlayer({
@@ -21,6 +22,7 @@ export default function HlsPlayer({
   muted = true,
   controls = true,
   className,
+  onErrorChange,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -28,28 +30,23 @@ export default function HlsPlayer({
   const bitrateRef = useRef<number>(0);
   const errorCountRef = useRef<number>(0);
 
-  const [error, setError] = useState<string | null>(null);
-
-  /* -----------------------------
-     Init Player
-  ----------------------------- */
+  const [errorToken, setErrorToken] = useState<{ src: string; message: string } | null>(null);
+  const error = errorToken?.src === src ? errorToken.message : null;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    setError(null);
+    onErrorChange?.(null);
     errorCountRef.current = 0;
     bitrateRef.current = 0;
 
-    // Safari (HLS natif)
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
       video.play().catch(() => {});
       return;
     }
 
-    // hls.js
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -60,21 +57,20 @@ export default function HlsPlayer({
       hls.loadSource(src);
       hls.attachMedia(video);
 
-      // Bitrate réel (niveau courant)
       hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
         const level = hls.levels[data.level];
         if (level?.bitrate) {
-          bitrateRef.current = Math.round(level.bitrate / 1000); // kbps
+          bitrateRef.current = Math.round(level.bitrate / 1000);
         }
       });
 
-      // Erreurs réelles
-      hls.on(Hls.Events.ERROR, (_e, data) => {
+      hls.on(Hls.Events.ERROR, (_event, payload) => {
         errorCountRef.current += 1;
-        if (data.fatal) {
-          setError("Erreur HLS fatale");
-          hls.destroy();
-        }
+        if (!payload.fatal) return;
+        const message = "Erreur HLS fatale";
+        setErrorToken({ src, message });
+        onErrorChange?.(message);
+        hls.destroy();
       });
 
       return () => {
@@ -83,12 +79,8 @@ export default function HlsPlayer({
       };
     }
 
-    setError("Navigateur non supporté");
-  }, [src]);
-
-  /* -----------------------------
-     Stats ingest (toutes les 5s)
-  ----------------------------- */
+    onErrorChange?.("Navigateur non supporte");
+  }, [onErrorChange, src]);
 
   useEffect(() => {
     if (!streamId) return;
@@ -98,19 +90,15 @@ export default function HlsPlayer({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          viewers: 1, // 1 player = 1 viewer (agrégation backend)
+          viewers: 1,
           bitrate: bitrateRef.current,
           errors: errorCountRef.current,
         }),
       }).catch(() => {});
-    }, 5000); // cadence PRO (broadcast standard)
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [streamId]);
-
-  /* -----------------------------
-     Render
-  ----------------------------- */
 
   return (
     <div className={className}>

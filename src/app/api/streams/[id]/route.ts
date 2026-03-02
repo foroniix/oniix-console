@@ -25,18 +25,36 @@ export async function PATCH(
         status: z.string().optional(),
         channelId: z.string().optional(),
         description: z.string().optional(),
+        scheduledAt: z.string().nullable().optional(),
+        poster: z.string().nullable().optional(),
+        latency: z.enum(["normal", "low", "ultra-low"]).optional(),
+        dvrWindowSec: z.number().int().optional(),
+        record: z.boolean().optional(),
+        drm: z.boolean().optional(),
+        captions: z.array(z.any()).optional(),
+        markers: z.array(z.any()).optional(),
+        geo: z.object({ allow: z.array(z.string()), block: z.array(z.string()) }).partial().optional(),
       })
     );
     if (!parsed.ok) return parsed.res;
     const body = parsed.data;
     const supa = supabaseUser(ctx.accessToken);
 
-    const payload: any = {};
+    const payload: Record<string, unknown> = {};
     if (body.title !== undefined) payload.title = body.title;
     if (body.hlsUrl !== undefined) payload.hls_url = body.hlsUrl;
     if (body.status !== undefined) payload.status = body.status;
     if (body.channelId !== undefined) payload.channel_id = body.channelId;
     if (body.description !== undefined) payload.description = body.description;
+    if (body.scheduledAt !== undefined) payload.scheduled_at = body.scheduledAt;
+    if (body.poster !== undefined) payload.poster = body.poster;
+    if (body.latency !== undefined) payload.latency = body.latency;
+    if (body.dvrWindowSec !== undefined) payload.dvr_window_sec = body.dvrWindowSec;
+    if (body.record !== undefined) payload.record = body.record;
+    if (body.drm !== undefined) payload.drm = body.drm;
+    if (body.captions !== undefined) payload.captions = body.captions;
+    if (body.markers !== undefined) payload.markers = body.markers;
+    if (body.geo !== undefined) payload.geo = body.geo;
     payload.updated_at = new Date().toISOString();
 
     const { data, error } = await supa

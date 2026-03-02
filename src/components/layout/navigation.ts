@@ -4,10 +4,8 @@ import {
   LayoutDashboard,
   RadioTower,
   Settings,
-  ShieldCheck,
   Tv2,
   Users,
-  Building2,
   CalendarClock,
   Megaphone,
   type LucideIcon,
@@ -27,31 +25,14 @@ export type NavSection = {
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    title: "Control Plane",
+    title: "Pilotage",
     items: [
       {
         href: "/dashboard",
         label: "Dashboard",
-        description: "Vue plateforme multi-tenant",
+        description: "Vue operationnelle",
         icon: LayoutDashboard,
       },
-      {
-        href: "/tenants",
-        label: "Tenants",
-        description: "Portefeuille editeurs TV",
-        icon: Building2,
-      },
-      {
-        href: "/activities",
-        label: "Activites",
-        description: "Audit et operationnel",
-        icon: Activity,
-      },
-    ],
-  },
-  {
-    title: "Broadcast",
-    items: [
       {
         href: "/channels",
         label: "Chaines",
@@ -60,8 +41,8 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         href: "/streams",
-        label: "Streams",
-        description: "Etat flux & signaux",
+        label: "Direct",
+        description: "Supervision des flux HLS",
         icon: RadioTower,
       },
       {
@@ -90,24 +71,29 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Gouvernance",
+    title: "Equipe",
     items: [
       {
         href: "/users",
         label: "Utilisateurs",
-        description: "IAM et roles",
+        description: "Membres et permissions",
         icon: Users,
       },
       {
-        href: "/system",
-        label: "Systeme",
-        description: "Sante plateforme",
-        icon: ShieldCheck,
+        href: "/activities",
+        label: "Activite",
+        description: "Journal et audit",
+        icon: Activity,
       },
+    ],
+  },
+  {
+    title: "Parametres",
+    items: [
       {
         href: "/settings",
-        label: "Configuration",
-        description: "Parametres globaux",
+        label: "Parametres",
+        description: "Configuration du workspace",
         icon: Settings,
       },
     ],
@@ -127,7 +113,7 @@ export function resolveRoute(pathname: string) {
   return {
     href: pathname,
     label: "Console",
-    description: "Pilotage plateforme",
+    description: "Pilotage diffusion",
     icon: LayoutDashboard,
   };
 }
@@ -142,4 +128,3 @@ export function findRouteByQuery(query: string) {
     }) ?? null
   );
 }
-
