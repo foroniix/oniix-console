@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { requireAuth, requireTenant } from "../../../../_utils/auth";
+import { auditLog } from "../../../../_utils/audit";
 import { supabaseUser } from "../../../../_utils/supabase";
 
 type Params = { params: Promise<{ id: string }> };
@@ -172,10 +173,28 @@ export async function POST(_: NextRequest, { params }: Params) {
           `HTTP ${manifestRes.status} sur le manifest.`
         )
       );
+      const validatedAt = new Date().toISOString();
+      await auditLog({
+        sb: supa,
+        tenantId: ctx.tenantId,
+        actorUserId: ctx.userId,
+        action: "STREAM_VALIDATE_HLS",
+        targetType: "stream",
+        targetId: id,
+        metadata: {
+          summary: "FAIL",
+          validatedAt,
+          checks: checks.map((check) => ({
+            key: check.key,
+            status: check.status,
+          })),
+          incidents: checks.filter((check) => check.status !== "OK").map((check) => check.message),
+        },
+      });
       return NextResponse.json(
         {
           ok: true,
-          validatedAt: new Date().toISOString(),
+          validatedAt,
           summary: "FAIL",
           checks,
           metrics: {
@@ -361,11 +380,32 @@ export async function POST(_: NextRequest, { params }: Params) {
     : checks.some((check) => check.status === "WARN")
       ? "WARN"
       : "OK";
+  const validatedAt = new Date().toISOString();
+
+  await auditLog({
+    sb: supa,
+    tenantId: ctx.tenantId,
+    actorUserId: ctx.userId,
+    action: "STREAM_VALIDATE_HLS",
+    targetType: "stream",
+    targetId: id,
+    metadata: {
+      summary,
+      validatedAt,
+      checks: checks.map((check) => ({
+        key: check.key,
+        status: check.status,
+      })),
+      incidents: checks
+        .filter((check) => check.status === "FAIL" || check.status === "WARN")
+        .map((check) => `${check.label}: ${check.message}`),
+    },
+  });
 
   return NextResponse.json(
     {
       ok: true,
-      validatedAt: new Date().toISOString(),
+      validatedAt,
       summary,
       checks,
       metrics: {

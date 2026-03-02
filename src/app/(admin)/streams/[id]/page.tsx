@@ -32,7 +32,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   endLiveAndCreateReplay,
   getStream,
-  listActivities,
   setStreamStatus,
   upsertStream,
   type Stream,
@@ -53,6 +52,15 @@ type AnalyticsResult = {
   series24h: Array<{ ts: string; viewers: number; bitrateKbps: number; errors: number }>;
 };
 type AuditItem = { id: string; at: string; action: string; details: string; actor: string };
+type AuditApiRow = {
+  id: string;
+  actor_user_id: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+};
 type StreamConfig = {
   title: string;
   hlsUrl: string;
@@ -148,12 +156,57 @@ export default function StreamDetailPage() {
 
   const loadAudit = useCallback(async () => {
     try {
-      const rows = await listActivities();
-      const mapped = rows
-        .filter((row) => row.targetType === "STREAM" && row.targetId === id)
-        .slice(0, 20)
-        .map((row) => ({ id: row.id, at: row.createdAt, action: row.action, details: row.title, actor: row.userId ?? "system" }));
-      setAudit((prev) => [...prev, ...mapped].sort((a, b) => (a.at > b.at ? -1 : 1)));
+      const response = await fetch(`/api/streams/${id}/audit?limit=40`, { cache: "no-store" });
+      const json = (await response.json().catch(() => null)) as
+        | { ok: true; logs: AuditApiRow[] }
+        | { ok?: false; error?: string }
+        | null;
+      if (!response.ok || !json || !("ok" in json) || !json.ok) return;
+
+      const mapped = (json.logs ?? []).map((row) => {
+        const metadata = (row.metadata ?? {}) as Record<string, unknown>;
+        const diff = metadata.diff as Record<string, { before: unknown; after: unknown }> | undefined;
+        const incidents = Array.isArray(metadata.incidents)
+          ? (metadata.incidents.filter((item) => typeof item === "string") as string[])
+          : [];
+
+        let details = "";
+        if (diff && Object.keys(diff).length > 0) {
+          details = Object.entries(diff)
+            .slice(0, 4)
+            .map(([field, delta]) => `${field}: ${String(delta.before)} -> ${String(delta.after)}`)
+            .join(" | ");
+        } else if (incidents.length > 0) {
+          details = incidents.slice(0, 2).join(" | ");
+        } else {
+          details = `Action ${row.action.toLowerCase()} executee`;
+        }
+
+        return {
+          id: row.id,
+          at: row.created_at,
+          action: row.action,
+          details,
+          actor: row.actor_user_id || "system",
+        };
+      });
+
+      setAudit(mapped);
+
+      const incidentLines: string[] = [];
+      for (const row of json.logs ?? []) {
+        if (row.action !== "STREAM_VALIDATE_HLS") continue;
+        const metadata = (row.metadata ?? {}) as Record<string, unknown>;
+        const summary = typeof metadata.summary === "string" ? metadata.summary.toUpperCase() : "";
+        if (!["WARN", "FAIL"].includes(summary)) continue;
+        const incidents = Array.isArray(metadata.incidents)
+          ? (metadata.incidents.filter((item) => typeof item === "string") as string[])
+          : [];
+        incidentLines.push(
+          `${dateLabel(row.created_at)} - ${summary}${incidents.length > 0 ? ` - ${incidents[0]}` : ""}`
+        );
+      }
+      setIncidents(incidentLines.slice(0, 20));
     } catch {
       // ignore
     }
@@ -178,10 +231,11 @@ export default function StreamDetailPage() {
       }
       previousSummaryRef.current = json.summary;
       addAudit("VALIDATE_HLS", `Validation ${json.summary}`);
+      void loadAudit();
     } finally {
       setValidating(false);
     }
-  }, [addAudit, id]);
+  }, [addAudit, id, loadAudit]);
 
   useEffect(() => {
     let mounted = true;
@@ -238,6 +292,7 @@ export default function StreamDetailPage() {
       setConfig(buildConfig(next));
       setFeedback("Configuration enregistree.");
       addAudit("UPDATE_CONFIG", "Configuration stream mise a jour");
+      void loadAudit();
     } catch {
       setFeedback("Impossible d'enregistrer la configuration.");
     } finally {
@@ -250,6 +305,7 @@ export default function StreamDetailPage() {
     const next = await setStreamStatus(stream.id, "LIVE");
     setStream(next);
     addAudit("SET_LIVE", "Flux passe en LIVE");
+    void loadAudit();
   };
 
   const onStop = async () => {
@@ -258,6 +314,7 @@ export default function StreamDetailPage() {
     const next = await setStreamStatus(stream.id, "OFFLINE");
     setStream(next);
     addAudit("STOP_STREAM", "Flux passe en OFFLINE");
+    void loadAudit();
   };
 
   const onCreateReplay = async () => {
@@ -265,6 +322,7 @@ export default function StreamDetailPage() {
     await endLiveAndCreateReplay(stream.id, { title: stream.title });
     setFeedback("Replay cree.");
     addAudit("CREATE_REPLAY", "Replay cree depuis live");
+    void loadAudit();
   };
 
   const geoResult = useMemo(() => {

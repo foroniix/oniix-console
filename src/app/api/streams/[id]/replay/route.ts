@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAuth, requireTenant } from "../../../_utils/auth";
+import { auditLog } from "../../../_utils/audit";
 import { supabaseUser } from "../../../_utils/supabase";
 import { parseJson } from "../../../_utils/validate";
 
@@ -127,5 +128,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     console.error("Replay create error", { error: error.message, tenantId: ctx.tenantId, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
+
+  await auditLog({
+    sb: supa,
+    tenantId: ctx.tenantId,
+    actorUserId: ctx.userId,
+    action: "STREAM_ENDED_FOR_REPLAY",
+    targetType: "stream",
+    targetId: id,
+    metadata: {
+      streamStatus: "ENDED",
+      replayId: data.id,
+      replayStatus: data.replay_status ?? null,
+    },
+  });
+
   return NextResponse.json(data, { status: 201 });
 }
