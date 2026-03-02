@@ -12,11 +12,13 @@ import {
 import {
   AlertTriangle,
   CheckCircle2,
+  Copy,
   KeyRound,
   Loader2,
   RefreshCw,
   Save,
   Shield,
+  Smartphone,
   Building2,
   User2
 } from "lucide-react";
@@ -25,6 +27,14 @@ import { cn } from "@/lib/utils";
 
 type UserInfo = { id: string; email: string | null; tenant_id: string | null; role: string | null };
 type TenantInfo = { id: string; name: string; created_at: string; created_by: string | null };
+type IngestInfo = {
+  configured: boolean;
+  source: "db" | "env" | "none";
+  canRotate: boolean;
+  requiresMigration: boolean;
+  created_at?: string;
+  rotated_at?: string;
+};
 
 function roleLabel(role?: string | null) {
   const r = (role || "").toLowerCase();
@@ -36,13 +46,16 @@ function roleLabel(role?: string | null) {
 export default function SettingsPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
+  const [ingest, setIngest] = useState<IngestInfo | null>(null);
 
   const [tenantName, setTenantName] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [newIngestKey, setNewIngestKey] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [savingTenant, setSavingTenant] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
+  const [rotatingIngest, setRotatingIngest] = useState(false);
 
   const [msg, setMsg] = useState<string>("");
   const [err, setErr] = useState<string>("");
@@ -53,19 +66,25 @@ export default function SettingsPage() {
     setLoading(true);
     setErr("");
     setMsg("");
+    setNewIngestKey("");
     try {
-      const [uRes, tRes] = await Promise.all([
+      const [uRes, tRes, iRes] = await Promise.all([
         fetch("/api/settings/user", { cache: "no-store" }),
-        fetch("/api/settings/tenant", { cache: "no-store" })
+        fetch("/api/settings/tenant", { cache: "no-store" }),
+        fetch("/api/settings/ingest-key", { cache: "no-store" })
       ]);
 
       const uJson = await uRes.json().catch(() => null);
       const tJson = await tRes.json().catch(() => null);
+      const iJson = await iRes.json().catch(() => null);
 
       if (uRes.ok && uJson?.ok) setUser(uJson.user);
       if (tRes.ok && tJson?.ok) {
         setTenant(tJson.tenant);
         setTenantName(tJson.tenant?.name ?? "");
+      }
+      if (iRes.ok && iJson?.ok) {
+        setIngest(iJson.ingest);
       }
     } catch {
       setErr("Impossible de charger les paramètres.");
@@ -119,6 +138,62 @@ export default function SettingsPage() {
       setSavingPwd(false);
     }
   };
+
+  const rotateIngestKey = async () => {
+    setRotatingIngest(true);
+    setErr("");
+    setMsg("");
+    setNewIngestKey("");
+    try {
+      const res = await fetch("/api/settings/ingest-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "manual_rotation" })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
+      setIngest(json.ingest);
+      setNewIngestKey(json.key || "");
+      setMsg("Cle ingest regeneree. Copiez-la maintenant.");
+    } catch (e: any) {
+      setErr(e?.message || "Erreur rotation cle ingest");
+    } finally {
+      setRotatingIngest(false);
+    }
+  };
+
+  const copyIngestKey = async () => {
+    if (!newIngestKey) return;
+    try {
+      await navigator.clipboard.writeText(newIngestKey);
+      setMsg("Cle ingest copiee.");
+    } catch {
+      setErr("Impossible de copier la cle.");
+    }
+  };
+
+  const ingestStatusLabel = useMemo(() => {
+    if (ingest?.configured) return "Configure";
+    if (ingest?.requiresMigration) return "Migration requise";
+    return "Non configure";
+  }, [ingest]);
+
+  const ingestSourceLabel = useMemo(() => {
+    if (!ingest) return "-";
+    if (ingest.source === "db") return "Base de donnees";
+    if (ingest.source === "env") return "Variable d'environnement";
+    return "Aucune";
+  }, [ingest]);
+
+  const ingestRotatedLabel = useMemo(() => {
+    const v = ingest?.rotated_at ?? ingest?.created_at;
+    if (!v) return "-";
+    try {
+      return new Date(v).toLocaleString();
+    } catch {
+      return v;
+    }
+  }, [ingest?.created_at, ingest?.rotated_at]);
 
   const createdAtLabel = useMemo(() => {
     if (!tenant?.created_at) return "—";
@@ -260,6 +335,75 @@ export default function SettingsPage() {
                     <Save className="h-4 w-4 mr-2" />
                   )}
                   Enregistrer
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Mobile ingest */}
+          <Card className="bg-white/5 border-white/10 backdrop-blur-xl lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-indigo-300" />
+                Ingest mobile
+              </CardTitle>
+              <CardDescription className="text-zinc-400">
+                Cle API utilisee par les apps pour envoyer les heartbeats analytics.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="rounded-xl border border-white/10 bg-zinc-950/30 overflow-hidden">
+                <Row label="Etat" value={ingestStatusLabel} />
+                <Divider />
+                <Row label="Source" value={ingestSourceLabel} />
+                <Divider />
+                <Row label="Derniere rotation" value={ingestRotatedLabel} mono />
+              </div>
+
+              {ingest?.requiresMigration && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+                  Migration requise: appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis l'interface.
+                </div>
+              )}
+
+              {newIngestKey && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 space-y-2">
+                  <div className="text-xs text-emerald-200 font-medium">
+                    Nouvelle cle (affichee une seule fois)
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      value={newIngestKey}
+                      readOnly
+                      className="bg-zinc-950/50 border-emerald-500/20 font-mono text-xs"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200"
+                      onClick={copyIngestKey}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copier
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end">
+                <Button
+                  type="button"
+                  onClick={rotateIngestKey}
+                  disabled={rotatingIngest || Boolean(ingest && !ingest.canRotate)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {rotatingIngest ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Regenerer la cle ingest
                 </Button>
               </div>
             </CardContent>

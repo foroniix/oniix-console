@@ -1,361 +1,209 @@
 "use client";
 
+import * as React from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronRight,
-  Command as CommandIcon,
-  FileText,
-  HelpCircle,
-  LayoutDashboard,
+  Command,
   LogOut,
   Menu,
-  Radio,
+  Plus,
   Search,
-  Settings,
-  Tv,
-  Users,
-  X,
+  UserCircle2,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
 
-import Sidebar from "@/components/layout/Sidebar";
+import { SidebarNav } from "@/components/layout/Sidebar";
+import { findRouteByQuery, resolveRoute } from "@/components/layout/navigation";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-// --- CONFIGURATION ---
-const ROUTE_NAMES: Record<string, string> = {
-  "/": "Vue d'ensemble",
-  "/movies": "Catalogue Films",
-  "/series": "Catalogue Séries",
-  "/channels": "Chaînes TV",
-  "/streams": "Gestion des Flux",
-  "/news": "Actualités & Blog",
-  "/users": "Utilisateurs",
-  "/activities": "Journal d'activités",
-  "/settings": "Configuration",
-};
+type MeResponse =
+  | {
+      ok: true;
+      user: {
+        email?: string | null;
+        full_name?: string | null;
+        role?: string | null;
+        avatar_url?: string | null;
+      };
+    }
+  | { ok: false; error?: string };
 
-// Données de navigation pour la recherche
-const SEARCH_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
-  { icon: Tv, label: "Chaînes TV", href: "/channels" },
-  { icon: Radio, label: "Flux & Streams", href: "/streams" },
-  { icon: Users, label: "Utilisateurs", href: "/users" },
-  { icon: FileText, label: "Actualités", href: "/news" },
-  { icon: Settings, label: "Paramètres", href: "/settings" },
-];
-
-// Mock Notifications
-const NOTIFICATIONS = [
-  { id: 1, title: "Flux coupé", desc: "Caméra 01 a perdu le signal", time: "2 min", type: "error" },
-  { id: 2, title: "Nouveau user", desc: "Jean D. s'est inscrit", time: "1h", type: "info" },
-  { id: 3, title: "Backup réussi", desc: "Sauvegarde journalière ok", time: "3h", type: "success" },
-];
+function buildInitials(name?: string | null, email?: string | null) {
+  const source = String(name || email || "SA").trim();
+  if (!source) return "SA";
+  const parts = source.split(/\s+/).filter(Boolean);
+  const a = (parts[0]?.[0] ?? "S").toUpperCase();
+  const b = (parts[1]?.[0] ?? parts[0]?.[1] ?? "A").toUpperCase();
+  return `${a}${b}`;
+}
 
 export default function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const route = React.useMemo(() => resolveRoute(pathname), [pathname]);
+  const [query, setQuery] = React.useState("");
+  const [name, setName] = React.useState("Super Admin");
+  const [email, setEmail] = React.useState<string | null>(null);
+  const [role, setRole] = React.useState<string>("superadmin");
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
 
-  // ✅ Mobile drawer state
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-
-  const currentPage =
-    ROUTE_NAMES[pathname] || pathname.split("/").pop() || "Dashboard";
-
-  // Gestion du raccourci clavier CMD+K / CTRL+K
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setIsSearchOpen((open) => !open);
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const json = (await res.json().catch(() => null)) as MeResponse | null;
+        if (!mounted || !res.ok || !json || !("ok" in json) || !json.ok) return;
+        setName(json.user.full_name?.trim() || "Super Admin");
+        setEmail(json.user.email?.trim() || null);
+        setRole((json.user.role?.trim() || "superadmin").toLowerCase());
+        setAvatarUrl(json.user.avatar_url?.trim() || null);
+      } catch {
+        // ignore profile fetch errors
       }
-      if (e.key === "Escape") {
-        setIsMobileNavOpen(false);
-      }
+    })();
+    return () => {
+      mounted = false;
     };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
   }, []);
 
-  // ✅ Ferme le drawer quand la route change
-  useEffect(() => {
-    setIsMobileNavOpen(false);
-  }, [pathname]);
+  const onSearchSubmit = React.useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+      const target = findRouteByQuery(query);
+      if (!target) return;
+      router.push(target.href);
+      setQuery("");
+    },
+    [query, router]
+  );
 
-  // Fonction de navigation via la recherche
-  const handleNavigate = (href: string) => {
-    router.push(href);
-    setIsSearchOpen(false);
-    setQuery("");
-  };
-
-  // Filtrage des résultats de recherche
-  const filteredItems = useMemo(() => {
-    return SEARCH_ITEMS.filter((item) =>
-      item.label.toLowerCase().includes(query.toLowerCase())
-    );
-  }, [query]);
+  const handleLogout = React.useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      console.error("logout_failed", error);
+    }
+  }, [router]);
 
   return (
-    <>
-      {/* ✅ Drawer sidebar mobile */}
-      {isMobileNavOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          {/* overlay */}
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setIsMobileNavOpen(false)}
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0b0f18]">
+      <div className="flex items-center gap-3 px-3 py-3 sm:px-5 lg:px-6">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="lg:hidden">
+              <Menu className="size-5" />
+            </Button>
+          </SheetTrigger>
+
+          <SheetContent side="left" className="w-[320px] border-white/10 bg-[#090c14] p-0">
+            <div className="border-b border-white/10 px-4 py-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">Navigation</p>
+              <p className="mt-1 text-sm font-semibold text-white">Oniix Superadmin</p>
+            </div>
+            <SidebarNav />
+          </SheetContent>
+        </Sheet>
+
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="hidden text-zinc-500 sm:inline">Oniix</span>
+            <ChevronRight className="hidden size-4 text-zinc-700 sm:inline" />
+            <span className="truncate font-semibold text-white">{route.label}</span>
+          </div>
+          <p className="hidden text-xs text-zinc-500 sm:block">{route.description}</p>
+        </div>
+
+        <form onSubmit={onSearchSubmit} className="relative ml-auto hidden w-full max-w-[460px] md:block">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Naviguer: tenants, streams, users, system..."
+            className="h-10 border-white/10 bg-white/5 pl-9 pr-16 text-sm"
           />
-          {/* panel */}
-          <div className="absolute left-0 top-0 h-full w-[280px] border-r border-white/10 bg-[#0A0B0D]">
-            <div className="flex items-center justify-between border-b border-white/10 px-3 py-3">
-              <div className="text-sm font-semibold text-zinc-100">Oniix</div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5"
-                onClick={() => setIsMobileNavOpen(false)}
-                aria-label="Fermer le menu"
-              >
-                <X className="h-5 w-5" />
+          <span className="pointer-events-none absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-zinc-400">
+            <Command className="size-3" />K
+          </span>
+        </form>
+
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="secondary"
+            className="hidden border border-emerald-500/25 bg-emerald-500/10 text-emerald-300 md:inline-flex"
+          >
+            Platform live
+          </Badge>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="hidden sm:inline-flex">
+                <Plus className="size-4" />
               </Button>
-            </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem asChild>
+                <Link href="/tenants">Nouveau tenant</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/users">Inviter un utilisateur</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/streams">Nouveau stream</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-            <div className="h-[calc(100%-52px)] overflow-y-auto">
-              <Sidebar />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/5 bg-zinc-950/80 px-4 sm:px-6 backdrop-blur-md transition-all">
-        {/* --- GAUCHE: hamburger + fil d'ariane --- */}
-        <div className="flex items-center gap-3 min-w-0">
-          {/* ✅ Hamburger mobile */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5"
-            onClick={() => setIsMobileNavOpen(true)}
-            aria-label="Ouvrir le menu"
-          >
-            <Menu className="h-5 w-5" />
+          <Button variant="outline" size="icon" className="hidden sm:inline-flex">
+            <Bell className="size-4" />
           </Button>
 
-          {/* --- FIL D'ARIANE --- */}
-          <div className="flex items-center gap-2 text-sm text-zinc-500 min-w-0">
-            <span
-              className="hover:text-zinc-300 transition-colors cursor-pointer truncate"
-              onClick={() => router.push("/")}
-            >
-              Oniix
-            </span>
-            <ChevronRight className="h-4 w-4 text-zinc-700 shrink-0" />
-            <span className="font-medium text-zinc-100 truncate">
-              {currentPage}
-            </span>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-10 gap-2 rounded-xl px-2 sm:px-3">
+                <Avatar className="size-8 border border-white/15">
+                  {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
+                  <AvatarFallback className="bg-primary/20 text-primary">
+                    {buildInitials(name, email)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden text-left sm:block">
+                  <span className="block text-xs font-semibold text-white">{name}</span>
+                  <span className="block text-[11px] text-zinc-500">{role}</span>
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem className="text-zinc-200">
+                <UserCircle2 className="mr-2 size-4" />
+                Mon profil
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-rose-300 focus:text-rose-200">
+                <LogOut className="mr-2 size-4" />
+                Deconnexion
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
-        {/* --- DROITE: actions --- */}
-        <div className="flex items-center gap-4">
-          {/* Déclencheur Recherche (desktop) */}
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            className="hidden md:flex items-center gap-2 rounded-md border border-white/5 bg-zinc-900/50 px-3 py-1.5 text-xs text-zinc-400 hover:border-zinc-700 hover:text-zinc-200 transition-all w-64 group"
-          >
-            <Search className="h-3.5 w-3.5 group-hover:text-indigo-400 transition-colors" />
-            <span className="flex-1 text-left">Rechercher...</span>
-            <div className="flex items-center gap-0.5 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 border border-white/5 group-hover:bg-zinc-700 group-hover:text-white transition-colors">
-              <CommandIcon className="h-2.5 w-2.5" />
-              <span>K</span>
-            </div>
-          </button>
-
-          {/* ✅ Recherche en mobile: icône */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden h-9 w-9 text-zinc-400 hover:text-white hover:bg-white/5"
-            onClick={() => setIsSearchOpen(true)}
-            aria-label="Rechercher"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-
-          <div className="h-6 w-px bg-white/10 mx-2 hidden md:block" />
-
-          <div className="flex items-center gap-2">
-            {/* Notifications Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-zinc-400 hover:text-white hover:bg-white/5 h-9 w-9 relative"
-                  aria-label="Notifications"
-                >
-                  <Bell className="h-5 w-5" />
-                  {NOTIFICATIONS.length > 0 && (
-                    <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 border border-zinc-950 animate-pulse" />
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-80 bg-zinc-950 border-zinc-800 text-zinc-100"
-              >
-                <DropdownMenuLabel className="flex justify-between items-center">
-                  Notifications
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] border-zinc-700 text-zinc-400"
-                  >
-                    {NOTIFICATIONS.length} nouvelles
-                  </Badge>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-zinc-800" />
-                <div className="max-h-[300px] overflow-y-auto">
-                  {NOTIFICATIONS.map((notif) => (
-                    <DropdownMenuItem
-                      key={notif.id}
-                      className="cursor-pointer focus:bg-zinc-900 p-3 flex flex-col items-start gap-1 border-b border-zinc-900 last:border-0"
-                    >
-                      <div className="flex justify-between w-full items-center">
-                        <span
-                          className={`text-xs font-bold ${
-                            notif.type === "error"
-                              ? "text-rose-400"
-                              : notif.type === "success"
-                              ? "text-emerald-400"
-                              : "text-blue-400"
-                          }`}
-                        >
-                          {notif.title}
-                        </span>
-                        <span className="text-[10px] text-zinc-500">
-                          {notif.time}
-                        </span>
-                      </div>
-                      <span className="text-xs text-zinc-400">
-                        {notif.desc}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-                <DropdownMenuSeparator className="bg-zinc-800" />
-                <DropdownMenuItem className="justify-center text-xs text-zinc-500 focus:text-white cursor-pointer focus:bg-zinc-900">
-                  Voir tout l'historique
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Aide Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-zinc-400 hover:text-white hover:bg-white/5 h-9 w-9"
-                  aria-label="Aide"
-                >
-                  <HelpCircle className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="bg-zinc-950 border-zinc-800 text-zinc-100"
-              >
-                <DropdownMenuItem className="cursor-pointer focus:bg-zinc-900">
-                  Documentation
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer focus:bg-zinc-900">
-                  Raccourcis Clavier
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer focus:bg-zinc-900 text-indigo-400">
-                  Contacter le Support
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
-
-      {/* --- COMMAND PALETTE (MODAL) --- */}
-      <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-        <DialogContent className="p-0 gap-0 bg-zinc-950 border-zinc-800 text-zinc-100 sm:max-w-[550px] overflow-hidden shadow-2xl shadow-black/50">
-          <div className="flex items-center border-b border-white/10 px-4 py-3">
-            <Search className="mr-2 h-5 w-5 text-zinc-500" />
-            <input
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-600"
-              placeholder="Tapez une commande ou cherchez..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              autoFocus
-            />
-            <div className="text-[10px] text-zinc-600 border border-zinc-800 rounded px-1.5 py-0.5">
-              ESC
-            </div>
-          </div>
-
-          <div className="max-h-[300px] overflow-y-auto p-2">
-            {filteredItems.length === 0 ? (
-              <div className="py-6 text-center text-sm text-zinc-500">
-                Aucun résultat pour "{query}"
-              </div>
-            ) : (
-              <>
-                <div className="mb-2 px-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                  Navigation Rapide
-                </div>
-                {filteredItems.map((item) => (
-                  <div
-                    key={item.href}
-                    onClick={() => handleNavigate(item.href)}
-                    className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm text-zinc-300 hover:bg-indigo-600 hover:text-white transition-colors group"
-                  >
-                    <item.icon className="h-4 w-4 text-zinc-500 group-hover:text-white/80" />
-                    <span>{item.label}</span>
-                    <ChevronRight className="ml-auto h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                ))}
-              </>
-            )}
-
-            {/* Actions rapides contextuelles (Exemple) */}
-            <div className="mt-4 mb-2 px-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-t border-white/5 pt-2">
-              Actions
-            </div>
-            <div
-              onClick={() => {
-                /* Logique déconnexion */
-              }}
-              className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm text-rose-400 hover:bg-rose-500/10 hover:bg-rose-900/30 transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Se déconnecter</span>
-            </div>
-          </div>
-
-          <div className="border-t border-white/5 bg-zinc-900/50 px-4 py-2 text-[10px] text-zinc-500 flex justify-between">
-            <span>Utilisez les flèches pour naviguer</span>
-            <span>Oniix Admin v2.1</span>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+      </div>
+    </header>
   );
 }
+

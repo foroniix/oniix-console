@@ -92,6 +92,60 @@ export type Vod = {
   channel?: { name: string; logo: string | null; category: string };
 };
 
+export type ProgramStatus = "draft" | "scheduled" | "published" | "cancelled";
+export type ProgramSlotStatus = "scheduled" | "published" | "cancelled";
+export type ProgramSlotVisibility = "public" | "private";
+export type ReplayStatus = "draft" | "ready" | "published" | "archived";
+
+export type Program = {
+  id: string;
+  channelId?: string | null;
+  title: string;
+  synopsis?: string | null;
+  category?: string | null;
+  poster?: string | null;
+  tags?: string[];
+  status: ProgramStatus;
+  publishedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  channel?: { id: string; name: string; logo: string | null; category: string };
+};
+
+export type ProgramSlot = {
+  id: string;
+  programId: string;
+  channelId?: string | null;
+  startsAt: string;
+  endsAt?: string | null;
+  slotStatus: ProgramSlotStatus;
+  visibility: ProgramSlotVisibility;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  program?: { id: string; title: string; poster?: string | null; status: ProgramStatus };
+  channel?: { id: string; name: string; logo: string | null; category: string };
+};
+
+export type Replay = {
+  id: string;
+  streamId?: string | null;
+  channelId?: string | null;
+  title: string;
+  synopsis?: string | null;
+  hlsUrl?: string | null;
+  poster?: string | null;
+  durationSec?: number | null;
+  replayStatus: ReplayStatus;
+  availableFrom?: string | null;
+  availableTo?: string | null;
+  geo?: { allow: string[]; block: string[] };
+  createdAt?: string;
+  updatedAt?: string;
+  stream?: { id: string; title: string; status: string };
+  channel?: { id: string; name: string; logo: string | null; category: string };
+};
+
 export type Activity = {
   id: string;
   title: string;
@@ -199,6 +253,90 @@ const mapVod = (v: any): Vod => ({
   sourceStreamId: v.source_stream_id ?? v.sourceStreamId ?? null,
   createdAt: v.created_at ?? v.createdAt,
   channel: v.channel,
+});
+
+const mapProgram = (p: any): Program => ({
+  id: p.id,
+  channelId: p.channel_id ?? p.channelId ?? null,
+  title: p.title,
+  synopsis: p.synopsis ?? null,
+  category: p.category ?? null,
+  poster: p.poster ?? null,
+  tags: p.tags ?? [],
+  status: p.status ?? "draft",
+  publishedAt: p.published_at ?? p.publishedAt ?? null,
+  createdAt: p.created_at ?? p.createdAt,
+  updatedAt: p.updated_at ?? p.updatedAt,
+  channel: p.channel,
+});
+
+const mapProgramSlot = (s: any): ProgramSlot => ({
+  id: s.id,
+  programId: s.program_id ?? s.programId,
+  channelId: s.channel_id ?? s.channelId ?? null,
+  startsAt: s.starts_at ?? s.startsAt,
+  endsAt: s.ends_at ?? s.endsAt ?? null,
+  slotStatus: s.slot_status ?? s.slotStatus ?? "scheduled",
+  visibility: s.visibility ?? "public",
+  notes: s.notes ?? null,
+  createdAt: s.created_at ?? s.createdAt,
+  updatedAt: s.updated_at ?? s.updatedAt,
+  program: s.program,
+  channel: s.channel,
+});
+
+const mapReplay = (r: any): Replay => ({
+  id: r.id,
+  streamId: r.stream_id ?? r.streamId ?? null,
+  channelId: r.channel_id ?? r.channelId ?? null,
+  title: r.title,
+  synopsis: r.synopsis ?? null,
+  hlsUrl: r.hls_url ?? r.hlsUrl ?? null,
+  poster: r.poster ?? null,
+  durationSec: r.duration_sec ?? r.durationSec ?? null,
+  replayStatus: r.replay_status ?? r.replayStatus ?? "draft",
+  availableFrom: r.available_from ?? r.availableFrom ?? null,
+  availableTo: r.available_to ?? r.availableTo ?? null,
+  geo: r.geo ?? { allow: [], block: [] },
+  createdAt: r.created_at ?? r.createdAt,
+  updatedAt: r.updated_at ?? r.updatedAt,
+  stream: r.stream,
+  channel: r.channel,
+});
+
+const toBodyProgram = (p: Partial<Program>) => ({
+  ...(p.channelId !== undefined ? { channelId: p.channelId } : {}),
+  ...(p.title !== undefined ? { title: p.title } : {}),
+  ...(p.synopsis !== undefined ? { synopsis: p.synopsis } : {}),
+  ...(p.category !== undefined ? { category: p.category } : {}),
+  ...(p.poster !== undefined ? { poster: p.poster } : {}),
+  ...(p.tags !== undefined ? { tags: p.tags } : {}),
+  ...(p.status !== undefined ? { status: p.status } : {}),
+  ...(p.publishedAt !== undefined ? { publishedAt: p.publishedAt } : {}),
+});
+
+const toBodyProgramSlot = (s: Partial<ProgramSlot>) => ({
+  ...(s.programId !== undefined ? { programId: s.programId } : {}),
+  ...(s.channelId !== undefined ? { channelId: s.channelId } : {}),
+  ...(s.startsAt !== undefined ? { startsAt: s.startsAt } : {}),
+  ...(s.endsAt !== undefined ? { endsAt: s.endsAt } : {}),
+  ...(s.slotStatus !== undefined ? { slotStatus: s.slotStatus } : {}),
+  ...(s.visibility !== undefined ? { visibility: s.visibility } : {}),
+  ...(s.notes !== undefined ? { notes: s.notes } : {}),
+});
+
+const toBodyReplay = (r: Partial<Replay>) => ({
+  ...(r.streamId !== undefined ? { streamId: r.streamId } : {}),
+  ...(r.channelId !== undefined ? { channelId: r.channelId } : {}),
+  ...(r.title !== undefined ? { title: r.title } : {}),
+  ...(r.synopsis !== undefined ? { synopsis: r.synopsis } : {}),
+  ...(r.hlsUrl !== undefined ? { hlsUrl: r.hlsUrl } : {}),
+  ...(r.poster !== undefined ? { poster: r.poster } : {}),
+  ...(r.durationSec !== undefined ? { durationSec: r.durationSec } : {}),
+  ...(r.replayStatus !== undefined ? { replayStatus: r.replayStatus } : {}),
+  ...(r.availableFrom !== undefined ? { availableFrom: r.availableFrom } : {}),
+  ...(r.availableTo !== undefined ? { availableTo: r.availableTo } : {}),
+  ...(r.geo !== undefined ? { geo: r.geo } : {}),
 });
 
 // ==========================================
@@ -345,13 +483,35 @@ export async function removeMarker(streamId: string, at: number | string) {
   );
 }
 
-export async function endLiveAndCreateReplay(id: string, opts?: { title?: string; durationSec?: number; thumb?: string }) {
+export async function endLiveAndCreateReplay(
+  id: string,
+  opts?: {
+    title?: string;
+    synopsis?: string;
+    hlsUrl?: string;
+    durationSec?: number;
+    poster?: string;
+    thumb?: string;
+    replayStatus?: ReplayStatus;
+    availableFrom?: string;
+    availableTo?: string;
+  }
+) {
   const sid = guardId(id, "endLiveAndCreateReplay");
   return j(
-    await fetch(`/api/streams/${encodeURIComponent(sid)}/end`, {
+    await fetch(`/api/streams/${encodeURIComponent(sid)}/replay`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(opts || {}),
+      body: JSON.stringify({
+        title: opts?.title,
+        synopsis: opts?.synopsis,
+        hlsUrl: opts?.hlsUrl,
+        durationSec: opts?.durationSec,
+        poster: opts?.poster ?? opts?.thumb ?? null,
+        replayStatus: opts?.replayStatus,
+        availableFrom: opts?.availableFrom,
+        availableTo: opts?.availableTo,
+      }),
     })
   );
 }
@@ -386,6 +546,168 @@ export async function upsertVod(v: Partial<Vod> & { id?: string }): Promise<Vod>
     : await j(await fetch(`/api/vod`, { method: "POST", headers, body }));
 
   return mapVod(row);
+}
+
+// --- Programs ---
+export async function listPrograms(filter?: {
+  status?: ProgramStatus;
+  channelId?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+}): Promise<Program[]> {
+  const qs = new URLSearchParams();
+  if (filter?.status) qs.set("status", filter.status);
+  if (filter?.channelId) qs.set("channelId", filter.channelId);
+  if (filter?.search) qs.set("search", filter.search);
+  if (filter?.from) qs.set("from", filter.from);
+  if (filter?.to) qs.set("to", filter.to);
+  if (typeof filter?.limit === "number") qs.set("limit", String(filter.limit));
+  const rows = await j(await fetch(`/api/programs?${qs}`, { cache: "no-store" }));
+  return (rows as any[]).map(mapProgram);
+}
+
+export async function upsertProgram(p: Partial<Program> & { id?: string }): Promise<Program> {
+  const headers = { "content-type": "application/json" };
+  const body = JSON.stringify(toBodyProgram(p));
+
+  const row = p.id
+    ? await j(
+        await fetch(`/api/programs/${encodeURIComponent(guardId(p.id, "upsertProgram"))}`, {
+          method: "PATCH",
+          headers,
+          body,
+        })
+      )
+    : await j(await fetch(`/api/programs`, { method: "POST", headers, body }));
+
+  return mapProgram(row);
+}
+
+export async function publishProgram(id: string): Promise<Program> {
+  const sid = guardId(id, "publishProgram");
+  const row = await j(
+    await fetch(`/api/programs/${encodeURIComponent(sid)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "published" }),
+    })
+  );
+  return mapProgram(row);
+}
+
+export async function removeProgram(id: string) {
+  const sid = guardId(id, "removeProgram");
+  return j(await fetch(`/api/programs/${encodeURIComponent(sid)}`, { method: "DELETE" }));
+}
+
+// --- Program Slots ---
+export async function listProgramSlots(filter?: {
+  programId?: string;
+  channelId?: string;
+  status?: ProgramSlotStatus;
+  visibility?: ProgramSlotVisibility;
+  from?: string;
+  to?: string;
+  limit?: number;
+}): Promise<ProgramSlot[]> {
+  const qs = new URLSearchParams();
+  if (filter?.programId) qs.set("programId", filter.programId);
+  if (filter?.channelId) qs.set("channelId", filter.channelId);
+  if (filter?.status) qs.set("status", filter.status);
+  if (filter?.visibility) qs.set("visibility", filter.visibility);
+  if (filter?.from) qs.set("from", filter.from);
+  if (filter?.to) qs.set("to", filter.to);
+  if (typeof filter?.limit === "number") qs.set("limit", String(filter.limit));
+  const rows = await j(await fetch(`/api/program-slots?${qs}`, { cache: "no-store" }));
+  return (rows as any[]).map(mapProgramSlot);
+}
+
+export async function upsertProgramSlot(s: Partial<ProgramSlot> & { id?: string }): Promise<ProgramSlot> {
+  const headers = { "content-type": "application/json" };
+  const body = JSON.stringify(toBodyProgramSlot(s));
+
+  const row = s.id
+    ? await j(
+        await fetch(`/api/program-slots/${encodeURIComponent(guardId(s.id, "upsertProgramSlot"))}`, {
+          method: "PATCH",
+          headers,
+          body,
+        })
+      )
+    : await j(await fetch(`/api/program-slots`, { method: "POST", headers, body }));
+
+  return mapProgramSlot(row);
+}
+
+export async function publishProgramSlot(id: string): Promise<ProgramSlot> {
+  const sid = guardId(id, "publishProgramSlot");
+  const row = await j(
+    await fetch(`/api/program-slots/${encodeURIComponent(sid)}/publish`, {
+      method: "POST",
+    })
+  );
+  return mapProgramSlot(row);
+}
+
+export async function removeProgramSlot(id: string) {
+  const sid = guardId(id, "removeProgramSlot");
+  return j(await fetch(`/api/program-slots/${encodeURIComponent(sid)}`, { method: "DELETE" }));
+}
+
+// --- Replays ---
+export async function listReplays(filter?: {
+  status?: ReplayStatus;
+  channelId?: string;
+  streamId?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+}): Promise<Replay[]> {
+  const qs = new URLSearchParams();
+  if (filter?.status) qs.set("status", filter.status);
+  if (filter?.channelId) qs.set("channelId", filter.channelId);
+  if (filter?.streamId) qs.set("streamId", filter.streamId);
+  if (filter?.search) qs.set("search", filter.search);
+  if (filter?.from) qs.set("from", filter.from);
+  if (filter?.to) qs.set("to", filter.to);
+  if (typeof filter?.limit === "number") qs.set("limit", String(filter.limit));
+  const rows = await j(await fetch(`/api/replays?${qs}`, { cache: "no-store" }));
+  return (rows as any[]).map(mapReplay);
+}
+
+export async function upsertReplay(r: Partial<Replay> & { id?: string }): Promise<Replay> {
+  const headers = { "content-type": "application/json" };
+  const body = JSON.stringify(toBodyReplay(r));
+
+  const row = r.id
+    ? await j(
+        await fetch(`/api/replays/${encodeURIComponent(guardId(r.id, "upsertReplay"))}`, {
+          method: "PATCH",
+          headers,
+          body,
+        })
+      )
+    : await j(await fetch(`/api/replays`, { method: "POST", headers, body }));
+
+  return mapReplay(row);
+}
+
+export async function publishReplay(id: string): Promise<Replay> {
+  const sid = guardId(id, "publishReplay");
+  const row = await j(
+    await fetch(`/api/replays/${encodeURIComponent(sid)}/publish`, {
+      method: "POST",
+    })
+  );
+  return mapReplay(row);
+}
+
+export async function removeReplay(id: string) {
+  const sid = guardId(id, "removeReplay");
+  return j(await fetch(`/api/replays/${encodeURIComponent(sid)}`, { method: "DELETE" }));
 }
 
 // --- Users ---

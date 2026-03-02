@@ -26,7 +26,7 @@ function deviceHint() {
 }
 
 /**
- * Envoie un heartbeat toutes les 15s avec stream_id.
+ * Envoie START + heartbeats toutes les 15s + STOP au cleanup.
  * Appelle ce hook dans le composant Player.
  */
 export function useStreamHeartbeat(streamId: string | null | undefined, opts?: { intervalSec?: number }) {
@@ -39,8 +39,8 @@ export function useStreamHeartbeat(streamId: string | null | undefined, opts?: {
 
     let stopped = false;
 
-    const send = async () => {
-      if (stopped) return;
+    const send = async (kind: "START" | "HEARTBEAT" | "STOP", force = false) => {
+      if (stopped && !force) return;
       try {
         await fetch("/api/analytics/heartbeat", {
           method: "POST",
@@ -49,6 +49,7 @@ export function useStreamHeartbeat(streamId: string | null | undefined, opts?: {
             session_id: sessionId,
             stream_id: streamId,
             device: deviceHint(),
+            kind,
           }),
         });
       } catch {
@@ -56,11 +57,14 @@ export function useStreamHeartbeat(streamId: string | null | undefined, opts?: {
       }
     };
 
-    // immediate
-    send();
+    // immediate start
+    void send("START");
 
-    const t = setInterval(send, intervalSec * 1000);
+    const t = setInterval(() => {
+      void send("HEARTBEAT");
+    }, intervalSec * 1000);
     return () => {
+      void send("STOP", true);
       stopped = true;
       clearInterval(t);
     };

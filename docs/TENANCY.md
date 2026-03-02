@@ -19,6 +19,14 @@
 
 ## Migration (reference)
 See `docs/migrations/tenant_memberships.sql` and adjust foreign keys to your schema.
+For mobile analytics ingest key rotation, apply `docs/migrations/tenant_ingest_keys.sql`.
+For realtime audience snapshots, apply `docs/migrations/viewer_sessions_live.sql`.
+For mobile program grid integration, see `docs/MOBILE_PROGRAM_GRID.md`.
+
+## Mobile analytics auth (SaaS-friendly)
+- Recommended: short-lived ingest tokens from `POST /api/mobile/ingest-token`.
+- Tenant users do not need to manually generate/rotate keys for basic stats.
+- Legacy `x-oniix-ingest` key flow remains supported as fallback.
 
 ## RLS alignment
 Use a single function to read the tenant id from the JWT and reuse it in policies.

@@ -3,286 +3,175 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  Activity,
-  Tv,
-  Signal,
-  Megaphone,
-  Target,
-  Banknote,
-  Users,
-  Settings,
-  LogOut,
-  Radio,
-} from "lucide-react";
+import { LogOut, Sparkles, Tv2 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { NAV_SECTIONS, isRouteActive } from "@/components/layout/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-
-type Role = string;
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  allowedRoles?: Role[];
-};
-
-type NavSection = {
-  title?: string;
-  items: NavItem[];
-};
-
-const SECTIONS: NavSection[] = [
-  {
-    items: [
-      { href: "/", label: "Vue d'ensemble", icon: LayoutDashboard },
-      { href: "/activities", label: "Activités", icon: Activity },
-    ],
-  },
-  {
-    title: "Broadcast",
-    items: [
-      { href: "/channels", label: "Chaînes TV", icon: Tv },
-      { href: "/streams", label: "Flux & Signaux", icon: Signal },
-    ],
-  },
-  {
-    title: "Monétisation",
-    items: [
-      {
-        href: "/ads",
-        label: "Publicités",
-        icon: Megaphone,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
-      },
-      {
-        href: "/ads/campaigns",
-        label: "Campagnes",
-        icon: Target,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
-      },
-      {
-        href: "/revenue",
-        label: "Revenus",
-        icon: Banknote,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
-      },
-    ],
-  },
-  {
-    title: "Administration",
-    items: [
-      {
-        href: "/users",
-        label: "Utilisateurs",
-        icon: Users,
-        allowedRoles: ["owner", "admin", "tenant_admin", "superadmin"],
-      },
-      {
-        href: "/settings",
-        label: "Configuration",
-        icon: Settings,
-        allowedRoles: ["member", "admin", "owner", "tenant_admin", "superadmin"],
-      },
-    ],
-  },
-];
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type MeResponse =
   | {
       ok: true;
       user: {
-        id: string;
         email?: string | null;
-        role?: string | null;
         full_name?: string | null;
+        role?: string | null;
         avatar_url?: string | null;
       };
     }
-  | { ok: false; error: string };
-
-type TenantResponse =
-  | { ok: true; tenant: { id: string; name: string } }
   | { ok: false; error?: string };
 
-function initialsFromNameOrEmail(name?: string | null, email?: string | null) {
-  const base = (name && name.trim().length ? name : email || "Utilisateur").trim();
-  const parts = base.split(/\s+/).filter(Boolean);
-  const a = (parts[0]?.[0] || "U").toUpperCase();
-  const b = (parts[1]?.[0] || parts[0]?.[1] || "").toUpperCase();
-  return (a + b).trim();
+function buildInitials(name?: string | null, email?: string | null) {
+  const source = String(name || email || "SA").trim();
+  if (!source) return "SA";
+  const parts = source.split(/\s+/).filter(Boolean);
+  const a = (parts[0]?.[0] ?? "S").toUpperCase();
+  const b = (parts[1]?.[0] ?? parts[0]?.[1] ?? "A").toUpperCase();
+  return `${a}${b}`;
 }
 
-type SidebarProps = {
-  inDrawer?: boolean;
-  onNavigate?: () => void;
-};
-
-export default function Sidebar({ inDrawer = false, onNavigate }: SidebarProps) {
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const router = useRouter();
 
-  const [role, setRole] = React.useState("");
-  const [fullName, setFullName] = React.useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
-  const [userEmail, setUserEmail] = React.useState("");
-  const [tenantName, setTenantName] = React.useState("");
+  return (
+    <nav className="flex min-h-0 flex-1 flex-col gap-7 overflow-y-auto px-4 pb-6 pt-5">
+      {NAV_SECTIONS.map((section) => (
+        <div key={section.title} className="space-y-2">
+          <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            {section.title}
+          </p>
 
-  const currentRole = React.useMemo(() => (role || "member").toLowerCase(), [role]);
-  const initials = React.useMemo(
-    () => initialsFromNameOrEmail(fullName, userEmail),
-    [fullName, userEmail]
+          <div className="space-y-1.5">
+            {section.items.map((item) => {
+              const active = isRouteActive(pathname, item.href);
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-2xl border px-3 py-3 transition-all duration-200",
+                    active
+                      ? "border-primary/40 bg-primary/15 text-white shadow-[0_18px_40px_-28px_hsl(var(--primary)/0.9)]"
+                      : "border-transparent bg-transparent text-zinc-300 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-flex size-9 items-center justify-center rounded-xl border transition-colors",
+                      active
+                        ? "border-primary/30 bg-primary/15 text-primary"
+                        : "border-white/10 bg-white/5 text-zinc-500 group-hover:text-zinc-200"
+                    )}
+                  >
+                    <Icon className="size-4" />
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">{item.label}</span>
+                    <span className="block truncate text-xs text-zinc-500">{item.description}</span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
   );
+}
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-
-  const visibleSections = React.useMemo(() => {
-    return SECTIONS.map((s) => ({
-      ...s,
-      items: s.items.filter((item) => {
-        if (!item.allowedRoles || item.allowedRoles.length === 0) return true;
-        return item.allowedRoles.map((r) => String(r).toLowerCase()).includes(currentRole);
-      }),
-    })).filter((s) => s.items.length > 0);
-  }, [currentRole]);
+function SidebarFooter() {
+  const router = useRouter();
+  const [name, setName] = React.useState("Super Admin");
+  const [email, setEmail] = React.useState<string | null>(null);
+  const [role, setRole] = React.useState<string>("superadmin");
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [meRes, tenantRes] = await Promise.all([
-          fetch("/api/auth/me", { cache: "no-store" }),
-          fetch("/api/settings/tenant", { cache: "no-store" }),
-        ]);
-
-        const meJson = (await meRes.json().catch(() => null)) as MeResponse | null;
-        const tenantJson = (await tenantRes.json().catch(() => null)) as TenantResponse | null;
-
-        if (!mounted) return;
-
-        if (meRes.ok && meJson && "ok" in meJson && meJson.ok) {
-          setUserEmail(meJson.user.email || "");
-          setRole(meJson.user.role || "");
-          setFullName(meJson.user.full_name ?? null);
-          setAvatarUrl(meJson.user.avatar_url ?? null);
-        }
-
-        if (tenantRes.ok && tenantJson && "ok" in tenantJson && tenantJson.ok) {
-          setTenantName(tenantJson.tenant?.name ?? "");
-        }
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const json = (await res.json().catch(() => null)) as MeResponse | null;
+        if (!mounted || !res.ok || !json || !("ok" in json) || !json.ok) return;
+        setName(json.user.full_name?.trim() || "Super Admin");
+        setEmail(json.user.email?.trim() || null);
+        setRole((json.user.role?.trim() || "superadmin").toLowerCase());
+        setAvatarUrl(json.user.avatar_url?.trim() || null);
       } catch {
-        // ignore
+        // ignore profile fetch errors
       }
     })();
-
     return () => {
       mounted = false;
     };
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = React.useCallback(async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      onNavigate?.();
       router.push("/login");
       router.refresh();
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error("logout_failed", error);
     }
-  };
+  }, [router]);
 
   return (
-    <aside
-      className={cn(
-        // ✅ Grid = footer garanti visible
-        "grid h-dvh w-[240px] grid-rows-[auto,1fr,auto] bg-zinc-950 text-zinc-100",
-        !inDrawer && "border-r border-white/5"
-      )}
-    >
-      {/* HEADER (plus compact) */}
-      <div className="h-12 px-3 flex items-center gap-3 border-b border-white/5">
-        <div className="h-8 w-8 rounded-xl bg-indigo-600/90 ring-1 ring-white/10 flex items-center justify-center">
-          <Radio className="h-4 w-4 text-white" />
-        </div>
-        <div className="min-w-0 leading-tight">
-          <div className="text-sm font-semibold truncate">ONIIX Partner</div>
-          <div className="text-[10px] text-zinc-500 truncate">Control Center</div>
-        </div>
-      </div>
+    <div className="border-t border-white/10 p-4">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div className="flex items-center gap-3">
+          <Avatar className="size-10 border border-white/15">
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
+            <AvatarFallback className="bg-primary/20 text-primary">
+              {buildInitials(name, email)}
+            </AvatarFallback>
+          </Avatar>
 
-      {/* MENU (contraint, pas de scroll, ne pousse jamais le footer) */}
-      <div className="min-h-0 overflow-hidden px-2 py-2">
-        <div className="space-y-2">
-          {visibleSections.map((section, idx) => (
-            <div key={idx} className="space-y-1">
-              {section.title ? (
-                <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                  {section.title}
-                </div>
-              ) : null}
-
-              <nav className="space-y-1">
-                {section.items.map((item) => {
-                  const active = isActive(item.href);
-                  const Icon = item.icon;
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => onNavigate?.()}
-                      className={cn(
-                        // ✅ moins haut, moins d’espace
-                        "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition",
-                        active
-                          ? "bg-white/10 text-white ring-1 ring-white/10"
-                          : "text-zinc-300/85 hover:text-white hover:bg-white/5"
-                      )}
-                    >
-                      <Icon className={cn("h-4 w-4", active ? "text-indigo-200" : "text-zinc-500")} />
-                      <span className="truncate font-medium">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* FOOTER (toujours visible) */}
-      <div className="px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <Separator className="bg-white/5 my-2" />
-
-        <div className="rounded-xl border border-white/10 bg-white/5 px-2 py-2">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8 border border-white/10">
-              {avatarUrl ? <AvatarImage src={avatarUrl} alt={userEmail || "User"} /> : null}
-              <AvatarFallback className="bg-zinc-900 text-zinc-200 text-[11px] font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-
-            <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold truncate">{tenantName || "Organisation"}</div>
-              <div className="text-[11px] text-zinc-500 truncate">{userEmail || "—"}</div>
-            </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-white">{name}</p>
+            <p className="truncate text-xs text-zinc-400">{role} control plane</p>
           </div>
-
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="mt-2 h-8 w-full justify-start px-2 text-rose-300 hover:text-rose-200 hover:bg-rose-500/10"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Déconnexion
-          </Button>
         </div>
+
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="mt-3 w-full justify-start border border-transparent text-rose-300 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-200"
+        >
+          <LogOut className="mr-2 size-4" />
+          Deconnexion
+        </Button>
       </div>
+    </div>
+  );
+}
+
+export default function Sidebar() {
+  return (
+    <aside className="hidden h-[calc(100vh-2rem)] w-[306px] shrink-0 flex-col overflow-hidden rounded-[24px] border border-white/10 bg-[#0b0f18] lg:flex">
+      <div className="border-b border-white/10 p-5">
+        <Link href="/dashboard" className="group flex items-center gap-3">
+          <span className="inline-flex size-12 items-center justify-center rounded-2xl border border-primary/35 bg-primary/15 shadow-[0_18px_40px_-24px_hsl(var(--primary)/0.85)]">
+            <Tv2 className="size-5 text-primary" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-base font-bold text-white">Oniix Superadmin</span>
+            <span className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-400">
+              <Sparkles className="size-3.5 text-primary" />
+              SaaS broadcast control plane
+            </span>
+          </span>
+        </Link>
+      </div>
+
+      <SidebarNav />
+      <SidebarFooter />
     </aside>
   );
 }
+

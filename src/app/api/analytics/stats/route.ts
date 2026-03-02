@@ -2,11 +2,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
-import { supabaseUser } from "../../_utils/supabase";
+import { supabaseAdmin } from "../../_utils/supabase";
 import { parseQuery } from "../../_utils/validate";
+import { resolveAnalyticsStreamFilter } from "../../_utils/analytics-stream-filter";
+import {
+  buildLiveSnapshotFromEvents,
+  getViewerLiveSnapshot,
+  type ViewerLiveEventRow,
+} from "../../_utils/viewer-live";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+const HEARTBEAT_SECONDS = 15;
+const LIVE_WINDOW_SEC = 35;
 
 interface AnalyticsEvent {
   created_at: string;
@@ -14,6 +22,28 @@ interface AnalyticsEvent {
   stream_id: string | null;
   session_id: string;
   event_type: string;
+}
+
+function normalizeEventType(eventType: string | null | undefined) {
+  return (eventType ?? "").trim().toUpperCase();
+}
+
+function buildEmptyResponse() {
+  return {
+    traffic: [] as { time: string; viewers: number }[],
+    devices: [] as { name: string; value: number }[],
+    kpi: {
+      totalUsers: 0,
+      totalEvents: 0,
+      watchTime: 0,
+      users: 0,
+      events: 0,
+      watchTimeLabel: "0m",
+      retention: 0,
+    },
+    recentEvents: [] as { message: string; time: string }[],
+    live: { activeUsers: 0, currentStreams: {} as Record<string, number> },
+  };
 }
 
 export async function GET(req: Request) {
@@ -28,12 +58,14 @@ export async function GET(req: Request) {
       req,
       z.object({
         period: z.string().optional(),
+        channelId: z.string().optional(),
+        streamId: z.string().optional(),
       })
     );
     if (!query.ok) return query.res;
     const period = query.data.period || "24h";
 
-    const supa = supabaseUser(ctx.accessToken);
+    const supa = supabaseAdmin();
     const now = new Date();
     const startTime = new Date();
 
@@ -41,20 +73,69 @@ export async function GET(req: Request) {
     else if (period === "7d") startTime.setDate(now.getDate() - 7);
     else if (period === "30d") startTime.setDate(now.getDate() - 30);
 
-    const liveThreshold = new Date(Date.now() - 30 * 1000).toISOString();
+    const filterRes = await resolveAnalyticsStreamFilter(supa, {
+      tenantId: ctx.tenantId,
+      channelId: query.data.channelId ?? null,
+      streamId: query.data.streamId ?? null,
+    });
+    if (!filterRes.ok) {
+      console.error("Analytics stats filter error", {
+        error: filterRes.error,
+        code: filterRes.code ?? null,
+        tenantId: ctx.tenantId,
+      });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
+    const streamFilter = filterRes.filter;
 
-    const [historicalRes, liveRes] = await Promise.all([
-      supa
-        .from("analytics_events")
-        .select("created_at, device_type, stream_id, session_id, event_type")
-        .eq("tenant_id", ctx.tenantId)
-        .gte("created_at", startTime.toISOString())
-        .order("created_at", { ascending: true }),
-      supa
-        .from("analytics_events")
-        .select("session_id")
-        .eq("tenant_id", ctx.tenantId)
-        .gte("created_at", liveThreshold),
+    if (streamFilter.mode === "none") {
+      const liveSnapshotRes = await getViewerLiveSnapshot(supa, {
+        tenantId: ctx.tenantId,
+        windowSec: LIVE_WINDOW_SEC,
+        expireStale: true,
+        streamIds: [],
+      });
+      const payload = buildEmptyResponse();
+      if (liveSnapshotRes.ok) {
+        payload.live = {
+          activeUsers: liveSnapshotRes.snapshot.activeUsers,
+          currentStreams: liveSnapshotRes.snapshot.currentStreams,
+        };
+      }
+      return NextResponse.json(payload);
+    }
+
+    const liveThreshold = new Date(Date.now() - LIVE_WINDOW_SEC * 1000).toISOString();
+
+    let historicalQuery = supa
+      .from("analytics_events")
+      .select("created_at, device_type, stream_id, session_id, event_type")
+      .eq("tenant_id", ctx.tenantId)
+      .gte("created_at", startTime.toISOString());
+
+    let liveQuery = supa
+      .from("analytics_events")
+      .select("created_at, session_id, stream_id, event_type")
+      .eq("tenant_id", ctx.tenantId)
+      .gte("created_at", liveThreshold);
+
+    if (streamFilter.mode === "ids" && streamFilter.streamIds.length === 1) {
+      historicalQuery = historicalQuery.eq("stream_id", streamFilter.streamIds[0]);
+      liveQuery = liveQuery.eq("stream_id", streamFilter.streamIds[0]);
+    } else if (streamFilter.mode === "ids" && streamFilter.streamIds.length > 1) {
+      historicalQuery = historicalQuery.in("stream_id", streamFilter.streamIds);
+      liveQuery = liveQuery.in("stream_id", streamFilter.streamIds);
+    }
+
+    const [historicalRes, liveRes, liveSnapshotRes] = await Promise.all([
+      historicalQuery.order("created_at", { ascending: true }),
+      liveQuery.order("created_at", { ascending: true }),
+      getViewerLiveSnapshot(supa, {
+        tenantId: ctx.tenantId,
+        windowSec: LIVE_WINDOW_SEC,
+        expireStale: true,
+        streamIds: streamFilter.mode === "ids" ? streamFilter.streamIds : undefined,
+      }),
     ]);
 
     if (historicalRes.error || liveRes.error) {
@@ -67,17 +148,30 @@ export async function GET(req: Request) {
     }
 
     const events = (historicalRes.data || []) as AnalyticsEvent[];
-    const liveEvents = (liveRes.data || []) as Partial<AnalyticsEvent>[];
+    const liveEvents = (liveRes.data || []) as ViewerLiveEventRow[];
+    const fallbackLiveSnapshot = buildLiveSnapshotFromEvents(liveEvents, {
+      windowSec: LIVE_WINDOW_SEC,
+    });
+    const liveSnapshot = liveSnapshotRes.ok ? liveSnapshotRes.snapshot : fallbackLiveSnapshot;
+    if (!liveSnapshotRes.ok && !liveSnapshotRes.tableMissing) {
+      console.error("Analytics stats live snapshot error", {
+        error: liveSnapshotRes.error ?? "unknown",
+        code: liveSnapshotRes.code ?? null,
+        tenantId: ctx.tenantId,
+      });
+    }
 
     const uniqueSessions = new Set(events.map((e) => e.session_id));
-    const activeUsersNow = new Set(liveEvents.map((e) => e.session_id)).size;
+    const activeUsersNow = liveSnapshot.activeUsers;
 
-    const heartbeats = events.filter((e) => e.event_type === "HEARTBEAT").length;
-    const totalMinutes = Math.round((heartbeats * 30) / 60);
+    const heartbeats = events.filter((e) => normalizeEventType(e.event_type) === "HEARTBEAT").length;
+    const totalMinutes = Math.round((heartbeats * HEARTBEAT_SECONDS) / 60);
     const watchTimeStr =
       totalMinutes > 60
         ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
         : `${totalMinutes}m`;
+
+    const currentStreams = liveSnapshot.currentStreams;
 
     const sessionActivity: Record<string, number> = {};
     events.forEach((e) => {
@@ -121,9 +215,10 @@ export async function GET(req: Request) {
       .reverse()
       .map((e) => {
         let message = "Interaction détectée";
-        if (e.event_type === "START_STREAM") message = "Nouveau visionnage";
-        else if (e.event_type === "HEARTBEAT") message = "Spectateur actif";
-        else if (e.event_type === "ERROR") message = "Erreur de lecture";
+        const normalizedType = normalizeEventType(e.event_type);
+        if (normalizedType === "START_STREAM") message = "Nouveau visionnage";
+        else if (normalizedType === "HEARTBEAT") message = "Spectateur actif";
+        else if (normalizedType === "ERROR") message = "Erreur de lecture";
         return {
           message,
           time: new Date(e.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -133,11 +228,19 @@ export async function GET(req: Request) {
     return NextResponse.json({
       traffic,
       devices,
-      kpi: { users: uniqueSessions.size, events: events.length, watchTime: watchTimeStr, retention: retentionRate },
+      kpi: {
+        totalUsers: uniqueSessions.size,
+        totalEvents: events.length,
+        watchTime: totalMinutes,
+        users: uniqueSessions.size,
+        events: events.length,
+        watchTimeLabel: watchTimeStr,
+        retention: retentionRate,
+      },
       recentEvents,
-      live: { activeUsers: activeUsersNow },
+      live: { activeUsers: activeUsersNow, currentStreams },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("API Analytics Error:", error);
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }

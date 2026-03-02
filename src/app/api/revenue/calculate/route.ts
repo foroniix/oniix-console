@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       .from("analytics_events")
       .select("stream_id")
       .eq("tenant_id", ctx.tenantId)
-      .eq("event_type", "HEARTBEAT")
+      .ilike("event_type", "heartbeat")
       .gte("created_at", start.toISOString())
       .lte("created_at", end.toISOString());
 
