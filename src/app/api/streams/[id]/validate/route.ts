@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { requireAuth, requireTenant } from "../../../../_utils/auth";
-import { auditLog } from "../../../../_utils/audit";
-import { supabaseUser } from "../../../../_utils/supabase";
+import { requireAuth, requireTenant } from "../../../_utils/auth";
+import { auditLog } from "../../../_utils/audit";
+import { supabaseUser } from "../../../_utils/supabase";
 
 type Params = { params: Promise<{ id: string }> };
 type CheckStatus = "OK" | "WARN" | "FAIL";

@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { requireAuth, requireTenant } from "../../../../_utils/auth";
-import { supabaseUser } from "../../../../_utils/supabase";
-import { parseQuery } from "../../../../_utils/validate";
+import { requireAuth, requireTenant } from "../../../_utils/auth";
+import { supabaseUser } from "../../../_utils/supabase";
+import { parseQuery } from "../../../_utils/validate";
 
 type Params = { params: Promise<{ id: string }> };
 
