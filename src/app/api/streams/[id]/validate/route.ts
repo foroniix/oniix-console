@@ -76,6 +76,29 @@ function parseMasterPlaylist(manifest: string, baseUrl: string) {
   return { variants, media };
 }
 
+function hasMonotonicBitrates(values: number[]) {
+  if (values.length <= 1) return values.length === 1;
+  let ascending = true;
+  let descending = true;
+  for (let i = 1; i < values.length; i += 1) {
+    if (values[i] < values[i - 1]) ascending = false;
+    if (values[i] > values[i - 1]) descending = false;
+  }
+  return ascending || descending;
+}
+
+function countExpectedSubtitles(captions: unknown) {
+  if (!Array.isArray(captions)) return 0;
+  return captions.filter((row) => {
+    if (!row || typeof row !== "object") return false;
+    const candidate = row as Record<string, unknown>;
+    const url = typeof candidate.url === "string" ? candidate.url.trim() : "";
+    if (!url) return false;
+    const kind = typeof candidate.kind === "string" ? candidate.kind.toLowerCase() : "subtitles";
+    return kind === "subtitles" || kind === "captions";
+  }).length;
+}
+
 function parseMediaPlaylist(manifest: string, baseUrl: string) {
   const lines = manifest.split(/\r?\n/);
   const durations: number[] = [];
@@ -184,9 +207,17 @@ export async function POST(_: NextRequest, { params }: Params) {
         metadata: {
           summary: "FAIL",
           validatedAt,
+          metrics: {
+            variantsCount,
+            audioTracks,
+            subtitleTracks,
+            segmentErrorCount,
+          },
           checks: checks.map((check) => ({
             key: check.key,
+            label: check.label,
             status: check.status,
+            message: check.message,
           })),
           incidents: checks.filter((check) => check.status !== "OK").map((check) => check.message),
         },
@@ -239,8 +270,7 @@ export async function POST(_: NextRequest, { params }: Params) {
       subtitleTracks = parsedMaster.media.filter((item) => item.type === "SUBTITLES").length;
 
       const bitrates = parsedMaster.variants.map((variant) => variant.bandwidth).filter((value) => value > 0);
-      const sorted = [...bitrates].sort((a, b) => a - b);
-      const coherent = bitrates.every((value, index) => value === sorted[index]);
+      const coherent = hasMonotonicBitrates(bitrates);
 
       checks.push(
         buildCheck(
@@ -263,7 +293,8 @@ export async function POST(_: NextRequest, { params }: Params) {
         )
       );
 
-      const expectedSubtitles = Array.isArray(stream.captions) && stream.captions.length > 0;
+      const expectedSubtitleCount = countExpectedSubtitles(stream.captions);
+      const expectedSubtitles = expectedSubtitleCount > 0;
       checks.push(
         buildCheck(
           "subtitle_tracks",
@@ -271,8 +302,8 @@ export async function POST(_: NextRequest, { params }: Params) {
           expectedSubtitles ? (subtitleTracks > 0 ? "OK" : "WARN") : subtitleTracks > 0 ? "OK" : "WARN",
           expectedSubtitles
             ? subtitleTracks > 0
-              ? `${subtitleTracks} piste(s) sous-titre detectee(s).`
-              : "Sous-titres attendus mais non detectes dans le manifest."
+              ? `${subtitleTracks} piste(s) sous-titre detectee(s) (attendu: ${expectedSubtitleCount}).`
+              : `Sous-titres attendus (${expectedSubtitleCount}) mais non detectes dans le manifest.`
             : subtitleTracks > 0
               ? `${subtitleTracks} piste(s) sous-titre detectee(s).`
               : "Aucune piste sous-titre detectee."
@@ -392,9 +423,17 @@ export async function POST(_: NextRequest, { params }: Params) {
     metadata: {
       summary,
       validatedAt,
+      metrics: {
+        variantsCount,
+        audioTracks,
+        subtitleTracks,
+        segmentErrorCount,
+      },
       checks: checks.map((check) => ({
         key: check.key,
+        label: check.label,
         status: check.status,
+        message: check.message,
       })),
       incidents: checks
         .filter((check) => check.status === "FAIL" || check.status === "WARN")

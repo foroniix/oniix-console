@@ -31,6 +31,7 @@ export const SLOT_VISIBILITY_VALUES: ProgramSlotVisibility[] = ["public", "priva
 
 export const REPLAY_STATUS_VALUES: ReplayStatus[] = [
   "draft",
+  "processing",
   "ready",
   "published",
   "archived",

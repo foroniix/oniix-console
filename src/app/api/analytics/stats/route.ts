@@ -5,6 +5,7 @@ import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseAdmin } from "../../_utils/supabase";
 import { parseQuery } from "../../_utils/validate";
 import { resolveAnalyticsStreamFilter } from "../../_utils/analytics-stream-filter";
+import { getStreamStatsLiveFallback } from "../../_utils/stream-stats-live-fallback";
 import {
   buildLiveSnapshotFromEvents,
   getViewerLiveSnapshot,
@@ -87,6 +88,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
     const streamFilter = filterRes.filter;
+    const streamIdsForFilter =
+      streamFilter.mode === "none" ? [] : streamFilter.mode === "ids" ? streamFilter.streamIds : undefined;
 
     if (streamFilter.mode === "none") {
       const liveSnapshotRes = await getViewerLiveSnapshot(supa, {
@@ -134,7 +137,7 @@ export async function GET(req: Request) {
         tenantId: ctx.tenantId,
         windowSec: LIVE_WINDOW_SEC,
         expireStale: true,
-        streamIds: streamFilter.mode === "ids" ? streamFilter.streamIds : undefined,
+        streamIds: streamIdsForFilter,
       }),
     ]);
 
@@ -162,7 +165,26 @@ export async function GET(req: Request) {
     }
 
     const uniqueSessions = new Set(events.map((e) => e.session_id));
-    const activeUsersNow = liveSnapshot.activeUsers;
+    let activeUsersNow = liveSnapshot.activeUsers;
+    let currentStreams = liveSnapshot.currentStreams;
+
+    if (streamFilter.mode !== "none" && activeUsersNow === 0) {
+      const streamStatsFallback = await getStreamStatsLiveFallback(supa, {
+        tenantId: ctx.tenantId,
+        windowSec: LIVE_WINDOW_SEC,
+        streamIds: streamIdsForFilter,
+      });
+      if (streamStatsFallback.ok) {
+        activeUsersNow = streamStatsFallback.snapshot.activeUsers;
+        currentStreams = streamStatsFallback.snapshot.currentStreams;
+      } else {
+        console.error("Analytics stats stream_stats fallback error", {
+          error: streamStatsFallback.error,
+          code: streamStatsFallback.code ?? null,
+          tenantId: ctx.tenantId,
+        });
+      }
+    }
 
     const heartbeats = events.filter((e) => normalizeEventType(e.event_type) === "HEARTBEAT").length;
     const totalMinutes = Math.round((heartbeats * HEARTBEAT_SECONDS) / 60);
@@ -170,8 +192,6 @@ export async function GET(req: Request) {
       totalMinutes > 60
         ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
         : `${totalMinutes}m`;
-
-    const currentStreams = liveSnapshot.currentStreams;
 
     const sessionActivity: Record<string, number> = {};
     events.forEach((e) => {

@@ -349,6 +349,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchLive();
+    const t = setInterval(() => {
+      void fetchLive();
+    }, 10_000);
+    return () => clearInterval(t);
   }, [fetchLive]);
 
   // realtime subscription

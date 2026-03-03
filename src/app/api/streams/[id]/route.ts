@@ -56,6 +56,45 @@ function buildDiff(before: StreamSnapshot | null, after: StreamSnapshot | null) 
   return out;
 }
 
+// DETAIL (GET)
+export async function GET(
+  _: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAuth();
+  if ("res" in auth) return auth.res;
+  const { ctx } = auth;
+  const tenantErr = await requireTenant(ctx);
+  if (tenantErr) return tenantErr;
+
+  try {
+    const { id } = await params;
+    const supa = supabaseUser(ctx.accessToken);
+
+    const { data, error } = await supa
+      .from("streams")
+      .select("*, channel:channels(id,name,logo,category)")
+      .eq("tenant_id", ctx.tenantId)
+      .eq("id", id)
+      .single();
+
+    if (error || !data) {
+      if (error) {
+        console.error("Stream get error", {
+          error: error.message,
+          tenantId: ctx.tenantId,
+          id,
+        });
+      }
+      return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
+    }
+
+    return NextResponse.json(data, { status: 200 });
+  } catch {
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
+}
+
 // MODIFICATION (PATCH)
 export async function PATCH(
   req: NextRequest,

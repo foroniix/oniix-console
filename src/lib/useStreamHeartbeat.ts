@@ -29,8 +29,13 @@ function deviceHint() {
  * Envoie START + heartbeats toutes les 15s + STOP au cleanup.
  * Appelle ce hook dans le composant Player.
  */
-export function useStreamHeartbeat(streamId: string | null | undefined, opts?: { intervalSec?: number }) {
+export function useStreamHeartbeat(
+  streamId: string | null | undefined,
+  opts?: { intervalSec?: number; ingestToken?: string | null; tenantId?: string | null }
+) {
   const intervalSec = opts?.intervalSec ?? 15;
+  const ingestToken = opts?.ingestToken ?? null;
+  const tenantId = opts?.tenantId ?? null;
 
   const sessionId = useMemo(() => getOrCreateSessionId(), []);
 
@@ -42,9 +47,13 @@ export function useStreamHeartbeat(streamId: string | null | undefined, opts?: {
     const send = async (kind: "START" | "HEARTBEAT" | "STOP", force = false) => {
       if (stopped && !force) return;
       try {
+        const headers: Record<string, string> = { "Content-Type": "application/json" };
+        if (ingestToken) headers["x-oniix-token"] = ingestToken;
+        if (tenantId) headers["x-oniix-tenant"] = tenantId;
+
         await fetch("/api/analytics/heartbeat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
             session_id: sessionId,
             stream_id: streamId,
@@ -68,5 +77,5 @@ export function useStreamHeartbeat(streamId: string | null | undefined, opts?: {
       stopped = true;
       clearInterval(t);
     };
-  }, [sessionId, streamId, intervalSec]);
+  }, [sessionId, streamId, intervalSec, ingestToken, tenantId]);
 }

@@ -22,21 +22,42 @@ export async function auditLog(input: AuditLogInput) {
     return;
   }
 
-  const { error } = await sb.from("audit_logs").insert({
-    tenant_id: tenantId,
-    actor_user_id: actorUserId,
-    action,
-    target_type: targetType ?? null,
-    target_id: targetId ?? null,
-    metadata: metadata ?? {},
-  });
+  const isMissingColumnError = (message: string) => {
+    const m = message.toLowerCase();
+    return (
+      m.includes("does not exist") ||
+      m.includes("could not find") ||
+      m.includes("column") ||
+      m.includes("schema cache")
+    );
+  };
 
-  if (error) {
+  const actorFieldAttempts = ["actor_user_id", "actor_id", "user_id"] as const;
+  let lastError: { message: string } | null = null;
+
+  for (const actorField of actorFieldAttempts) {
+    const payload: Record<string, unknown> = {
+      tenant_id: tenantId,
+      action,
+      target_type: targetType ?? null,
+      target_id: targetId ?? null,
+      metadata: metadata ?? {},
+      [actorField]: actorUserId,
+    };
+
+    const { error } = await sb.from("audit_logs").insert(payload);
+    if (!error) return;
+
+    lastError = error;
+    if (!isMissingColumnError(error.message)) break;
+  }
+
+  if (lastError) {
     console.error("Audit log insert failed", {
       action,
       tenantId,
       actorUserId,
-      error: error.message,
+      error: lastError.message,
     });
   }
 }

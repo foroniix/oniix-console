@@ -12,6 +12,9 @@ type Props = {
   controls?: boolean;
   className?: string;
   onErrorChange?: (error: string | null) => void;
+  enableStatsIngest?: boolean;
+  statsIngestIntervalMs?: number;
+  statsIngestPaused?: boolean;
 };
 
 export default function HlsPlayer({
@@ -23,6 +26,9 @@ export default function HlsPlayer({
   controls = true,
   className,
   onErrorChange,
+  enableStatsIngest = false,
+  statsIngestIntervalMs = 15000,
+  statsIngestPaused = false,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -83,9 +89,11 @@ export default function HlsPlayer({
   }, [onErrorChange, src]);
 
   useEffect(() => {
-    if (!streamId) return;
+    if (!streamId || !enableStatsIngest || statsIngestPaused) return;
 
-    const interval = setInterval(() => {
+    const safeIntervalMs = Math.max(5000, Math.floor(statsIngestIntervalMs));
+
+    const publishSample = () => {
       fetch(`/api/streams/${streamId}/stats/ingest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,10 +103,23 @@ export default function HlsPlayer({
           errors: errorCountRef.current,
         }),
       }).catch(() => {});
-    }, 5000);
+    };
 
-    return () => clearInterval(interval);
-  }, [streamId]);
+    publishSample();
+    const onVisibility = () => {
+      if (!document.hidden) publishSample();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      publishSample();
+    }, safeIntervalMs);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(interval);
+    };
+  }, [enableStatsIngest, statsIngestIntervalMs, statsIngestPaused, streamId]);
 
   return (
     <div className={className}>

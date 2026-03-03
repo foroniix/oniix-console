@@ -95,7 +95,7 @@ export type Vod = {
 export type ProgramStatus = "draft" | "scheduled" | "published" | "cancelled";
 export type ProgramSlotStatus = "scheduled" | "published" | "cancelled";
 export type ProgramSlotVisibility = "public" | "private";
-export type ReplayStatus = "draft" | "ready" | "published" | "archived";
+export type ReplayStatus = "draft" | "processing" | "ready" | "published" | "archived";
 
 export type Program = {
   id: string;
@@ -139,6 +139,10 @@ export type Replay = {
   replayStatus: ReplayStatus;
   availableFrom?: string | null;
   availableTo?: string | null;
+  sourceHlsUrl?: string | null;
+  clipStartAt?: string | null;
+  clipEndAt?: string | null;
+  processingError?: string | null;
   geo?: { allow: string[]; block: string[] };
   createdAt?: string;
   updatedAt?: string;
@@ -297,6 +301,10 @@ const mapReplay = (r: any): Replay => ({
   replayStatus: r.replay_status ?? r.replayStatus ?? "draft",
   availableFrom: r.available_from ?? r.availableFrom ?? null,
   availableTo: r.available_to ?? r.availableTo ?? null,
+  sourceHlsUrl: r.source_hls_url ?? r.sourceHlsUrl ?? null,
+  clipStartAt: r.clip_start_at ?? r.clipStartAt ?? null,
+  clipEndAt: r.clip_end_at ?? r.clipEndAt ?? null,
+  processingError: r.processing_error ?? r.processingError ?? null,
   geo: r.geo ?? { allow: [], block: [] },
   createdAt: r.created_at ?? r.createdAt,
   updatedAt: r.updated_at ?? r.updatedAt,
@@ -336,6 +344,9 @@ const toBodyReplay = (r: Partial<Replay>) => ({
   ...(r.replayStatus !== undefined ? { replayStatus: r.replayStatus } : {}),
   ...(r.availableFrom !== undefined ? { availableFrom: r.availableFrom } : {}),
   ...(r.availableTo !== undefined ? { availableTo: r.availableTo } : {}),
+  ...(r.sourceHlsUrl !== undefined ? { sourceHlsUrl: r.sourceHlsUrl } : {}),
+  ...(r.clipStartAt !== undefined ? { clipStartAt: r.clipStartAt } : {}),
+  ...(r.clipEndAt !== undefined ? { clipEndAt: r.clipEndAt } : {}),
   ...(r.geo !== undefined ? { geo: r.geo } : {}),
 });
 
@@ -495,6 +506,9 @@ export async function endLiveAndCreateReplay(
     replayStatus?: ReplayStatus;
     availableFrom?: string;
     availableTo?: string;
+    clipStartAt?: string;
+    clipEndAt?: string;
+    sourceHlsUrl?: string;
   }
 ) {
   const sid = guardId(id, "endLiveAndCreateReplay");
@@ -511,6 +525,9 @@ export async function endLiveAndCreateReplay(
         replayStatus: opts?.replayStatus,
         availableFrom: opts?.availableFrom,
         availableTo: opts?.availableTo,
+        clipStartAt: opts?.clipStartAt,
+        clipEndAt: opts?.clipEndAt,
+        sourceHlsUrl: opts?.sourceHlsUrl,
       }),
     })
   );

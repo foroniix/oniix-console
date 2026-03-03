@@ -4,6 +4,7 @@ import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseAdmin } from "../../_utils/supabase";
 import { parseQuery } from "../../_utils/validate";
 import { resolveAnalyticsStreamFilter } from "../../_utils/analytics-stream-filter";
+import { getStreamStatsLiveFallback } from "../../_utils/stream-stats-live-fallback";
 import {
   buildLiveSnapshotFromEvents,
   clampLiveWindowSec,
@@ -48,20 +49,45 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   const streamFilter = filterRes.filter;
+  const streamIdsForFilter =
+    streamFilter.mode === "none" ? [] : streamFilter.mode === "ids" ? streamFilter.streamIds : undefined;
 
   const liveRes = await getViewerLiveSnapshot(supa, {
     tenantId: ctx.tenantId,
     windowSec,
     expireStale: true,
-    streamIds:
-      streamFilter.mode === "none"
-        ? []
-        : streamFilter.mode === "ids"
-        ? streamFilter.streamIds
-        : undefined,
+    streamIds: streamIdsForFilter,
   });
 
   if (liveRes.ok) {
+    if (streamFilter.mode !== "none" && liveRes.snapshot.activeUsers === 0) {
+      const streamStatsFallback = await getStreamStatsLiveFallback(supa, {
+        tenantId: ctx.tenantId,
+        windowSec,
+        streamIds: streamIdsForFilter,
+      });
+      if (streamStatsFallback.ok && streamStatsFallback.snapshot.activeUsers > 0) {
+        return NextResponse.json({
+          ok: true,
+          live: {
+            activeUsers: streamStatsFallback.snapshot.activeUsers,
+            currentStreams: streamStatsFallback.snapshot.currentStreams,
+          },
+          sessions: [],
+          asOf: streamStatsFallback.snapshot.asOf,
+          windowSec: streamStatsFallback.snapshot.windowSec,
+          source: streamStatsFallback.snapshot.source,
+        });
+      }
+      if (!streamStatsFallback.ok) {
+        console.error("Analytics live stream_stats fallback error", {
+          error: streamStatsFallback.error,
+          code: streamStatsFallback.code ?? null,
+          tenantId: ctx.tenantId,
+        });
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       live: {
@@ -114,6 +140,34 @@ export async function GET(req: Request) {
     (fallbackRes.data ?? []) as ViewerLiveEventRow[],
     { windowSec }
   );
+
+  if (streamFilter.mode !== "none" && fallbackSnapshot.activeUsers === 0) {
+    const streamStatsFallback = await getStreamStatsLiveFallback(supa, {
+      tenantId: ctx.tenantId,
+      windowSec,
+      streamIds: streamIdsForFilter,
+    });
+    if (streamStatsFallback.ok && streamStatsFallback.snapshot.activeUsers > 0) {
+      return NextResponse.json({
+        ok: true,
+        live: {
+          activeUsers: streamStatsFallback.snapshot.activeUsers,
+          currentStreams: streamStatsFallback.snapshot.currentStreams,
+        },
+        sessions: [],
+        asOf: streamStatsFallback.snapshot.asOf,
+        windowSec: streamStatsFallback.snapshot.windowSec,
+        source: streamStatsFallback.snapshot.source,
+      });
+    }
+    if (!streamStatsFallback.ok) {
+      console.error("Analytics live stream_stats fallback error", {
+        error: streamStatsFallback.error,
+        code: streamStatsFallback.code ?? null,
+        tenantId: ctx.tenantId,
+      });
+    }
+  }
 
   return NextResponse.json({
     ok: true,

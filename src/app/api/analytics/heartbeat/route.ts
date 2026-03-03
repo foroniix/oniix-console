@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getTenantContext, jsonError } from "../../tenant/_utils";
+import { requireTenantIngestAuth } from "../../_utils/tenant-ingest-auth";
 import { supabaseAdmin } from "../../_utils/supabase";
 import { parseJson } from "../../_utils/validate";
 import { touchViewerLiveSession } from "../../_utils/viewer-live";
@@ -38,9 +39,6 @@ function normalizeEventType(input?: string, kind?: string) {
 }
 
 export async function POST(req: Request) {
-  const ctx = await getTenantContext();
-  if (!ctx.ok) return ctx.res;
-
   const parsed = await parseJson(
     req,
     z.object({
@@ -56,29 +54,54 @@ export async function POST(req: Request) {
   const stream_id = parsed.data.stream_id?.trim() ?? null;
   const device = parsed.data.device?.trim() ?? null;
   const eventType = normalizeEventType(parsed.data.event_type, parsed.data.kind);
+
+  const authCtx = await getTenantContext();
+  let tenantId = "";
+  let userId: string | null = null;
+
+  if (authCtx.ok) {
+    tenantId = authCtx.tenant_id ?? "";
+    userId = authCtx.user.id;
+  } else {
+    const ingestAuth = await requireTenantIngestAuth(req);
+    if (!ingestAuth.ok) return authCtx.res;
+
+    tenantId = ingestAuth.tenantId;
+    userId = null;
+
+    if (ingestAuth.keySource === "token") {
+      const scopedStreamId = ingestAuth.streamId?.trim() ?? "";
+      const requestedStreamId = stream_id?.trim() ?? "";
+      if (!requestedStreamId || !scopedStreamId || requestedStreamId !== scopedStreamId) {
+        return NextResponse.json({ ok: false, error: "Authentification ingest invalide." }, { status: 401 });
+      }
+    }
+  }
+
   const admin = supabaseAdmin();
 
   if (!session_id) return jsonError("Donnee requise manquante.", 400);
+  if (!tenantId) return jsonError("Acces refuse.", 403);
 
   const { error } = await admin.from("analytics_events").insert({
-    tenant_id: ctx.tenant_id,
+    tenant_id: tenantId,
     stream_id,
     session_id,
-    user_id: ctx.user.id,
+    user_id: userId,
     event_type: eventType,
     device_type: device,
   });
 
   if (error) {
-    console.error("Analytics heartbeat error", { error: error.message, tenantId: ctx.tenant_id });
+    console.error("Analytics heartbeat error", { error: error.message, tenantId });
     return jsonError("Une erreur est survenue.", 400);
   }
 
   const liveRes = await touchViewerLiveSession(admin, {
-    tenantId: ctx.tenant_id,
+    tenantId,
     sessionId: session_id,
     streamId: stream_id,
-    userId: ctx.user.id,
+    userId,
     deviceType: device,
     eventType,
   });
@@ -86,7 +109,7 @@ export async function POST(req: Request) {
     console.error("Analytics heartbeat live sync error", {
       error: liveRes.error ?? "unknown",
       code: liveRes.code ?? null,
-      tenantId: ctx.tenant_id,
+      tenantId,
       sessionId: session_id,
       streamId: stream_id,
       eventType,

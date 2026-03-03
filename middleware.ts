@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 
 const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 const BLOCKED_PATH_PREFIXES = ["/api/public", "/api/upload", "/api/utils/validate-hls", "/api/_debug"];
+const PUBLIC_PATH_PREFIXES = ["/we", "/web"];
+const PUBLIC_API_PREFIXES = ["/api/mobile", "/api/analytics/ingest", "/api/analytics/heartbeat"];
+const CSRF_EXEMPT_API_PREFIXES = ["/api/mobile", "/api/analytics/ingest", "/api/analytics/heartbeat"];
 
 const SECURITY_HEADERS: Record<string, string> = {
   ...(process.env.NODE_ENV === "production"
@@ -59,6 +62,15 @@ function isSameOrigin(request: NextRequest) {
 export function middleware(request: NextRequest) {
   const cookie = request.cookies.get(ACCESS_COOKIE);
   const { pathname } = request.nextUrl;
+  const isPublicPath = PUBLIC_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+  const isPublicApiPath = PUBLIC_API_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+  const isCsrfExemptApiPath = CSRF_EXEMPT_API_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
 
   if (BLOCKED_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
     return withSecurityHeaders(blockedResponse(pathname));
@@ -67,7 +79,7 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/api")) {
     if (!request.method || !unsafeMethods.has(request.method.toUpperCase())) {
       // noop
-    } else if (!isSameOrigin(request)) {
+    } else if (!isCsrfExemptApiPath && !isSameOrigin(request)) {
       return withSecurityHeaders(csrfResponse());
     }
   }
@@ -81,6 +93,8 @@ export function middleware(request: NextRequest) {
   // Allow auth API and static assets
   if (
     pathname.startsWith("/api/auth") ||
+    isPublicApiPath ||
+    isPublicPath ||
     pathname.startsWith("/_next") ||
     pathname.includes(".")
   ) {

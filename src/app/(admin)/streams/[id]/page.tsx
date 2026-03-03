@@ -6,6 +6,7 @@ import {
   Copy,
   Loader2,
   MonitorPlay,
+  Pause,
   Play,
   RefreshCw,
   Save,
@@ -44,6 +45,7 @@ type ValidationResult = {
   summary: "OK" | "WARN" | "FAIL";
   checks: ValidationCheck[];
   metrics: { variantsCount: number; audioTracks: number; subtitleTracks: number; segmentErrorCount: number };
+  incidents?: string[];
 };
 type AnalyticsResult = {
   ok: true;
@@ -74,11 +76,34 @@ type StreamConfig = {
   captionsText: string;
 };
 
+type DrmProvider = "none" | "widevine" | "fairplay" | "multi";
+
+type DrmConfig = {
+  provider: DrmProvider;
+  widevineLicenseUrl: string;
+  fairplayLicenseUrl: string;
+  fairplayCertificateUrl: string;
+};
+
 const PRESETS: Record<string, Partial<StreamConfig>> = {
   standard: { latency: "normal", dvrEnabled: false, dvrWindowSec: 0, timeshift: true, drmEnabled: false },
   low: { latency: "low", dvrEnabled: false, dvrWindowSec: 0, timeshift: true, drmEnabled: false },
   dvr: { latency: "normal", dvrEnabled: true, dvrWindowSec: 21600, timeshift: true, drmEnabled: false },
   sport: { latency: "low", dvrEnabled: true, dvrWindowSec: 7200, timeshift: true, drmEnabled: true },
+};
+
+const PRESET_LABELS: Record<string, string> = {
+  standard: "Standard",
+  low: "Low-latency",
+  dvr: "DVR",
+  sport: "Sport",
+};
+
+const DEFAULT_DRM_CONFIG: DrmConfig = {
+  provider: "none",
+  widevineLicenseUrl: "",
+  fairplayLicenseUrl: "",
+  fairplayCertificateUrl: "",
 };
 
 function parseList(value: string) {
@@ -93,6 +118,43 @@ function dateLabel(value?: string | null) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "--";
   return parsed.toLocaleString();
+}
+
+function toRecord(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function compactValue(value: unknown) {
+  if (value === null || value === undefined) return "null";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function parseStoredDrmConfig(raw: string): DrmConfig {
+  try {
+    const parsed = JSON.parse(raw) as Partial<DrmConfig>;
+    const provider =
+      parsed.provider === "widevine" ||
+      parsed.provider === "fairplay" ||
+      parsed.provider === "multi" ||
+      parsed.provider === "none"
+        ? parsed.provider
+        : "none";
+    return {
+      provider,
+      widevineLicenseUrl: typeof parsed.widevineLicenseUrl === "string" ? parsed.widevineLicenseUrl : "",
+      fairplayLicenseUrl: typeof parsed.fairplayLicenseUrl === "string" ? parsed.fairplayLicenseUrl : "",
+      fairplayCertificateUrl:
+        typeof parsed.fairplayCertificateUrl === "string" ? parsed.fairplayCertificateUrl : "",
+    };
+  } catch {
+    return DEFAULT_DRM_CONFIG;
+  }
 }
 
 function buildConfig(stream: Stream): StreamConfig {
@@ -114,6 +176,7 @@ export default function StreamDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [stream, setStream] = useState<Stream | null>(null);
   const [config, setConfig] = useState<StreamConfig | null>(null);
+  const [drmConfig, setDrmConfig] = useState<DrmConfig>(DEFAULT_DRM_CONFIG);
   const [analytics, setAnalytics] = useState<AnalyticsResult | null>(null);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [incidents, setIncidents] = useState<string[]>([]);
@@ -127,11 +190,19 @@ export default function StreamDetailPage() {
   const [muted, setMuted] = useState(true);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [geoProbe, setGeoProbe] = useState("");
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
+  const [configDirty, setConfigDirty] = useState(false);
   const previousSummaryRef = useRef<ValidationResult["summary"] | null>(null);
 
   const addAudit = useCallback((action: string, details: string, actor = "operator") => {
     const at = new Date().toISOString();
     setAudit((prev) => [{ id: `${action}-${at}`, at, action, details, actor }, ...prev]);
+  }, []);
+
+  const patchConfig = useCallback((patch: Partial<StreamConfig>) => {
+    setConfig((prev) => (prev ? { ...prev, ...patch } : prev));
+    setConfigDirty(true);
   }, []);
 
   const loadStream = useCallback(async () => {
@@ -156,7 +227,7 @@ export default function StreamDetailPage() {
 
   const loadAudit = useCallback(async () => {
     try {
-      const response = await fetch(`/api/streams/${id}/audit?limit=40`, { cache: "no-store" });
+      const response = await fetch(`/api/streams/${id}/audit?limit=80`, { cache: "no-store" });
       const json = (await response.json().catch(() => null)) as
         | { ok: true; logs: AuditApiRow[] }
         | { ok?: false; error?: string }
@@ -164,9 +235,9 @@ export default function StreamDetailPage() {
       if (!response.ok || !json || !("ok" in json) || !json.ok) return;
 
       const mapped = (json.logs ?? []).map((row) => {
-        const metadata = (row.metadata ?? {}) as Record<string, unknown>;
-        const diff = metadata.diff as Record<string, { before: unknown; after: unknown }> | undefined;
-        const incidents = Array.isArray(metadata.incidents)
+        const metadata = toRecord(row.metadata) ?? {};
+        const diff = toRecord(metadata.diff);
+        const incidentLines = Array.isArray(metadata.incidents)
           ? (metadata.incidents.filter((item) => typeof item === "string") as string[])
           : [];
 
@@ -174,10 +245,13 @@ export default function StreamDetailPage() {
         if (diff && Object.keys(diff).length > 0) {
           details = Object.entries(diff)
             .slice(0, 4)
-            .map(([field, delta]) => `${field}: ${String(delta.before)} -> ${String(delta.after)}`)
+            .map(([field, delta]) => {
+              const pair = toRecord(delta);
+              return `${field}: ${compactValue(pair?.before)} -> ${compactValue(pair?.after)}`;
+            })
             .join(" | ");
-        } else if (incidents.length > 0) {
-          details = incidents.slice(0, 2).join(" | ");
+        } else if (incidentLines.length > 0) {
+          details = incidentLines.slice(0, 2).join(" | ");
         } else {
           details = `Action ${row.action.toLowerCase()} executee`;
         }
@@ -193,20 +267,89 @@ export default function StreamDetailPage() {
 
       setAudit(mapped);
 
-      const incidentLines: string[] = [];
-      for (const row of json.logs ?? []) {
-        if (row.action !== "STREAM_VALIDATE_HLS") continue;
-        const metadata = (row.metadata ?? {}) as Record<string, unknown>;
-        const summary = typeof metadata.summary === "string" ? metadata.summary.toUpperCase() : "";
-        if (!["WARN", "FAIL"].includes(summary)) continue;
-        const incidents = Array.isArray(metadata.incidents)
-          ? (metadata.incidents.filter((item) => typeof item === "string") as string[])
-          : [];
-        incidentLines.push(
-          `${dateLabel(row.created_at)} - ${summary}${incidents.length > 0 ? ` - ${incidents[0]}` : ""}`
-        );
+      const asNumber = (value: unknown) => {
+        const n = Number(value ?? 0);
+        return Number.isFinite(n) ? n : 0;
+      };
+
+      const validationRows = (json.logs ?? [])
+        .filter((row) => row.action === "STREAM_VALIDATE_HLS")
+        .map((row) => {
+          const metadata = toRecord(row.metadata) ?? {};
+          const summary = typeof metadata.summary === "string" ? metadata.summary.toUpperCase() : "";
+          if (summary !== "OK" && summary !== "WARN" && summary !== "FAIL") return null;
+          const incidents = Array.isArray(metadata.incidents)
+            ? (metadata.incidents.filter((item) => typeof item === "string") as string[])
+            : [];
+          const checks = Array.isArray(metadata.checks) ? metadata.checks : [];
+          const metrics = toRecord(metadata.metrics) ?? {};
+          return {
+            at: typeof metadata.validatedAt === "string" ? metadata.validatedAt : row.created_at,
+            summary: summary as ValidationResult["summary"],
+            incidents,
+            checks: checks
+              .map((item, index) => {
+                const check = toRecord(item);
+                const status = typeof check?.status === "string" ? check.status.toUpperCase() : "";
+                if (status !== "OK" && status !== "WARN" && status !== "FAIL") return null;
+                return {
+                  key: typeof check?.key === "string" ? check.key : `check-${index}`,
+                  label: typeof check?.label === "string" ? check.label : `Check ${index + 1}`,
+                  status: status as ValidationCheck["status"],
+                  message: typeof check?.message === "string" ? check.message : "",
+                } satisfies ValidationCheck;
+              })
+              .filter((item): item is ValidationCheck => item !== null),
+            metrics: {
+              variantsCount: asNumber(metrics.variantsCount),
+              audioTracks: asNumber(metrics.audioTracks),
+              subtitleTracks: asNumber(metrics.subtitleTracks),
+              segmentErrorCount: asNumber(metrics.segmentErrorCount),
+            },
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => (a.at > b.at ? 1 : -1));
+
+      const latestValidation = validationRows.at(-1);
+      if (latestValidation) {
+        setValidation({
+          ok: true,
+          validatedAt: latestValidation.at,
+          summary: latestValidation.summary,
+          checks: latestValidation.checks,
+          metrics: latestValidation.metrics,
+          incidents: latestValidation.incidents,
+        });
+        previousSummaryRef.current = latestValidation.summary;
       }
-      setIncidents(incidentLines.slice(0, 20));
+
+      const timeline: string[] = [];
+      let previous: ValidationResult["summary"] | null = null;
+
+      for (const row of validationRows) {
+        if ((row.summary === "WARN" || row.summary === "FAIL") && (!previous || previous === "OK")) {
+          timeline.push(
+            `${dateLabel(row.at)} - incident detecte${row.incidents[0] ? ` - ${row.incidents[0]}` : ""}`
+          );
+        } else if (row.summary === "OK" && previous && previous !== "OK") {
+          timeline.push(`${dateLabel(row.at)} - incident resolu`);
+        }
+        previous = row.summary;
+      }
+
+      if (timeline.length === 0) {
+        const warnings = validationRows
+          .filter((row) => row.summary !== "OK")
+          .slice(-5)
+          .map(
+            (row) =>
+              `${dateLabel(row.at)} - ${row.summary}${row.incidents[0] ? ` - ${row.incidents[0]}` : ""}`
+          );
+        setIncidents(warnings.reverse());
+      } else {
+        setIncidents(timeline.reverse().slice(0, 20));
+      }
     } catch {
       // ignore
     }
@@ -223,8 +366,10 @@ export default function StreamDetailPage() {
       }
       setValidation(json);
       setFeedback(`Validation HLS terminee (${json.summary}).`);
+      const issue =
+        json.incidents?.[0] ?? json.checks.find((check) => check.status !== "OK")?.message ?? "Verification requise";
       if ((json.summary === "WARN" || json.summary === "FAIL") && (!previousSummaryRef.current || previousSummaryRef.current === "OK")) {
-        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident detecte`, ...prev]);
+        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident detecte - ${issue}`, ...prev]);
       }
       if (json.summary === "OK" && previousSummaryRef.current && previousSummaryRef.current !== "OK") {
         setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident resolu`, ...prev]);
@@ -242,6 +387,7 @@ export default function StreamDetailPage() {
     (async () => {
       try {
         await Promise.all([loadStream(), loadAnalytics(false), loadAudit()]);
+        if (mounted) setLastRefreshAt(new Date().toISOString());
       } finally {
         if (mounted) setLoading(false);
       }
@@ -252,18 +398,50 @@ export default function StreamDetailPage() {
   }, [loadAnalytics, loadAudit, loadStream]);
 
   useEffect(() => {
+    if (!autoRefreshEnabled || tab === "config") return;
+
+    const refresh = () => {
+      if (document.hidden) return;
+      void Promise.all([loadAnalytics(true), loadAudit()]).then(() => {
+        setLastRefreshAt(new Date().toISOString());
+      });
+    };
+
+    refresh();
+
     const onVisibility = () => {
-      if (!document.hidden) void loadAnalytics(true);
+      if (!document.hidden) refresh();
     };
     document.addEventListener("visibilitychange", onVisibility);
-    const timer = window.setInterval(() => {
-      if (!document.hidden) void loadAnalytics(true);
-    }, 15000);
+    const timer = window.setInterval(refresh, 15000);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.clearInterval(timer);
     };
-  }, [loadAnalytics]);
+  }, [autoRefreshEnabled, loadAnalytics, loadAudit, tab]);
+
+  useEffect(() => {
+    const storageKey = `stream:${id}:drm-config`;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) {
+        setDrmConfig(DEFAULT_DRM_CONFIG);
+        return;
+      }
+      setDrmConfig(parseStoredDrmConfig(raw));
+    } catch {
+      setDrmConfig(DEFAULT_DRM_CONFIG);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    const storageKey = `stream:${id}:drm-config`;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(drmConfig));
+    } catch {
+      // ignore storage failures
+    }
+  }, [drmConfig, id]);
 
   const onSaveConfig = async () => {
     if (!stream || !config) return;
@@ -283,14 +461,31 @@ export default function StreamDetailPage() {
           .map((line) => line.trim())
           .filter(Boolean)
           .map((line) => {
-            const [lang, url] = line.split("|");
-            return { lang: (lang || "und").trim(), url: (url || "").trim(), kind: "subtitles" as const };
+            const [lang, second, third] = line.split("|").map((part) => part.trim());
+            if (third) {
+              return {
+                lang: (lang || "und").trim(),
+                label: second || undefined,
+                url: third,
+                kind: "subtitles" as const,
+              };
+            }
+            return {
+              lang: (lang || "und").trim(),
+              url: (second || "").trim(),
+              kind: "subtitles" as const,
+            };
           })
           .filter((item) => item.url.length > 0),
       });
       setStream(next);
       setConfig(buildConfig(next));
-      setFeedback("Configuration enregistree.");
+      setConfigDirty(false);
+      if (config.drmEnabled && drmConfig.provider !== "none") {
+        setFeedback("Configuration enregistree. Endpoints DRM conserves localement (scope backend requis).");
+      } else {
+        setFeedback("Configuration enregistree.");
+      }
       addAudit("UPDATE_CONFIG", "Configuration stream mise a jour");
       void loadAudit();
     } catch {
@@ -331,12 +526,20 @@ export default function StreamDetailPage() {
     const allow = parseList(config.geoAllow);
     const block = parseList(config.geoBlock);
     if (block.includes(country)) return { status: "DOWN", text: `${country} bloque` };
-    if (allow.length > 0 && !allow.includes(country)) return { status: "WARN", text: `${country} hors allowlist` };
+    if (allow.length > 0 && !allow.includes(country)) return { status: "DEGRADED", text: `${country} hors allowlist` };
     return { status: "HEALTHY", text: `${country} autorise` };
   }, [config, geoProbe]);
 
   const series = useMemo(() => (analytics?.series24h ?? []).slice(-20).reverse(), [analytics?.series24h]);
   const audits = useMemo(() => [...audit].sort((a, b) => (a.at > b.at ? -1 : 1)), [audit]);
+  const healthCounts = useMemo(() => {
+    const checks = validation?.checks ?? [];
+    return {
+      ok: checks.filter((check) => check.status === "OK").length,
+      warn: checks.filter((check) => check.status === "WARN").length,
+      fail: checks.filter((check) => check.status === "FAIL").length,
+    };
+  }, [validation?.checks]);
 
   if (loading || !stream || !config) {
     return (
@@ -356,7 +559,23 @@ export default function StreamDetailPage() {
         actions={
           <>
             <StatusBadge status={stream.status} />
-            <Button variant="outline" onClick={() => { void loadStream(); void loadAnalytics(true); }} className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]">
+            <Button
+              variant="outline"
+              onClick={() => setAutoRefreshEnabled((value) => !value)}
+              className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+            >
+              {autoRefreshEnabled ? <Pause className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
+              {autoRefreshEnabled ? "Pause refresh" : "Resume refresh"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                void Promise.all([loadStream(), loadAnalytics(true), loadAudit()]).then(() => {
+                  setLastRefreshAt(new Date().toISOString());
+                });
+              }}
+              className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+            >
               <RefreshCw className="mr-2 size-4" />
               Actualiser
             </Button>
@@ -366,8 +585,15 @@ export default function StreamDetailPage() {
 
       {feedback ? <div className="rounded-xl border border-[#262b38] bg-[#1b1f2a] px-4 py-3 text-sm">{feedback}</div> : null}
 
+      <div className="rounded-xl border border-[#262b38] bg-[#151821] px-4 py-3 text-xs text-[#8b93a7]">
+        Auto refresh: <span className="font-medium text-[#e6eaf2]">{autoRefreshEnabled ? "ON" : "OFF"}</span>
+        {" | "}
+        Derniere synchro diagnostics: <span className="font-medium text-[#e6eaf2]">{dateLabel(lastRefreshAt)}</span>
+      </div>
+
       <KpiRow>
         <KpiCard label="Viewers now" value={analytics?.current.viewers ?? 0} tone="info" loading={analyticsLoading} />
+        <KpiCard label="Viewers 1h (avg)" value={analytics?.summary.viewersAvg1h ?? 0} loading={analyticsLoading} />
         <KpiCard label="Peak 24h" value={analytics?.summary.viewersPeak24h ?? 0} loading={analyticsLoading} />
         <KpiCard label="Bitrate 1h" value={`${analytics?.summary.bitrateAvg1h ?? 0} kbps`} loading={analyticsLoading} />
         <KpiCard label="Erreurs 24h" value={analytics?.summary.errors24h ?? 0} tone={(analytics?.summary.errors24h ?? 0) > 0 ? "warning" : "success"} loading={analyticsLoading} />
@@ -386,7 +612,18 @@ export default function StreamDetailPage() {
           <div className="space-y-4 xl:col-span-2">
             <div className="overflow-hidden rounded-xl border border-[#262b38] bg-[#151821]">
               <div className="aspect-video bg-black">
-                <HlsPlayer streamId={stream.id} src={stream.hlsUrl} muted={muted} autoPlay controls className="h-full w-full" onErrorChange={setPlayerError} />
+                <HlsPlayer
+                  streamId={stream.id}
+                  src={stream.hlsUrl}
+                  muted={muted}
+                  autoPlay
+                  controls
+                  className="h-full w-full"
+                  onErrorChange={setPlayerError}
+                  enableStatsIngest
+                  statsIngestIntervalMs={15000}
+                  statsIngestPaused={!autoRefreshEnabled}
+                />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#262b38] px-4 py-3">
                 <span className="text-xs text-[#8b93a7]">Derniere activite: {dateLabel(stream.updatedAt)}</span>
@@ -429,11 +666,30 @@ export default function StreamDetailPage() {
               ) : (
                 <p className="mt-3 text-sm text-[#8b93a7]">Aucune validation executee.</p>
               )}
+              <div className="mt-3 rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3 text-sm text-[#8b93a7]">
+                <p>Erreurs player 1h: <span className="font-medium text-[#e6eaf2]">{analytics?.summary.errors1h ?? 0}</span></p>
+                <p>Bitrate reel 1h: <span className="font-medium text-[#e6eaf2]">{analytics?.summary.bitrateAvg1h ?? 0} kbps</span></p>
+              </div>
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="health" className="mt-4 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-3">
+              <p className="text-xs uppercase tracking-[0.08em] text-[#8b93a7]">Checks OK</p>
+              <p className="mt-1 text-xl font-semibold text-[#22c55e]">{healthCounts.ok}</p>
+            </div>
+            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-3">
+              <p className="text-xs uppercase tracking-[0.08em] text-[#8b93a7]">Checks WARN</p>
+              <p className="mt-1 text-xl font-semibold text-[#f59e0b]">{healthCounts.warn}</p>
+            </div>
+            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-3">
+              <p className="text-xs uppercase tracking-[0.08em] text-[#8b93a7]">Checks FAIL</p>
+              <p className="mt-1 text-xl font-semibold text-[#ef4444]">{healthCounts.fail}</p>
+            </div>
+          </div>
+
           <DataTableShell title="Checks automatiques" description="Manifest, variants, playlist, segments." loading={validating} isEmpty={!validation || validation.checks.length === 0} emptyTitle="Aucun check" emptyDescription="Lancez Valider HLS.">
             <Table>
               <TableHeader className="bg-[#1b1f2a]"><TableRow className="border-[#262b38]"><TableHead>Check</TableHead><TableHead>Statut</TableHead><TableHead>Details</TableHead></TableRow></TableHeader>
@@ -458,24 +714,65 @@ export default function StreamDetailPage() {
           <div className="space-y-4 rounded-xl border border-[#262b38] bg-[#151821] p-4 xl:col-span-2">
             <div className="flex flex-wrap gap-2">
               {Object.entries(PRESETS).map(([key, preset]) => (
-                <Button key={key} type="button" variant="outline" size="sm" onClick={() => setConfig((prev) => (prev ? { ...prev, ...preset } : prev))} className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]">{key}</Button>
+                <Button
+                  key={key}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    patchConfig(preset);
+                    setFeedback(`Preset ${PRESET_LABELS[key] ?? key} applique.`);
+                  }}
+                  className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+                >
+                  {PRESET_LABELS[key] ?? key}
+                </Button>
               ))}
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div><Label>Nom du flux</Label><Input value={config.title} onChange={(e) => setConfig((prev) => (prev ? { ...prev, title: e.target.value } : prev))} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
-              <div><Label>Manifest HLS</Label><Input value={config.hlsUrl} onChange={(e) => setConfig((prev) => (prev ? { ...prev, hlsUrl: e.target.value } : prev))} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
-              <div><Label>DVR window (sec)</Label><Input type="number" value={config.dvrWindowSec} onChange={(e) => setConfig((prev) => (prev ? { ...prev, dvrWindowSec: Number(e.target.value) || 0 } : prev))} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+              <div><Label>Nom du flux</Label><Input value={config.title} onChange={(e) => patchConfig({ title: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+              <div><Label>Manifest HLS</Label><Input value={config.hlsUrl} onChange={(e) => patchConfig({ hlsUrl: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+              <div><Label>DVR window (sec)</Label><Input type="number" value={config.dvrWindowSec} onChange={(e) => patchConfig({ dvrWindowSec: Number(e.target.value) || 0 })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
               <div className="space-y-2 pt-6">
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>DVR</Label><Switch checked={config.dvrEnabled} onCheckedChange={(checked) => setConfig((prev) => (prev ? { ...prev, dvrEnabled: checked, dvrWindowSec: checked ? Math.max(prev.dvrWindowSec, 3600) : 0 } : prev))} /></div>
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>Timeshift</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => setConfig((prev) => (prev ? { ...prev, timeshift: checked } : prev))} /></div>
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>DRM</Label><Switch checked={config.drmEnabled} onCheckedChange={(checked) => setConfig((prev) => (prev ? { ...prev, drmEnabled: checked } : prev))} /></div>
+                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>DVR</Label><Switch checked={config.dvrEnabled} onCheckedChange={(checked) => patchConfig({ dvrEnabled: checked, dvrWindowSec: checked ? Math.max(config.dvrWindowSec, 3600) : 0 })} /></div>
+                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>Low-latency</Label><Switch checked={config.latency !== "normal"} onCheckedChange={(checked) => patchConfig({ latency: checked ? "low" : "normal" })} /></div>
+                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>Timeshift</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => patchConfig({ timeshift: checked })} /></div>
+                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>DRM</Label><Switch checked={config.drmEnabled} onCheckedChange={(checked) => patchConfig({ drmEnabled: checked })} /></div>
               </div>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div><Label>Geo allow</Label><Input value={config.geoAllow} onChange={(e) => setConfig((prev) => (prev ? { ...prev, geoAllow: e.target.value } : prev))} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
-              <div><Label>Geo block</Label><Input value={config.geoBlock} onChange={(e) => setConfig((prev) => (prev ? { ...prev, geoBlock: e.target.value } : prev))} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+            <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3">
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: "none", label: "None" },
+                  { value: "widevine", label: "Widevine" },
+                  { value: "fairplay", label: "FairPlay" },
+                  { value: "multi", label: "Widevine + FairPlay" },
+                ].map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!config.drmEnabled}
+                    onClick={() => setDrmConfig((prev) => ({ ...prev, provider: option.value as DrmProvider }))}
+                    className={drmConfig.provider === option.value ? "border-[#4c82fb]/40 bg-[#1c2a4a] text-[#4c82fb]" : "border-[#262b38] bg-[#151821] text-[#e6eaf2]"}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div><Label>Widevine license URL</Label><Input value={drmConfig.widevineLicenseUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, widevineLicenseUrl: e.target.value }))} className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]" /></div>
+                <div><Label>FairPlay license URL</Label><Input value={drmConfig.fairplayLicenseUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayLicenseUrl: e.target.value }))} className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]" /></div>
+              </div>
+              <div className="mt-3"><Label>FairPlay certificate URL</Label><Input value={drmConfig.fairplayCertificateUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayCertificateUrl: e.target.value }))} className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]" /></div>
+              <p className="mt-2 text-xs text-[#8b93a7]">Les endpoints DRM sont conserves localement tant que le scope backend DRM dedie n est pas active.</p>
             </div>
-            <div><Label>Subtitles mapping (lang|url)</Label><Textarea value={config.captionsText} onChange={(e) => setConfig((prev) => (prev ? { ...prev, captionsText: e.target.value } : prev))} className="mt-1 min-h-[120px] border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div><Label>Geo allow</Label><Input value={config.geoAllow} onChange={(e) => patchConfig({ geoAllow: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+              <div><Label>Geo block</Label><Input value={config.geoBlock} onChange={(e) => patchConfig({ geoBlock: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+            </div>
+            <div><Label>Subtitles mapping (lang|url ou lang|label|url)</Label><Textarea value={config.captionsText} onChange={(e) => patchConfig({ captionsText: e.target.value })} className="mt-1 min-h-[120px] border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
             <div className="flex justify-end"><Button onClick={onSaveConfig} disabled={saving} className="bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}Enregistrer</Button></div>
           </div>
           <div className="space-y-4 rounded-xl border border-[#262b38] bg-[#151821] p-4">
@@ -484,6 +781,9 @@ export default function StreamDetailPage() {
             {geoResult ? <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3"><StatusBadge status={geoResult.status} /><p className="mt-2 text-sm text-[#8b93a7]">{geoResult.text}</p></div> : null}
             <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3 text-sm text-[#8b93a7]">
               Checklist go live: manifest accessible, DRM OK, geoblocking verifie, EPG publie.
+            </div>
+            <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3 text-sm text-[#8b93a7]">
+              Etat edition: <span className="font-medium text-[#e6eaf2]">{configDirty ? "Modifications non sauvegardees" : "A jour"}</span>
             </div>
           </div>
         </TabsContent>

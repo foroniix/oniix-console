@@ -72,6 +72,16 @@ type ReplayQueryRow = {
   channel: ReplayChannelRelationRow | ReplayChannelRelationRow[] | null;
 };
 
+type StreamQueryRow = {
+  id: string;
+  channel_id: string | null;
+  title: string | null;
+  hls_url: string | null;
+  poster: string | null;
+  status: "OFFLINE" | "LIVE" | "ENDED";
+  updated_at: string | null;
+};
+
 function toIsoDate(value?: string | null) {
   if (!value) return null;
   const parsed = new Date(value);
@@ -156,6 +166,50 @@ export async function GET(req: NextRequest) {
   }
 
   const channels = (channelsData ?? []) as ChannelRow[];
+
+  let streamsQuery = admin
+    .from("streams")
+    .select("id,channel_id,title,hls_url,poster,status,updated_at")
+    .eq("tenant_id", tenantAuth.tenantId)
+    .eq("status", "LIVE")
+    .order("updated_at", { ascending: false })
+    .limit(1000);
+
+  if (channelId) streamsQuery = streamsQuery.eq("channel_id", channelId);
+
+  const { data: streamRows, error: streamsError } = await streamsQuery;
+  if (streamsError) {
+    console.error("Mobile program grid streams load error", {
+      error: streamsError.message,
+      tenantId: tenantAuth.tenantId,
+    });
+    return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
+  }
+
+  const liveStreamByChannel = new Map<
+    string,
+    {
+      id: string;
+      title: string;
+      hls_url: string | null;
+      poster: string | null;
+      status: "OFFLINE" | "LIVE" | "ENDED";
+      updated_at: string | null;
+    }
+  >();
+
+  for (const row of (streamRows ?? []) as StreamQueryRow[]) {
+    const streamChannelId = row.channel_id?.trim();
+    if (!streamChannelId || liveStreamByChannel.has(streamChannelId)) continue;
+    liveStreamByChannel.set(streamChannelId, {
+      id: row.id,
+      title: row.title?.trim() || "Live",
+      hls_url: row.hls_url ?? null,
+      poster: row.poster ?? null,
+      status: row.status,
+      updated_at: row.updated_at ?? null,
+    });
+  }
 
   let slotsQuery = admin
     .from("program_slots")
@@ -247,12 +301,14 @@ export async function GET(req: NextRequest) {
 
   const grid = lanes.map((lane) => {
     const nowNext = nowNextMap.get(lane.channelId ?? "__no_channel__");
+    const liveStream = lane.channelId ? liveStreamByChannel.get(lane.channelId) ?? null : null;
     return {
       channel: {
         id: lane.channelId,
         name: lane.channelName,
         logo: lane.channelLogo,
       },
+      live_stream: liveStream,
       now: nowNext?.now ? mapGridEntry(nowNext.now) : null,
       next: nowNext?.next ? mapGridEntry(nowNext.next) : null,
       slots: lane.entries.map(mapGridEntry),

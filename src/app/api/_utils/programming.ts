@@ -1,6 +1,6 @@
 export type ProgramStatus = "draft" | "scheduled" | "published" | "cancelled";
 export type ProgramSlotStatus = "scheduled" | "published" | "cancelled";
-export type ReplayStatus = "draft" | "ready" | "published" | "archived";
+export type ReplayStatus = "draft" | "processing" | "ready" | "published" | "archived";
 
 type StatusMap<T extends string> = Record<T, readonly T[]>;
 
@@ -18,10 +18,11 @@ const SLOT_TRANSITIONS: StatusMap<ProgramSlotStatus> = {
 };
 
 const REPLAY_TRANSITIONS: StatusMap<ReplayStatus> = {
-  draft: ["draft", "ready", "published", "archived"],
-  ready: ["ready", "draft", "published", "archived"],
+  draft: ["draft", "processing", "ready", "published", "archived"],
+  processing: ["processing", "ready", "archived"],
+  ready: ["ready", "draft", "processing", "published", "archived"],
   published: ["published", "archived"],
-  archived: ["archived"],
+  archived: ["archived", "ready", "processing"],
 };
 
 function canTransition<T extends string>(map: StatusMap<T>, current: T, next: T) {
