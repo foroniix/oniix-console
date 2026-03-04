@@ -14,14 +14,16 @@ function isMissingTableError(code?: string | null) {
 export async function GET() {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
+  const tenantId = ctx.tenant_id;
+  if (!tenantId) return jsonError("Tenant manquant.", 400);
 
-  const adminCheck = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
+  const adminCheck = await requireTenantAdmin(ctx.sb, tenantId, ctx.user.id);
   if (!adminCheck.ok) return jsonError(adminCheck.error, 403);
 
   const { data, error } = await ctx.sb
     .from("tenant_ingest_keys")
     .select("created_at, rotated_at")
-    .eq("tenant_id", ctx.tenant_id)
+    .eq("tenant_id", tenantId)
     .maybeSingle();
 
   if (error) {
@@ -29,12 +31,12 @@ export async function GET() {
       console.error("Ingest key load error", {
         error: error.message,
         code: error.code,
-        tenantId: ctx.tenant_id,
+        tenantId,
       });
       return jsonError("Une erreur est survenue.", 500);
     }
 
-    const envConfigured = Boolean(resolveExpectedIngestKey(ctx.tenant_id));
+    const envConfigured = Boolean(resolveExpectedIngestKey(tenantId));
     return NextResponse.json(
       {
         ok: true,
@@ -66,7 +68,7 @@ export async function GET() {
     );
   }
 
-  const envConfigured = Boolean(resolveExpectedIngestKey(ctx.tenant_id));
+  const envConfigured = Boolean(resolveExpectedIngestKey(tenantId));
   return NextResponse.json(
     {
       ok: true,
@@ -84,8 +86,10 @@ export async function GET() {
 export async function POST(req: Request) {
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
+  const tenantId = ctx.tenant_id;
+  if (!tenantId) return jsonError("Tenant manquant.", 400);
 
-  const adminCheck = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
+  const adminCheck = await requireTenantAdmin(ctx.sb, tenantId, ctx.user.id);
   if (!adminCheck.ok) return jsonError(adminCheck.error, 403);
 
   const parsed = await parseJson(
@@ -102,7 +106,7 @@ export async function POST(req: Request) {
 
   const { error } = await ctx.sb.from("tenant_ingest_keys").upsert(
     {
-      tenant_id: ctx.tenant_id,
+      tenant_id: tenantId,
       key_hash: keyHash,
       rotated_at: now,
       rotated_by: ctx.user.id,
@@ -117,7 +121,7 @@ export async function POST(req: Request) {
     console.error("Ingest key rotate error", {
       error: error.message,
       code: error.code,
-      tenantId: ctx.tenant_id,
+      tenantId,
       userId: ctx.user.id,
     });
     return jsonError("Une erreur est survenue.", 500);
@@ -138,4 +142,3 @@ export async function POST(req: Request) {
     { status: 200 }
   );
 }
-

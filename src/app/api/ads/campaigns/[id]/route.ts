@@ -34,7 +34,7 @@ export async function PATCH(
       active: z.boolean().optional(),
       starts_at: z.string().optional(),
       ends_at: z.string().optional(),
-      targeting: z.record(z.any()).optional(),
+      targeting: z.record(z.string(), z.any()).optional(),
     })
   );
   if (!parsed.ok) return parsed.res;

@@ -21,6 +21,8 @@ export async function GET(req: Request) {
   const { ctx } = auth;
   const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
+  const tenantId = ctx.tenantId;
+  if (!tenantId) return NextResponse.json({ error: "Tenant manquant." }, { status: 400 });
 
   const query = parseQuery(
     req,
@@ -36,7 +38,7 @@ export async function GET(req: Request) {
   const supa = supabaseAdmin();
 
   const filterRes = await resolveAnalyticsStreamFilter(supa, {
-    tenantId: ctx.tenantId,
+    tenantId,
     channelId: query.data.channelId ?? null,
     streamId: query.data.streamId ?? null,
   });
@@ -44,7 +46,7 @@ export async function GET(req: Request) {
     console.error("Analytics live filter error", {
       error: filterRes.error,
       code: filterRes.code ?? null,
-      tenantId: ctx.tenantId,
+      tenantId,
     });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
@@ -53,7 +55,7 @@ export async function GET(req: Request) {
     streamFilter.mode === "none" ? [] : streamFilter.mode === "ids" ? streamFilter.streamIds : undefined;
 
   const liveRes = await getViewerLiveSnapshot(supa, {
-    tenantId: ctx.tenantId,
+    tenantId,
     windowSec,
     expireStale: true,
     streamIds: streamIdsForFilter,
@@ -62,7 +64,7 @@ export async function GET(req: Request) {
   if (liveRes.ok) {
     if (streamFilter.mode !== "none" && liveRes.snapshot.activeUsers === 0) {
       const streamStatsFallback = await getStreamStatsLiveFallback(supa, {
-        tenantId: ctx.tenantId,
+        tenantId,
         windowSec,
         streamIds: streamIdsForFilter,
       });
@@ -83,7 +85,7 @@ export async function GET(req: Request) {
         console.error("Analytics live stream_stats fallback error", {
           error: streamStatsFallback.error,
           code: streamStatsFallback.code ?? null,
-          tenantId: ctx.tenantId,
+          tenantId,
         });
       }
     }
@@ -105,7 +107,7 @@ export async function GET(req: Request) {
     console.error("Analytics live snapshot error", {
       error: liveRes.error ?? "unknown",
       code: liveRes.code ?? null,
-      tenantId: ctx.tenantId,
+      tenantId,
     });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
@@ -114,7 +116,7 @@ export async function GET(req: Request) {
   let fallbackQuery = supa
     .from("analytics_events")
     .select("created_at, session_id, stream_id, event_type")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", tenantId)
     .gte("created_at", liveThreshold);
 
   if (streamFilter.mode === "ids" && streamFilter.streamIds.length === 1) {
@@ -131,7 +133,7 @@ export async function GET(req: Request) {
     console.error("Analytics live fallback error", {
       error: fallbackRes.error.message,
       code: fallbackRes.error.code,
-      tenantId: ctx.tenantId,
+      tenantId,
     });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
@@ -143,7 +145,7 @@ export async function GET(req: Request) {
 
   if (streamFilter.mode !== "none" && fallbackSnapshot.activeUsers === 0) {
     const streamStatsFallback = await getStreamStatsLiveFallback(supa, {
-      tenantId: ctx.tenantId,
+      tenantId,
       windowSec,
       streamIds: streamIdsForFilter,
     });
@@ -164,7 +166,7 @@ export async function GET(req: Request) {
       console.error("Analytics live stream_stats fallback error", {
         error: streamStatsFallback.error,
         code: streamStatsFallback.code ?? null,
-        tenantId: ctx.tenantId,
+        tenantId,
       });
     }
   }

@@ -2,6 +2,32 @@ import { NextResponse } from "next/server";
 import { requireAuth, requireTenant } from "../_utils/auth";
 import { supabaseUser, supabaseAdmin } from "../_utils/supabase";
 
+type TenantContextError = {
+  ok: false;
+  res: NextResponse;
+};
+
+type TenantContextBase = {
+  sb: ReturnType<typeof supabaseUser>;
+  admin: ReturnType<typeof supabaseAdmin>;
+  user: {
+    id: string;
+    email?: string | null;
+    app_metadata?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+};
+
+type TenantContextWithTenant = {
+  ok: true;
+  tenant_id: string;
+} & TenantContextBase;
+
+type TenantContextOptionalTenant = {
+  ok: true;
+  tenant_id: string | null;
+} & TenantContextBase;
+
 export function jsonError(message: string, status = 400) {
   const safeMessage =
     status === 401
@@ -12,14 +38,26 @@ export function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: safeMessage }, { status });
 }
 
-export async function getTenantContext(options?: { requireMembership?: boolean }) {
+export async function getTenantContext<T extends boolean = true>(
+  options?: { requireMembership?: T }
+): Promise<T extends false ? TenantContextError | TenantContextOptionalTenant : TenantContextError | TenantContextWithTenant> {
   const auth = await requireAuth();
-  if ("res" in auth) return { ok: false as const, res: auth.res };
+  if ("res" in auth) return { ok: false as const, res: auth.res } as any;
   const { ctx } = auth;
 
   if (options?.requireMembership !== false) {
     const tenantRes = await requireTenant(ctx);
-    if (tenantRes) return { ok: false as const, res: tenantRes };
+    if (tenantRes) return { ok: false as const, res: tenantRes } as any;
+    const tenantId = ctx.tenantId;
+    if (!tenantId) return { ok: false as const, res: jsonError("Tenant manquant.", 400) } as any;
+
+    return {
+      ok: true as const,
+      sb: supabaseUser(ctx.accessToken),
+      admin: supabaseAdmin(),
+      user: ctx.user,
+      tenant_id: tenantId,
+    } as any;
   }
 
   return {
@@ -27,8 +65,8 @@ export async function getTenantContext(options?: { requireMembership?: boolean }
     sb: supabaseUser(ctx.accessToken),
     admin: supabaseAdmin(),
     user: ctx.user,
-    tenant_id: ctx.tenantId,
-  };
+    tenant_id: ctx.tenantId ?? null,
+  } as any;
 }
 
 export async function requireTenantAdmin(

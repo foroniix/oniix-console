@@ -38,6 +38,8 @@ export async function POST(req: Request) {
   const { ctx } = auth;
   const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
+  const tenantId = ctx.tenantId;
+  if (!tenantId) return NextResponse.json({ error: "Tenant manquant." }, { status: 400 });
 
   try {
     const parsed = await parseJson(
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
     const normalizedEventType = normalizeEventType(body.eventType);
 
     const { error } = await supa.from("analytics_events").insert({
-      tenant_id: ctx.tenantId,
+      tenant_id: tenantId,
       session_id: body.sessionId,
       user_id: body.userId || ctx.userId || null,
       event_type: normalizedEventType,
@@ -77,7 +79,7 @@ export async function POST(req: Request) {
     if (error) throw new Error(error.message);
 
     const liveRes = await touchViewerLiveSession(supa, {
-      tenantId: ctx.tenantId,
+      tenantId,
       sessionId: body.sessionId,
       streamId: body.streamId ?? null,
       userId: body.userId || ctx.userId || null,
@@ -88,7 +90,7 @@ export async function POST(req: Request) {
       console.error("Analytics collect live sync error", {
         error: liveRes.error ?? "unknown",
         code: liveRes.code ?? null,
-        tenantId: ctx.tenantId,
+        tenantId,
         sessionId: body.sessionId,
         streamId: body.streamId ?? null,
         eventType: normalizedEventType,

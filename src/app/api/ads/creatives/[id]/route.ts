@@ -36,7 +36,7 @@ export async function PATCH(
       width: z.number().optional(),
       height: z.number().optional(),
       duration_ms: z.number().optional(),
-      metadata: z.record(z.any()).optional(),
+      metadata: z.record(z.string(), z.any()).optional(),
     })
   );
   if (!parsed.ok) return parsed.res;

@@ -53,6 +53,8 @@ export async function GET(req: Request) {
   const { ctx } = auth;
   const tenantErr = await requireTenant(ctx);
   if (tenantErr) return tenantErr;
+  const tenantId = ctx.tenantId;
+  if (!tenantId) return NextResponse.json({ error: "Tenant manquant." }, { status: 400 });
 
   try {
     const query = parseQuery(
@@ -75,7 +77,7 @@ export async function GET(req: Request) {
     else if (period === "30d") startTime.setDate(now.getDate() - 30);
 
     const filterRes = await resolveAnalyticsStreamFilter(supa, {
-      tenantId: ctx.tenantId,
+      tenantId,
       channelId: query.data.channelId ?? null,
       streamId: query.data.streamId ?? null,
     });
@@ -83,7 +85,7 @@ export async function GET(req: Request) {
       console.error("Analytics stats filter error", {
         error: filterRes.error,
         code: filterRes.code ?? null,
-        tenantId: ctx.tenantId,
+        tenantId,
       });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
@@ -93,7 +95,7 @@ export async function GET(req: Request) {
 
     if (streamFilter.mode === "none") {
       const liveSnapshotRes = await getViewerLiveSnapshot(supa, {
-        tenantId: ctx.tenantId,
+        tenantId,
         windowSec: LIVE_WINDOW_SEC,
         expireStale: true,
         streamIds: [],
@@ -113,13 +115,13 @@ export async function GET(req: Request) {
     let historicalQuery = supa
       .from("analytics_events")
       .select("created_at, device_type, stream_id, session_id, event_type")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", tenantId)
       .gte("created_at", startTime.toISOString());
 
     let liveQuery = supa
       .from("analytics_events")
       .select("created_at, session_id, stream_id, event_type")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", tenantId)
       .gte("created_at", liveThreshold);
 
     if (streamFilter.mode === "ids" && streamFilter.streamIds.length === 1) {
@@ -134,7 +136,7 @@ export async function GET(req: Request) {
       historicalQuery.order("created_at", { ascending: true }),
       liveQuery.order("created_at", { ascending: true }),
       getViewerLiveSnapshot(supa, {
-        tenantId: ctx.tenantId,
+        tenantId,
         windowSec: LIVE_WINDOW_SEC,
         expireStale: true,
         streamIds: streamIdsForFilter,
@@ -145,7 +147,7 @@ export async function GET(req: Request) {
       console.error("Analytics stats error", {
         historical: historicalRes.error?.message,
         live: liveRes.error?.message,
-        tenantId: ctx.tenantId,
+        tenantId,
       });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
@@ -160,7 +162,7 @@ export async function GET(req: Request) {
       console.error("Analytics stats live snapshot error", {
         error: liveSnapshotRes.error ?? "unknown",
         code: liveSnapshotRes.code ?? null,
-        tenantId: ctx.tenantId,
+        tenantId,
       });
     }
 
@@ -168,9 +170,9 @@ export async function GET(req: Request) {
     let activeUsersNow = liveSnapshot.activeUsers;
     let currentStreams = liveSnapshot.currentStreams;
 
-    if (streamFilter.mode !== "none" && activeUsersNow === 0) {
+    if (activeUsersNow === 0) {
       const streamStatsFallback = await getStreamStatsLiveFallback(supa, {
-        tenantId: ctx.tenantId,
+        tenantId,
         windowSec: LIVE_WINDOW_SEC,
         streamIds: streamIdsForFilter,
       });
@@ -181,7 +183,7 @@ export async function GET(req: Request) {
         console.error("Analytics stats stream_stats fallback error", {
           error: streamStatsFallback.error,
           code: streamStatsFallback.code ?? null,
-          tenantId: ctx.tenantId,
+          tenantId,
         });
       }
     }

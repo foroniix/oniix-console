@@ -78,8 +78,8 @@ export async function POST(req: Request) {
   const parsed = await parseJson(
     req,
     z.object({
-      event: z.string().min(1),
-      placement: z.string().optional().nullable(),
+      event: z.enum(["IMPRESSION", "CLICK", "START", "COMPLETE", "SKIP"]),
+      placement: z.enum(["PLAYER_START", "EVERY_X_MIN", "ON_EVENT", "MANUAL_TRIGGER"]).optional().nullable(),
       campaign_id: z.string().optional().nullable(),
       creative_id: z.string().optional().nullable(),
       stream_id: z.string().optional().nullable(),
