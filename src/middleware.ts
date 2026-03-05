@@ -9,6 +9,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/api/auth/login",
   "/api/auth/signup",
   "/api/auth/logout",
+  "/api/replays/process/cron",
   "/_next",
   "/favicon.ico",
 ];

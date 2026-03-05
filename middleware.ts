@@ -5,8 +5,18 @@ import { NextResponse } from "next/server";
 const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 const BLOCKED_PATH_PREFIXES = ["/api/public", "/api/upload", "/api/utils/validate-hls", "/api/_debug"];
 const PUBLIC_PATH_PREFIXES = ["/we", "/web"];
-const PUBLIC_API_PREFIXES = ["/api/mobile", "/api/analytics/ingest", "/api/analytics/heartbeat"];
-const CSRF_EXEMPT_API_PREFIXES = ["/api/mobile", "/api/analytics/ingest", "/api/analytics/heartbeat"];
+const PUBLIC_API_PREFIXES = [
+  "/api/mobile",
+  "/api/analytics/ingest",
+  "/api/analytics/heartbeat",
+  "/api/replays/process/cron",
+];
+const CSRF_EXEMPT_API_PREFIXES = [
+  "/api/mobile",
+  "/api/analytics/ingest",
+  "/api/analytics/heartbeat",
+  "/api/replays/process/cron",
+];
 
 const SECURITY_HEADERS: Record<string, string> = {
   ...(process.env.NODE_ENV === "production"
