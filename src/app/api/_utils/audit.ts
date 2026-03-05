@@ -22,16 +22,6 @@ export async function auditLog(input: AuditLogInput) {
     return;
   }
 
-  const isMissingColumnError = (message: string) => {
-    const m = message.toLowerCase();
-    return (
-      m.includes("does not exist") ||
-      m.includes("could not find") ||
-      m.includes("column") ||
-      m.includes("schema cache")
-    );
-  };
-
   const actorFieldAttempts = ["actor_user_id", "actor_id", "user_id"] as const;
   let lastError: { message: string } | null = null;
 
@@ -49,7 +39,6 @@ export async function auditLog(input: AuditLogInput) {
     if (!error) return;
 
     lastError = error;
-    if (!isMissingColumnError(error.message)) break;
   }
 
   if (lastError) {
