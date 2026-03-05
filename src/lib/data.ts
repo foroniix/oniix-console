@@ -509,6 +509,8 @@ export async function endLiveAndCreateReplay(
     clipStartAt?: string;
     clipEndAt?: string;
     sourceHlsUrl?: string;
+    endStream?: boolean;
+    baseUrl?: string;
   }
 ) {
   const sid = guardId(id, "endLiveAndCreateReplay");
@@ -528,6 +530,8 @@ export async function endLiveAndCreateReplay(
         clipStartAt: opts?.clipStartAt,
         clipEndAt: opts?.clipEndAt,
         sourceHlsUrl: opts?.sourceHlsUrl,
+        endStream: opts?.endStream,
+        baseUrl: opts?.baseUrl,
       }),
     })
   );

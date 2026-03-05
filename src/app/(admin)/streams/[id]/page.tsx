@@ -53,6 +53,12 @@ type AnalyticsResult = {
   summary: { viewersAvg1h: number; viewersPeak24h: number; bitrateAvg1h: number; errors1h: number; errors24h: number };
   series24h: Array<{ ts: string; viewers: number; bitrateKbps: number; errors: number }>;
 };
+type ReplayProcessResult = {
+  ok?: boolean;
+  done?: number;
+  failed?: number;
+  processed?: Array<{ jobId: string; replayId: string; status: "done" | "failed"; message: string }>;
+};
 type AuditItem = { id: string; at: string; action: string; details: string; actor: string };
 type AuditApiRow = {
   id: string;
@@ -118,6 +124,17 @@ function dateLabel(value?: string | null) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "--";
   return parsed.toLocaleString();
+}
+
+function toLocalDateTimeInput(value: Date) {
+  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function parseDateTimeInput(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
 }
 
 function toRecord(value: unknown) {
@@ -190,6 +207,11 @@ export default function StreamDetailPage() {
   const [muted, setMuted] = useState(true);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [geoProbe, setGeoProbe] = useState("");
+  const [clipStartAt, setClipStartAt] = useState("");
+  const [clipEndAt, setClipEndAt] = useState("");
+  const [clipEndStream, setClipEndStream] = useState(false);
+  const [clipSubmitting, setClipSubmitting] = useState(false);
+  const [clipQueueRunning, setClipQueueRunning] = useState(false);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
   const [configDirty, setConfigDirty] = useState(false);
@@ -398,6 +420,14 @@ export default function StreamDetailPage() {
   }, [loadAnalytics, loadAudit, loadStream]);
 
   useEffect(() => {
+    const now = new Date();
+    const start = new Date(now.getTime() - 15 * 60 * 1000);
+    setClipStartAt(toLocalDateTimeInput(start));
+    setClipEndAt(toLocalDateTimeInput(now));
+    setClipEndStream(false);
+  }, [id]);
+
+  useEffect(() => {
     if (!autoRefreshEnabled || tab === "config") return;
 
     const refresh = () => {
@@ -512,12 +542,89 @@ export default function StreamDetailPage() {
     void loadAudit();
   };
 
-  const onCreateReplay = async () => {
+  const onCreateReplayInstant = async () => {
     if (!stream) return;
-    await endLiveAndCreateReplay(stream.id, { title: stream.title });
-    setFeedback("Replay cree.");
-    addAudit("CREATE_REPLAY", "Replay cree depuis live");
-    void loadAudit();
+    try {
+      await endLiveAndCreateReplay(stream.id, { title: stream.title, endStream: true });
+      setFeedback("Replay instantane cree (flux passe en ENDED).");
+      addAudit("CREATE_REPLAY", "Replay instantane cree depuis live");
+      void loadAudit();
+    } catch {
+      setFeedback("Impossible de creer le replay instantane.");
+    }
+  };
+
+  const onCreateReplayClip = async () => {
+    if (!stream) return;
+    const clipStartIso = parseDateTimeInput(clipStartAt);
+    const clipEndIso = parseDateTimeInput(clipEndAt);
+    if (!clipStartIso || !clipEndIso || clipEndIso <= clipStartIso) {
+      setFeedback("Fenetre replay invalide. Verifiez debut/fin.");
+      return;
+    }
+
+    setClipSubmitting(true);
+    try {
+      await endLiveAndCreateReplay(stream.id, {
+        title: stream.title,
+        clipStartAt: clipStartIso,
+        clipEndAt: clipEndIso,
+        sourceHlsUrl: stream.hlsUrl,
+        replayStatus: "processing",
+        endStream: clipEndStream,
+      });
+
+      addAudit("CREATE_REPLAY_CLIP", `Replay fenetre ${dateLabel(clipStartIso)} -> ${dateLabel(clipEndIso)}`);
+
+      const processRes = await fetch("/api/replays/process", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ limit: 1 }),
+      });
+      const processJson = (await processRes.json().catch(() => null)) as ReplayProcessResult | null;
+
+      if (processRes.ok && processJson?.ok) {
+        const done = Number(processJson.done ?? 0);
+        const failed = Number(processJson.failed ?? 0);
+        if (done > 0) {
+          setFeedback("Replay clip genere et pret.");
+        } else if (failed > 0) {
+          setFeedback(processJson.processed?.[0]?.message || "Replay clip en echec.");
+        } else {
+          setFeedback("Replay clip cree en file d'attente.");
+        }
+      } else {
+        setFeedback("Replay clip cree, traitement en file d'attente.");
+      }
+      void loadAudit();
+    } catch {
+      setFeedback("Impossible de creer le replay clip.");
+    } finally {
+      setClipSubmitting(false);
+    }
+  };
+
+  const onProcessClipQueue = async () => {
+    setClipQueueRunning(true);
+    try {
+      const response = await fetch("/api/replays/process", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ limit: 3 }),
+      });
+      const json = (await response.json().catch(() => null)) as ReplayProcessResult | null;
+      if (!response.ok || !json?.ok) {
+        setFeedback("Traitement des clips impossible.");
+        return;
+      }
+      const done = Number(json.done ?? 0);
+      const failed = Number(json.failed ?? 0);
+      setFeedback(`Traitement clips: ${done} termine(s), ${failed} en echec.`);
+      addAudit("PROCESS_REPLAY_CLIPS", `${done} done / ${failed} failed`);
+      void loadAudit();
+    } finally {
+      setClipQueueRunning(false);
+    }
   };
 
   const geoResult = useMemo(() => {
@@ -652,7 +759,49 @@ export default function StreamDetailPage() {
               <div className="mt-3 space-y-2">
                 <Button onClick={onSetLive} disabled={stream.status === "LIVE"} className="w-full justify-start bg-[#22c55e] text-black hover:bg-[#22c55e]/90"><Play className="mr-2 size-4" />Passer live</Button>
                 <Button onClick={onStop} disabled={stream.status !== "LIVE"} variant="outline" className="w-full justify-start border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#f59e0b]"><Square className="mr-2 size-4" />Arreter le flux</Button>
-                <Button onClick={onCreateReplay} variant="outline" className="w-full justify-start border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"><MonitorPlay className="mr-2 size-4" />Creer replay</Button>
+                <Button onClick={onCreateReplayInstant} variant="outline" className="w-full justify-start border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"><MonitorPlay className="mr-2 size-4" />Creer replay instantane</Button>
+              </div>
+              <div className="mt-3 space-y-2 rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3">
+                <p className="text-xs text-[#8b93a7]">Replay clip (flux continu): selectionnez debut et fin.</p>
+                <div>
+                  <Label className="text-xs text-[#8b93a7]">Debut</Label>
+                  <Input
+                    type="datetime-local"
+                    value={clipStartAt}
+                    onChange={(event) => setClipStartAt(event.target.value)}
+                    className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-[#8b93a7]">Fin</Label>
+                  <Input
+                    type="datetime-local"
+                    value={clipEndAt}
+                    onChange={(event) => setClipEndAt(event.target.value)}
+                    className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]"
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#151821] px-3 py-2">
+                  <Label className="text-xs text-[#8b93a7]">Arreter le flux live</Label>
+                  <Switch checked={clipEndStream} onCheckedChange={setClipEndStream} />
+                </div>
+                <Button
+                  onClick={() => void onCreateReplayClip()}
+                  disabled={clipSubmitting}
+                  className="w-full bg-[#4c82fb] text-white hover:bg-[#3b6fe0]"
+                >
+                  {clipSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <MonitorPlay className="mr-2 size-4" />}
+                  Creer replay depuis fenetre
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => void onProcessClipQueue()}
+                  disabled={clipQueueRunning}
+                  className="w-full border-[#262b38] bg-[#151821] text-[#e6eaf2]"
+                >
+                  {clipQueueRunning ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
+                  Traiter la file clips
+                </Button>
               </div>
             </div>
             <div className="rounded-xl border border-[#262b38] bg-[#151821] p-4">

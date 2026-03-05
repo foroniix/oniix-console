@@ -6,7 +6,7 @@ import { canTransitionReplayStatus } from "../../_utils/programming";
 import { supabaseUser } from "../../_utils/supabase";
 import { parseJson } from "../../_utils/validate";
 
-const ReplayStatus = z.enum(["draft", "ready", "published", "archived"]);
+const ReplayStatus = z.enum(["draft", "processing", "ready", "published", "archived"]);
 
 function toIsoDate(value?: string | null) {
   if (!value) return null;
@@ -82,7 +82,10 @@ export async function PATCH(
 
   if (
     body.replayStatus !== undefined &&
-    !canTransitionReplayStatus(current.replay_status as "draft" | "ready" | "published" | "archived", body.replayStatus)
+    !canTransitionReplayStatus(
+      current.replay_status as "draft" | "processing" | "ready" | "published" | "archived",
+      body.replayStatus
+    )
   ) {
     return invalidTransitionResponse();
   }

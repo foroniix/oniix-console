@@ -5,7 +5,7 @@ import { auditLog } from "../_utils/audit";
 import { supabaseUser } from "../_utils/supabase";
 import { parseJson, parseQuery } from "../_utils/validate";
 
-const ReplayStatus = z.enum(["draft", "ready", "published", "archived"]);
+const ReplayStatus = z.enum(["draft", "processing", "ready", "published", "archived"]);
 
 function toIsoDate(value?: string | null) {
   if (!value) return null;

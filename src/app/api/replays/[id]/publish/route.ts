@@ -44,7 +44,7 @@ export async function POST(
   if (!current.hls_url) return invalidResponse();
   if (
     !canTransitionReplayStatus(
-      current.replay_status as "draft" | "ready" | "published" | "archived",
+      current.replay_status as "draft" | "processing" | "ready" | "published" | "archived",
       "published"
     )
   ) {
