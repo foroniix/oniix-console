@@ -127,9 +127,11 @@ export default function ProgrammingPage() {
               form={vm.replayForm}
               statusOptions={vm.replayStatusOptions}
               saving={vm.savingReplay}
+              processingQueue={vm.processingReplayQueue}
               busyAction={vm.busyAction}
               onPatch={vm.patchReplayForm}
               onSave={vm.saveReplay}
+              onProcessQueue={vm.processReplayQueue}
               onReset={vm.resetReplayForm}
               onEdit={vm.startEditReplay}
               onPublish={vm.publishReplayById}

@@ -27,14 +27,30 @@ type ReplaySectionProps = {
   form: ReplayFormState;
   statusOptions: ReplayFormState["status"][];
   saving: boolean;
+  processingQueue: boolean;
   busyAction: string | null;
   onPatch: (patch: Partial<ReplayFormState>) => void;
   onSave: () => void;
+  onProcessQueue: () => void;
   onReset: () => void;
   onEdit: (replay: Replay) => void;
   onPublish: (id: string) => void;
   onDelete: (id: string) => void;
 };
+
+function statusTone(status: Replay["replayStatus"]) {
+  if (status === "published") return "bg-emerald-600 text-white";
+  if (status === "ready") return "bg-blue-600 text-white";
+  if (status === "processing") return "bg-amber-500 text-black";
+  if (status === "archived") return "bg-zinc-600 text-white";
+  return "bg-zinc-700 text-white";
+}
+
+function shorten(value: string, max = 90) {
+  const raw = value.trim();
+  if (raw.length <= max) return raw;
+  return `${raw.slice(0, max - 1)}...`;
+}
 
 export function ReplaySection(props: ReplaySectionProps) {
   const {
@@ -45,9 +61,11 @@ export function ReplaySection(props: ReplaySectionProps) {
     form,
     statusOptions,
     saving,
+    processingQueue,
     busyAction,
     onPatch,
     onSave,
+    onProcessQueue,
     onReset,
     onEdit,
     onPublish,
@@ -191,6 +209,14 @@ export function ReplaySection(props: ReplaySectionProps) {
             <Plus className="h-4 w-4 mr-2" />
             {saving ? "Enregistrement..." : form.id ? "Mettre a jour replay" : "Ajouter replay"}
           </Button>
+          <Button
+            variant="outline"
+            onClick={onProcessQueue}
+            disabled={processingQueue}
+            className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+          >
+            {processingQueue ? "Traitement..." : "Traiter clips en attente"}
+          </Button>
           {form.id ? (
             <Button
               variant="outline"
@@ -210,9 +236,9 @@ export function ReplaySection(props: ReplaySectionProps) {
               <th className="text-left px-3 py-2">Replay</th>
               <th className="text-left px-3 py-2">Source</th>
               <th className="text-left px-3 py-2">Chaine</th>
-              <th className="text-left px-3 py-2">HLS</th>
+              <th className="text-left px-3 py-2">HLS / Fenetre</th>
               <th className="text-left px-3 py-2">Disponibilite</th>
-              <th className="text-left px-3 py-2">Statut</th>
+              <th className="text-left px-3 py-2">Statut / Diagnostic</th>
               <th className="text-right px-3 py-2">Actions</th>
             </tr>
           </thead>
@@ -237,13 +263,29 @@ export function ReplaySection(props: ReplaySectionProps) {
                     {replay.stream?.title || (replay.streamId ? streamMap.get(replay.streamId) : null) || "-"}
                   </td>
                   <td className="px-3 py-2">{replay.channel?.name || "-"}</td>
-                  <td className="px-3 py-2">{replay.hlsUrl || "-"}</td>
+                  <td className="px-3 py-2">
+                    <div className="space-y-1">
+                      <div className="text-xs text-zinc-200">{replay.hlsUrl ? shorten(replay.hlsUrl, 72) : "-"}</div>
+                      {replay.clipStartAt || replay.clipEndAt ? (
+                        <div className="text-[11px] text-zinc-500">
+                          {formatDateTime(replay.clipStartAt)} {"->"} {formatDateTime(replay.clipEndAt)}
+                        </div>
+                      ) : null}
+                    </div>
+                  </td>
                   <td className="px-3 py-2">
                     {formatDateTime(replay.availableFrom)}
                     {replay.availableTo ? ` -> ${formatDateTime(replay.availableTo)}` : ""}
                   </td>
                   <td className="px-3 py-2">
-                    <Badge>{replay.replayStatus}</Badge>
+                    <div className="space-y-1">
+                      <Badge className={statusTone(replay.replayStatus)}>{replay.replayStatus}</Badge>
+                      {replay.processingError ? (
+                        <div className="text-[11px] text-rose-300">{shorten(replay.processingError, 110)}</div>
+                      ) : replay.replayStatus === "processing" ? (
+                        <div className="text-[11px] text-amber-300">Generation en cours...</div>
+                      ) : null}
+                    </div>
                   </td>
                   <td className="px-3 py-2 text-right space-x-2">
                     <Button

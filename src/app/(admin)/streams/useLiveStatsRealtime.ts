@@ -62,6 +62,10 @@ const LIVE_DEBOUNCE_MS = 500;
 const LEGACY_STATS_MAX_AGE_MS = 30_000;
 const LIVE_STATS_V2_ENABLED = process.env.NEXT_PUBLIC_LIVE_STATS_V2 !== "false";
 
+type UseLiveStatsRealtimeOptions = {
+  enableBackgroundPolling?: boolean;
+};
+
 function computeHealth(bitrate: number, errors: number): UIStats["health"] {
   if (errors > 0) return "Critical";
   if (bitrate < 2000) return "Unstable";
@@ -73,20 +77,27 @@ function formatBitrate(bitrate: number) {
   return bitrate > 1000 ? `${(bitrate / 1000).toFixed(1)} Mbps` : `${bitrate} kbps`;
 }
 
-export function useLiveStatsRealtime(streamId: string, isLive: boolean) {
+export function useLiveStatsRealtime(
+  streamId: string,
+  isLive: boolean,
+  options?: UseLiveStatsRealtimeOptions
+) {
   const [stats, setStats] = useState<UIStats>(INITIAL_STATS);
   const audioIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const enableBackgroundPolling = options?.enableBackgroundPolling ?? false;
 
   useEffect(() => {
     if (!isLive) return;
 
     let alive = true;
+    const shouldUseAnalytics = LIVE_STATS_V2_ENABLED && enableBackgroundPolling;
     let qualityChannel: SupabaseChannel | null = null;
     let analyticsChannel: SupabaseChannel | null = null;
     let analyticsClient: ReturnType<typeof supabaseBrowser> | null = null;
     let livePollTimer: ReturnType<typeof setInterval> | null = null;
     let livePurgeTimer: ReturnType<typeof setInterval> | null = null;
     let liveRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+    let visibilityListener: (() => void) | null = null;
     let analyticsHasSignal = false;
 
     const liveSessions = new Map<string, number>();
@@ -198,7 +209,7 @@ export function useLiveStatsRealtime(streamId: string, isLive: boolean) {
 
       const latest = (data ?? null) as StreamStatsRow | null;
       applyQuality(latest);
-      if (!LIVE_STATS_V2_ENABLED) applyViewers(Number(latest?.viewers ?? 0), "legacy");
+      if (!shouldUseAnalytics) applyViewers(Number(latest?.viewers ?? 0), "legacy");
 
       qualityChannel = supabase
         .channel(`stream-quality:${streamId}`)
@@ -212,7 +223,7 @@ export function useLiveStatsRealtime(streamId: string, isLive: boolean) {
           },
           (payload: { new: StreamStatsRow }) => {
             applyQuality(payload.new);
-            if (!LIVE_STATS_V2_ENABLED) {
+            if (!shouldUseAnalytics) {
               applyViewers(Number(payload.new?.viewers ?? 0), "legacy");
             }
           }
@@ -289,14 +300,23 @@ export function useLiveStatsRealtime(streamId: string, isLive: boolean) {
 
     void initQualityStream();
 
-    if (LIVE_STATS_V2_ENABLED) {
+    if (shouldUseAnalytics) {
       void loadLiveSnapshot();
       livePollTimer = setInterval(() => {
+        if (typeof document !== "undefined" && document.hidden) return;
         void loadLiveSnapshot();
       }, LIVE_POLL_MS);
       livePurgeTimer = setInterval(() => {
         recomputeFromSessions();
       }, LIVE_PURGE_MS);
+      visibilityListener = () => {
+        if (typeof document !== "undefined" && !document.hidden) {
+          void loadLiveSnapshot();
+        }
+      };
+      if (typeof document !== "undefined") {
+        document.addEventListener("visibilitychange", visibilityListener);
+      }
       void initAnalyticsRealtime();
     }
 
@@ -306,6 +326,9 @@ export function useLiveStatsRealtime(streamId: string, isLive: boolean) {
       if (livePollTimer) clearInterval(livePollTimer);
       if (livePurgeTimer) clearInterval(livePurgeTimer);
       if (liveRefreshTimer) clearTimeout(liveRefreshTimer);
+      if (visibilityListener && typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", visibilityListener);
+      }
       try {
         if (qualityChannel) supabase.removeChannel(qualityChannel);
       } catch {}
@@ -316,7 +339,7 @@ export function useLiveStatsRealtime(streamId: string, isLive: boolean) {
         analyticsClient?.removeAllChannels();
       } catch {}
     };
-  }, [streamId, isLive]);
+  }, [streamId, isLive, enableBackgroundPolling]);
 
   return isLive ? stats : INITIAL_STATS;
 }

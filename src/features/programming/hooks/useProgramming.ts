@@ -72,6 +72,13 @@ function resolveActionErrorMessage(fallback: string, err?: unknown) {
   return message;
 }
 
+type ReplayProcessApiResponse = {
+  ok?: boolean;
+  done?: number;
+  failed?: number;
+  error?: string;
+};
+
 export function useProgramming() {
   const [tab, setTab] = useState<TabKey>("grid");
 
@@ -91,6 +98,7 @@ export function useProgramming() {
   const [savingProgram, setSavingProgram] = useState(false);
   const [savingSlot, setSavingSlot] = useState(false);
   const [savingReplay, setSavingReplay] = useState(false);
+  const [processingReplayQueue, setProcessingReplayQueue] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -361,6 +369,33 @@ export function useProgramming() {
     }
   }, [replayForm, resetReplayForm, setErrorFeedback, setSuccessFeedback]);
 
+  const processReplayQueue = useCallback(async () => {
+    setProcessingReplayQueue(true);
+    try {
+      const response = await fetch("/api/replays/process", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ limit: 5 }),
+      });
+      const json = (await response.json().catch(() => null)) as ReplayProcessApiResponse | null;
+
+      if (!response.ok || !json?.ok) {
+        const message = json?.error?.trim();
+        setErrorFeedback(message || "Impossible de traiter la file replay.");
+        return;
+      }
+
+      const done = Number(json.done ?? 0);
+      const failed = Number(json.failed ?? 0);
+      setSuccessFeedback(`Traitement replay: ${done} termine(s), ${failed} en echec.`);
+      await loadAll(true);
+    } catch (err) {
+      setErrorFeedback("Impossible de traiter la file replay.", err);
+    } finally {
+      setProcessingReplayQueue(false);
+    }
+  }, [loadAll, setErrorFeedback, setSuccessFeedback]);
+
   const startEditProgram = useCallback((program: Program) => {
     setProgramForm({
       id: program.id,
@@ -532,6 +567,7 @@ export function useProgramming() {
     savingProgram,
     savingSlot,
     savingReplay,
+    processingReplayQueue,
     busyAction,
     patchProgramForm,
     patchSlotForm,
@@ -540,6 +576,7 @@ export function useProgramming() {
     resetSlotForm,
     resetReplayForm,
     loadAll,
+    processReplayQueue,
     saveProgram,
     saveSlot,
     saveReplay,
