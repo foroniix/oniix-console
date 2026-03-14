@@ -31,6 +31,7 @@ yarn-error.log*
 .pnpm-debug.log*
 dev-out.log
 .tmp-supabase-cli*
+supabase/.temp/
 
 # env files (never commit secrets)
 .env
