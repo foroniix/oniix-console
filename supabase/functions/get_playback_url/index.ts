@@ -1,9 +1,8 @@
 import { z } from "npm:zod@4";
 
 import { jsonResponse, optionsResponse } from "../_shared/cors.ts";
-import { env } from "../_shared/env.ts";
 import { createAdminClient } from "../_shared/supabase.ts";
-import { createPlaybackToken } from "../_shared/hls-token.ts";
+import { env } from "../_shared/env.ts";
 
 const requestSchema = z.object({
   channel_id: z.string().uuid(),
@@ -119,21 +118,13 @@ Deno.serve(async (request) => {
     sessionId = session.id;
   }
 
-  const token = await createPlaybackToken({
-    secret: env.hlsTokenSecret,
-    channelId: channel.id,
-    sessionId,
-    deviceId: body.device_id ?? null,
-    ttlSec: env.playbackTokenTtlSec,
-  });
-
   const playbackUrl = new URL(`/hls/${channel.id}/master.m3u8`, env.streamBaseUrl);
-  playbackUrl.searchParams.set("token", token.token);
+  playbackUrl.searchParams.set("sid", sessionId);
 
   return jsonResponse({
     ok: true,
     session_id: sessionId,
     playback_url: playbackUrl.toString(),
-    expires_at: token.payload.exp,
+    expires_at: null,
   });
 });

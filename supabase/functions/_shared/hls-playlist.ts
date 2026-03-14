@@ -4,7 +4,7 @@ type RewriteHlsPlaylistInput = {
   playlist: string;
   playlistUrl: string;
   channelId: string;
-  token: string;
+  token?: string | null;
   streamBaseUrl: string;
   makeResourceRef: (absoluteUrl: string) => Promise<string> | string;
 };
@@ -46,7 +46,9 @@ async function buildProxyUrl(
     `/hls/${encodeURIComponent(input.channelId)}/${encodeURIComponent(sanitizeFileName(parsed.pathname))}`,
     input.streamBaseUrl
   );
-  proxyUrl.searchParams.set("token", input.token);
+  if (input.token?.trim()) {
+    proxyUrl.searchParams.set("token", input.token.trim());
+  }
   proxyUrl.searchParams.set("ref", ref);
   return proxyUrl.toString();
 }

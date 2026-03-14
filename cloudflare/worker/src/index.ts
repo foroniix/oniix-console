@@ -1,6 +1,5 @@
 import { rewriteHlsPlaylist } from "../../../shared/ott/hls-playlist";
 import { createOriginRef, verifyOriginRef } from "../../../shared/ott/origin-ref";
-import { verifyPlaybackToken } from "../../../shared/ott/hls-token";
 
 type Env = {
   STREAM_BASE_URL: string;
@@ -20,15 +19,27 @@ type ResolveOriginResponse = {
   resolved_at: string;
 };
 
+const ORIGIN_LOOKUP_CACHE_TTL_SEC = 300;
+const DEFAULT_UNSECURED_REF_TTL_SEC = 60 * 60 * 12;
+
 function getTtl(value: string | undefined, fallback: number) {
   const parsed = Number(value ?? "");
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function buildCacheKey(request: Request, kind: "playlist" | "segment", channelId: string, ref: string | null) {
+async function hashCacheRef(ref: string | null) {
+  if (!ref) return "master";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ref));
+  return Array.from(new Uint8Array(digest))
+    .map((item) => item.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function buildCacheKey(request: Request, kind: "playlist" | "segment", channelId: string, ref: string | null) {
   const url = new URL(request.url);
   url.pathname = `/_cache/${kind}/${channelId}`;
-  url.search = ref ? `?ref=${encodeURIComponent(ref)}` : "?ref=master";
+  const refKey = await hashCacheRef(ref);
+  url.search = `?ref=${refKey}`;
   return new Request(url.toString(), { method: "GET" });
 }
 
@@ -49,7 +60,7 @@ function buildClientHeaders(source: Headers, cacheControl: string) {
 }
 
 async function resolveOrigin(request: Request, env: Env, ctx: ExecutionContext, channelId: string) {
-  const cacheKey = buildCacheKey(request, "playlist", `origin-${channelId}`, "lookup");
+  const cacheKey = await buildCacheKey(request, "playlist", `origin-${channelId}`, "lookup");
   const cached = await caches.default.match(cacheKey);
   if (cached) {
     return (await cached.json()) as ResolveOriginResponse;
@@ -72,7 +83,7 @@ async function resolveOrigin(request: Request, env: Env, ctx: ExecutionContext, 
   const cacheable = new Response(JSON.stringify(payload), {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "max-age=30",
+      "Cache-Control": `max-age=${ORIGIN_LOOKUP_CACHE_TTL_SEC}`,
     },
   });
   ctx.waitUntil(caches.default.put(cacheKey, cacheable));
@@ -98,12 +109,12 @@ async function proxyPlaylist(
   env: Env,
   ctx: ExecutionContext,
   channelId: string,
-  token: string,
-  tokenExp: number,
+  token: string | null,
+  refExp: number,
   targetUrl: string,
   ref: string | null
 ) {
-  const cacheKey = buildCacheKey(request, "playlist", channelId, ref);
+  const cacheKey = await buildCacheKey(request, "playlist", channelId, ref);
   const cached = await caches.default.match(cacheKey);
   if (cached) return cached;
 
@@ -113,7 +124,14 @@ async function proxyPlaylist(
       "Cache-Control": "no-cache",
       Accept: "application/vnd.apple.mpegurl,application/x-mpegURL,text/plain,*/*",
     },
+  }).catch((error) => {
+    console.warn("playlist origin fetch exception", { channelId, targetUrl, error: String(error) });
+    return null;
   });
+
+  if (!originResponse) {
+    return new Response("Origin playlist unavailable.", { status: 502 });
+  }
 
   if (!originResponse.ok) {
     console.warn("playlist origin fetch failed", { channelId, status: originResponse.status });
@@ -132,13 +150,14 @@ async function proxyPlaylist(
         secret: env.ORIGIN_REF_SECRET,
         channelId,
         url: absoluteUrl,
-        exp: tokenExp,
+        exp: refExp,
       }),
   });
 
   console.log("playlist proxied", { channelId, kind: rewritten.kind, rewritten: rewritten.rewriteCount });
 
-  const cacheTtl = getTtl(env.PLAYLIST_CACHE_TTL_SEC, 2);
+  const mediaPlaylistTtl = getTtl(env.PLAYLIST_CACHE_TTL_SEC, 2);
+  const cacheTtl = rewritten.kind === "master" ? Math.max(mediaPlaylistTtl, 30) : mediaPlaylistTtl;
   const response = new Response(rewritten.playlist, {
     status: 200,
     headers: {
@@ -168,7 +187,7 @@ async function proxySegment(
   ref: string | null
 ) {
   const hasRange = request.headers.has("Range");
-  const cacheKey = buildCacheKey(request, "segment", channelId, ref);
+  const cacheKey = await buildCacheKey(request, "segment", channelId, ref);
   if (!hasRange) {
     const cached = await caches.default.match(cacheKey);
     if (cached) return cached;
@@ -181,7 +200,14 @@ async function proxySegment(
           Range: request.headers.get("Range") ?? "",
         }
       : undefined,
+  }).catch((error) => {
+    console.warn("segment origin fetch exception", { channelId, targetUrl, error: String(error) });
+    return null;
   });
+
+  if (!originResponse) {
+    return new Response("Origin segment unavailable.", { status: 502 });
+  }
 
   if (!originResponse.ok && originResponse.status !== 206) {
     console.warn("segment origin fetch failed", { channelId, status: originResponse.status });
@@ -223,18 +249,9 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext) 
   }
 
   const channelId = decodeURIComponent(match[1]);
-  const token = url.searchParams.get("token")?.trim() ?? "";
+  const token = url.searchParams.get("token")?.trim() || null;
   const ref = url.searchParams.get("ref")?.trim() ?? null;
-
-  const verifiedToken = await verifyPlaybackToken({
-    token,
-    secret: env.HLS_TOKEN_SECRET,
-    channelId,
-  });
-  if (!verifiedToken.ok) {
-    console.warn("invalid playback token", { channelId, error: verifiedToken.error });
-    return new Response("Unauthorized.", { status: 401 });
-  }
+  const refExp = Math.floor(Date.now() / 1000) + DEFAULT_UNSECURED_REF_TTL_SEC;
 
   let targetUrl: string;
   if (ref) {
@@ -254,7 +271,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext) 
   }
 
   if (looksLikePlaylistUrl(targetUrl)) {
-    return proxyPlaylist(request, env, ctx, channelId, token, verifiedToken.payload.exp, targetUrl, ref);
+    return proxyPlaylist(request, env, ctx, channelId, token, refExp, targetUrl, ref);
   }
   if (looksLikeMediaAsset(targetUrl)) {
     return proxySegment(request, env, ctx, channelId, targetUrl, ref);
@@ -264,7 +281,7 @@ async function handleRequest(request: Request, env: Env, ctx: ExecutionContext) 
     method: "HEAD",
   }).catch(() => null);
   if (probeResponse && isPlaylistRequest(targetUrl, probeResponse)) {
-    return proxyPlaylist(request, env, ctx, channelId, token, verifiedToken.payload.exp, targetUrl, ref);
+    return proxyPlaylist(request, env, ctx, channelId, token, refExp, targetUrl, ref);
   }
 
   return proxySegment(request, env, ctx, channelId, targetUrl, ref);

@@ -29,7 +29,9 @@ async function buildProxyUrl(absoluteUrl, input) {
     `/hls/${encodeURIComponent(input.channelId)}/${encodeURIComponent(sanitizeFileName(parsed.pathname))}`,
     input.streamBaseUrl
   );
-  proxyUrl.searchParams.set("token", input.token);
+  if (input.token?.trim()) {
+    proxyUrl.searchParams.set("token", input.token.trim());
+  }
   proxyUrl.searchParams.set("ref", ref);
   return proxyUrl.toString();
 }
@@ -173,64 +175,23 @@ async function verifyOriginRef(input) {
   }
 }
 
-// ../../shared/ott/hls-token.ts
-async function importHmacKey(secret) {
-  return crypto.subtle.importKey(
-    "raw",
-    utf8ToBytes(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"]
-  );
-}
-async function verifyPlaybackToken(input) {
-  const value = input.token.trim();
-  if (!value) {
-    return { ok: false, error: "Missing token." };
-  }
-  const [payloadEncoded, signature] = value.split(".");
-  if (!payloadEncoded || !signature) {
-    return { ok: false, error: "Malformed token." };
-  }
-  const key = await importHmacKey(input.secret);
-  const isValid = await crypto.subtle.verify(
-    "HMAC",
-    key,
-    decodeBase64UrlToBytes(signature),
-    utf8ToBytes(payloadEncoded)
-  );
-  if (!isValid) {
-    return { ok: false, error: "Invalid signature." };
-  }
-  let payload;
-  try {
-    payload = decodeJsonBase64Url(payloadEncoded);
-  } catch {
-    return { ok: false, error: "Invalid payload." };
-  }
-  const nowEpochSec = input.nowEpochSec ?? Math.floor(Date.now() / 1e3);
-  if (payload.v !== 1) return { ok: false, error: "Unsupported token version." };
-  if (!payload.cid || !payload.sid) return { ok: false, error: "Incomplete token." };
-  if (payload.exp <= nowEpochSec) return { ok: false, error: "Token expired." };
-  if (payload.cid !== input.channelId) return { ok: false, error: "Channel mismatch." };
-  if (payload.path && input.expectedPath && payload.path !== input.expectedPath) {
-    return { ok: false, error: "Path mismatch." };
-  }
-  return {
-    ok: true,
-    payload
-  };
-}
-
 // src/index.ts
+var ORIGIN_LOOKUP_CACHE_TTL_SEC = 300;
+var DEFAULT_UNSECURED_REF_TTL_SEC = 60 * 60 * 12;
 function getTtl(value, fallback) {
   const parsed = Number(value ?? "");
   return Number.isFinite(parsed) ? parsed : fallback;
 }
-function buildCacheKey(request, kind, channelId, ref) {
+async function hashCacheRef(ref) {
+  if (!ref) return "master";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ref));
+  return Array.from(new Uint8Array(digest)).map((item) => item.toString(16).padStart(2, "0")).join("");
+}
+async function buildCacheKey(request, kind, channelId, ref) {
   const url = new URL(request.url);
   url.pathname = `/_cache/${kind}/${channelId}`;
-  url.search = ref ? `?ref=${encodeURIComponent(ref)}` : "?ref=master";
+  const refKey = await hashCacheRef(ref);
+  url.search = `?ref=${refKey}`;
   return new Request(url.toString(), { method: "GET" });
 }
 function contentTypeForPlaylist() {
@@ -248,7 +209,7 @@ function buildClientHeaders(source, cacheControl) {
   return headers;
 }
 async function resolveOrigin(request, env, ctx, channelId) {
-  const cacheKey = buildCacheKey(request, "playlist", `origin-${channelId}`, "lookup");
+  const cacheKey = await buildCacheKey(request, "playlist", `origin-${channelId}`, "lookup");
   const cached = await caches.default.match(cacheKey);
   if (cached) {
     return await cached.json();
@@ -268,7 +229,7 @@ async function resolveOrigin(request, env, ctx, channelId) {
   const cacheable = new Response(JSON.stringify(payload), {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "max-age=30"
+      "Cache-Control": `max-age=${ORIGIN_LOOKUP_CACHE_TTL_SEC}`
     }
   });
   ctx.waitUntil(caches.default.put(cacheKey, cacheable));
@@ -284,8 +245,8 @@ function looksLikePlaylistUrl(targetUrl) {
 function looksLikeMediaAsset(targetUrl) {
   return /\.(ts|m4s|mp4|aac|mp3|vtt|webvtt)($|\?)/i.test(targetUrl);
 }
-async function proxyPlaylist(request, env, ctx, channelId, token, tokenExp, targetUrl, ref) {
-  const cacheKey = buildCacheKey(request, "playlist", channelId, ref);
+async function proxyPlaylist(request, env, ctx, channelId, token, refExp, targetUrl, ref) {
+  const cacheKey = await buildCacheKey(request, "playlist", channelId, ref);
   const cached = await caches.default.match(cacheKey);
   if (cached) return cached;
   const originResponse = await fetch(targetUrl, {
@@ -294,7 +255,13 @@ async function proxyPlaylist(request, env, ctx, channelId, token, tokenExp, targ
       "Cache-Control": "no-cache",
       Accept: "application/vnd.apple.mpegurl,application/x-mpegURL,text/plain,*/*"
     }
+  }).catch((error) => {
+    console.warn("playlist origin fetch exception", { channelId, targetUrl, error: String(error) });
+    return null;
   });
+  if (!originResponse) {
+    return new Response("Origin playlist unavailable.", { status: 502 });
+  }
   if (!originResponse.ok) {
     console.warn("playlist origin fetch failed", { channelId, status: originResponse.status });
     return new Response("Origin playlist unavailable.", { status: 502 });
@@ -310,11 +277,12 @@ async function proxyPlaylist(request, env, ctx, channelId, token, tokenExp, targ
       secret: env.ORIGIN_REF_SECRET,
       channelId,
       url: absoluteUrl,
-      exp: tokenExp
+      exp: refExp
     })
   });
   console.log("playlist proxied", { channelId, kind: rewritten.kind, rewritten: rewritten.rewriteCount });
-  const cacheTtl = getTtl(env.PLAYLIST_CACHE_TTL_SEC, 2);
+  const mediaPlaylistTtl = getTtl(env.PLAYLIST_CACHE_TTL_SEC, 2);
+  const cacheTtl = rewritten.kind === "master" ? Math.max(mediaPlaylistTtl, 30) : mediaPlaylistTtl;
   const response = new Response(rewritten.playlist, {
     status: 200,
     headers: {
@@ -334,7 +302,7 @@ async function proxyPlaylist(request, env, ctx, channelId, token, tokenExp, targ
 }
 async function proxySegment(request, env, ctx, channelId, targetUrl, ref) {
   const hasRange = request.headers.has("Range");
-  const cacheKey = buildCacheKey(request, "segment", channelId, ref);
+  const cacheKey = await buildCacheKey(request, "segment", channelId, ref);
   if (!hasRange) {
     const cached = await caches.default.match(cacheKey);
     if (cached) return cached;
@@ -344,7 +312,13 @@ async function proxySegment(request, env, ctx, channelId, targetUrl, ref) {
     headers: request.headers.has("Range") ? {
       Range: request.headers.get("Range") ?? ""
     } : void 0
+  }).catch((error) => {
+    console.warn("segment origin fetch exception", { channelId, targetUrl, error: String(error) });
+    return null;
   });
+  if (!originResponse) {
+    return new Response("Origin segment unavailable.", { status: 502 });
+  }
   if (!originResponse.ok && originResponse.status !== 206) {
     console.warn("segment origin fetch failed", { channelId, status: originResponse.status });
     return new Response("Origin segment unavailable.", { status: 502 });
@@ -378,17 +352,9 @@ async function handleRequest(request, env, ctx) {
     return new Response("Not found.", { status: 404 });
   }
   const channelId = decodeURIComponent(match[1]);
-  const token = url.searchParams.get("token")?.trim() ?? "";
+  const token = url.searchParams.get("token")?.trim() || null;
   const ref = url.searchParams.get("ref")?.trim() ?? null;
-  const verifiedToken = await verifyPlaybackToken({
-    token,
-    secret: env.HLS_TOKEN_SECRET,
-    channelId
-  });
-  if (!verifiedToken.ok) {
-    console.warn("invalid playback token", { channelId, error: verifiedToken.error });
-    return new Response("Unauthorized.", { status: 401 });
-  }
+  const refExp = Math.floor(Date.now() / 1e3) + DEFAULT_UNSECURED_REF_TTL_SEC;
   let targetUrl;
   if (ref) {
     const originRef = await verifyOriginRef({
@@ -406,7 +372,7 @@ async function handleRequest(request, env, ctx) {
     targetUrl = resolved.origin_hls_url;
   }
   if (looksLikePlaylistUrl(targetUrl)) {
-    return proxyPlaylist(request, env, ctx, channelId, token, verifiedToken.payload.exp, targetUrl, ref);
+    return proxyPlaylist(request, env, ctx, channelId, token, refExp, targetUrl, ref);
   }
   if (looksLikeMediaAsset(targetUrl)) {
     return proxySegment(request, env, ctx, channelId, targetUrl, ref);
@@ -415,15 +381,15 @@ async function handleRequest(request, env, ctx) {
     method: "HEAD"
   }).catch(() => null);
   if (probeResponse && isPlaylistRequest(targetUrl, probeResponse)) {
-    return proxyPlaylist(request, env, ctx, channelId, token, verifiedToken.payload.exp, targetUrl, ref);
+    return proxyPlaylist(request, env, ctx, channelId, token, refExp, targetUrl, ref);
   }
   return proxySegment(request, env, ctx, channelId, targetUrl, ref);
 }
-var src_default = {
+var index_default = {
   fetch(request, env, ctx) {
     return handleRequest(request, env, ctx);
   }
 };
 export {
-  src_default as default
+  index_default as default
 };
