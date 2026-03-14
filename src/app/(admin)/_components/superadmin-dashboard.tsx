@@ -34,6 +34,9 @@ type OverviewKpis = {
   users_total: number;
   streams_total: number;
   streams_live: number;
+  channels_total: number;
+  channels_missing_origin: number;
+  channels_missing_tenant: number;
   events_24h: number;
   live_sessions: number;
   ingest_configured_tenants: number;
@@ -121,7 +124,7 @@ export default function SuperadminDashboard() {
       }
       setData(json);
     } catch {
-      setError("Erreur reseau sur la vue plateforme.");
+      setError("Erreur réseau sur la vue plateforme.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -141,6 +144,14 @@ export default function SuperadminDashboard() {
     if (!kpis || kpis.tenants_total <= 0) return 0;
     return Math.round((kpis.ingest_configured_tenants / kpis.tenants_total) * 100);
   }, [kpis]);
+  const readyChannels = useMemo(() => {
+    if (!kpis) return 0;
+    return Math.max(0, kpis.channels_total - kpis.channels_missing_origin);
+  }, [kpis]);
+  const channelsCoverage = useMemo(() => {
+    if (!kpis || kpis.channels_total <= 0) return 0;
+    return Math.round((readyChannels / kpis.channels_total) * 100);
+  }, [kpis, readyChannels]);
 
   const warnings = data?.warnings ?? [];
 
@@ -155,21 +166,21 @@ export default function SuperadminDashboard() {
             </Badge>
           </div>
           <p className="text-sm text-zinc-400">
-            Pilotage global des editeurs TV, audience live, sante plateforme et adoption SaaS.
+            Pilotage global des éditeurs TV, audience live, santé plateforme et adoption SaaS.
           </p>
           <p className="text-xs text-zinc-500">
-            Derniere sync: {data?.generated_at ? dateTimeFormat(data.generated_at) : "--"}
+            Dernière synchro : {data?.generated_at ? dateTimeFormat(data.generated_at) : "--"}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={() => fetchOverview(true)}>
             <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
-            Rafraichir
+            Actualiser
           </Button>
           <Button asChild>
             <Link href="/tenants">
-              Gerer les tenants
+              Gérer les tenants
               <ArrowUpRight className="ml-2 size-4" />
             </Link>
           </Button>
@@ -185,15 +196,38 @@ export default function SuperadminDashboard() {
       {warnings.length > 0 ? (
         <Card className="border-amber-500/25 bg-amber-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-200">Points a corriger</CardTitle>
+            <CardTitle className="text-sm text-amber-200">Points à corriger</CardTitle>
             <CardDescription className="text-amber-200/80">
-              Certaines briques SaaS ne sont pas encore completement provisionnees.
+              Certaines briques SaaS ne sont pas encore complètement provisionnées.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-1 text-xs text-amber-100">
             {warnings.map((warning) => (
               <p key={warning}>- {warning}</p>
             ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {kpis && (kpis.channels_missing_origin > 0 || kpis.channels_missing_tenant > 0) ? (
+        <Card className="border-amber-500/25 bg-amber-500/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-amber-200">Backfill OTT requis</CardTitle>
+            <CardDescription className="text-amber-200/80">
+              La lecture proxy Oniix ne sera pas exploitable tant que ces champs ne sont pas complétés dans la console.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1 text-sm text-amber-100">
+              <p>{numberFormat(kpis.channels_missing_origin)} chaîne(s) sans `origin_hls_url`.</p>
+              <p>{numberFormat(kpis.channels_missing_tenant)} chaîne(s) sans `tenant_id`.</p>
+            </div>
+            <Button asChild variant="outline" className="border-amber-400/20 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20">
+              <Link href="/system/channel-backfill">
+                Ouvrir le backfill
+                <ArrowUpRight className="ml-2 size-4" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : null}
@@ -208,17 +242,17 @@ export default function SuperadminDashboard() {
         <MetricCard
           title="Tenants actifs (24h)"
           value={loading && !data ? "..." : numberFormat(kpis?.tenants_active_24h ?? 0)}
-          subtitle="Base active sur la derniere journee"
+          subtitle="Base active sur la dernière journée"
           icon={BadgeCheck}
         />
         <MetricCard
           title="Utilisateurs plateforme"
           value={loading && !data ? "..." : numberFormat(kpis?.users_total ?? 0)}
-          subtitle="Comptes consolides tout tenant"
+          subtitle="Comptes consolidés tout tenant"
           icon={Users}
         />
         <MetricCard
-          title="Events analytics 24h"
+          title="Événements analytics 24h"
           value={loading && !data ? "..." : numberFormat(kpis?.events_24h ?? 0)}
           subtitle={`${numberFormat(kpis?.live_sessions ?? 0)} sessions live (~35s)`}
           icon={Activity}
@@ -230,19 +264,25 @@ export default function SuperadminDashboard() {
               ? "..."
               : `${numberFormat(kpis?.streams_live ?? 0)} / ${numberFormat(kpis?.streams_total ?? 0)}`
           }
-          subtitle="Occupation live du parc streams"
+          subtitle="Occupation live du parc de streams"
           icon={RadioTower}
         />
         <MetricCard
           title="Couverture ingest"
           value={loading && !data ? "..." : `${ingestCoverage}%`}
-          subtitle={`${numberFormat(kpis?.ingest_configured_tenants ?? 0)} tenants configures`}
+          subtitle={`${numberFormat(kpis?.ingest_configured_tenants ?? 0)} tenants configurés`}
           icon={ShieldCheck}
+        />
+        <MetricCard
+          title="Chaînes OTT prêtes"
+          value={loading && !data ? "..." : `${channelsCoverage}%`}
+          subtitle={`${numberFormat(readyChannels)} / ${numberFormat(kpis?.channels_total ?? 0)} avec origine`}
+          icon={RadioTower}
         />
         <MetricCard
           title="Sessions live"
           value={loading && !data ? "..." : numberFormat(kpis?.live_sessions ?? 0)}
-          subtitle="Snapshot fenetre glissante"
+          subtitle="Snapshot fenêtre glissante"
           icon={Waves}
         />
       </section>
@@ -250,8 +290,8 @@ export default function SuperadminDashboard() {
       <section className="grid gap-5 xl:grid-cols-7">
         <Card className="xl:col-span-4">
           <CardHeader>
-            <CardTitle>Top tenants par activite</CardTitle>
-            <CardDescription>Classement plateforme par volume d&apos;evenements sur 24h.</CardDescription>
+            <CardTitle>Top tenants par activité</CardTitle>
+            <CardDescription>Classement plateforme par volume d&apos;événements sur 24h.</CardDescription>
           </CardHeader>
           <CardContent>
             {loading && !data ? (
@@ -280,7 +320,7 @@ export default function SuperadminDashboard() {
               </Table>
             ) : (
               <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-sm text-zinc-500">
-                Aucune activite analytics exploitable pour le moment.
+                Aucune activité analytics exploitable pour le moment.
               </div>
             )}
           </CardContent>
@@ -289,8 +329,8 @@ export default function SuperadminDashboard() {
         <div className="space-y-5 xl:col-span-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Onboarding recent</CardTitle>
-              <CardDescription>Derniers tenants provisionnes sur la plateforme.</CardDescription>
+              <CardTitle>Onboarding récent</CardTitle>
+              <CardDescription>Derniers tenants provisionnés sur la plateforme.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {loading && !data ? (
@@ -305,12 +345,12 @@ export default function SuperadminDashboard() {
                     className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3"
                   >
                     <p className="text-sm font-semibold text-white">{tenant.name}</p>
-                    <p className="mt-1 text-xs text-zinc-500">Cree le {dateTimeFormat(tenant.created_at)}</p>
+                    <p className="mt-1 text-xs text-zinc-500">Créé le {dateTimeFormat(tenant.created_at)}</p>
                   </div>
                 ))
               ) : (
                 <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
-                  Aucun tenant recent.
+                  Aucun tenant récent.
                 </div>
               )}
             </CardContent>
@@ -336,7 +376,7 @@ export default function SuperadminDashboard() {
               </Button>
               <Button asChild variant="outline" className="justify-between">
                 <Link href="/system">
-                  Sante systeme
+                  Santé système
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>

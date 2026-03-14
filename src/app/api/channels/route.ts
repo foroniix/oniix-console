@@ -42,10 +42,15 @@ export async function POST(req: Request) {
         category: z.string().optional(),
         active: z.boolean().optional(),
         logo: z.string().nullable().optional(),
+        originHlsUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
       })
     );
     if (!parsed.ok) return parsed.res;
     const body = parsed.data;
+    const originHlsUrl =
+      body.originHlsUrl === undefined || body.originHlsUrl === null || body.originHlsUrl === ""
+        ? null
+        : body.originHlsUrl;
     const supa = supabaseUser(ctx.accessToken);
 
     const slug =
@@ -65,7 +70,9 @@ export async function POST(req: Request) {
         slug,
         category: body.category ?? "Other",
         active: body.active ?? true,
+        is_active: body.active ?? true,
         logo: body.logo ?? null,
+        origin_hls_url: originHlsUrl,
       })
       .select()
       .single();

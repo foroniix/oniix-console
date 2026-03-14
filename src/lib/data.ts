@@ -23,6 +23,34 @@ export type Channel = {
   slug: string;
   active: boolean;
   logo?: string | null;
+  originHlsUrl?: string | null;
+};
+
+export type ChannelHealth = {
+  status: "ok" | "degraded" | "down" | null;
+  message: string | null;
+  lastCheckAt: string | null;
+  masterPlaylistHttpCode: number | null;
+  mediaPlaylistHttpCode: number | null;
+  segmentHttpCode: number | null;
+};
+
+export type ChannelRealtimeStats = {
+  activeViewers: number;
+  sessionsToday: number;
+  watchMinutesToday: number;
+  bufferRatio: number;
+  errorsToday: number;
+  lastMinutes: Array<{
+    bucketMinute: string;
+    activeViewers: number;
+    sessionsStarted: number;
+    watchSeconds: number;
+    bufferSeconds: number;
+    errorCount: number;
+    plays: number;
+  }>;
+  health: ChannelHealth;
 };
 
 export type StreamStatus = "OFFLINE" | "LIVE" | "ENDED";
@@ -229,6 +257,16 @@ const mapStream = (row: any): Stream => ({
   channel: row.channel,
 });
 
+const mapChannel = (row: any): Channel => ({
+  id: row.id,
+  name: row.name,
+  category: row.category ?? "Autre",
+  slug: row.slug ?? "",
+  active: Boolean(row.is_active ?? row.active),
+  logo: row.logo ?? null,
+  originHlsUrl: row.origin_hls_url ?? row.originHlsUrl ?? null,
+});
+
 const toBodyStream = (s: Partial<Stream>) => ({
   channelId: s.channelId,
   title: s.title,
@@ -356,28 +394,36 @@ const toBodyReplay = (r: Partial<Replay>) => ({
 
 // --- Channels ---
 export async function listChannels(): Promise<Channel[]> {
-  return (await j(await fetch("/api/channels", { cache: "no-store" }))) as Channel[];
+  const rows = await j(await fetch("/api/channels", { cache: "no-store" }));
+  return (rows as any[]).map(mapChannel);
 }
 
 export async function upsertChannel(input: Partial<Channel> & { id?: string }): Promise<Channel> {
   const headers = { "content-type": "application/json" };
+  const originHlsUrl =
+    typeof input.originHlsUrl === "string" && input.originHlsUrl.trim() === ""
+      ? null
+      : input.originHlsUrl ?? null;
   const body = JSON.stringify({
     name: input.name,
     category: (input.category ?? "Autre") as Category,
     active: input.active ?? true,
     logo: input.logo ?? null,
     slug: input.slug,
+    originHlsUrl,
   });
 
-  return input.id
-    ? j(
+  const row = input.id
+    ? await j(
         await fetch(`/api/channels/${encodeURIComponent(guardId(input.id, "upsertChannel"))}`, {
           method: "PATCH",
           headers,
           body,
         })
       )
-    : j(await fetch(`/api/channels`, { method: "POST", headers, body }));
+    : await j(await fetch(`/api/channels`, { method: "POST", headers, body }));
+
+  return mapChannel(row);
 }
 
 export async function toggleChannel(id: string, active: boolean): Promise<void> {
@@ -535,6 +581,20 @@ export async function endLiveAndCreateReplay(
       }),
     })
   );
+}
+
+export async function getChannelRealtimeStats(
+  channelId: string,
+  options?: { minutes?: number }
+): Promise<ChannelRealtimeStats> {
+  const sid = guardId(channelId, "getChannelRealtimeStats");
+  const qs = new URLSearchParams();
+  if (options?.minutes) qs.set("minutes", String(options.minutes));
+  return j(
+    await fetch(`/api/channels/${encodeURIComponent(sid)}/realtime-stats?${qs.toString()}`, {
+      cache: "no-store",
+    })
+  ) as Promise<ChannelRealtimeStats>;
 }
 
 // --- VOD ---

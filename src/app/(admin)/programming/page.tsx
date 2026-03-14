@@ -22,7 +22,7 @@ export default function ProgrammingPage() {
         title="Programmation"
         subtitle="Planifiez vos programmes, slots de diffusion et replays."
         breadcrumbs={[
-          { label: "Console Editeur", href: "/dashboard" },
+          { label: "Oniix Console", href: "/dashboard" },
           { label: "Programmation" },
         ]}
         icon={<CalendarClock className="size-5" />}

@@ -75,6 +75,9 @@ export async function GET() {
   let usersTotal = 0;
   let ingestConfiguredTenants = 0;
   let liveSessions = 0;
+  let channelsTotal = 0;
+  let channelsMissingOrigin = 0;
+  let channelsMissingTenant = 0;
 
   try {
     const usersCountPromise = listUsersCount(admin).catch(() => 0);
@@ -118,6 +121,31 @@ export async function GET() {
       .eq("status", "LIVE");
     if (!streamsLiveRes.error) {
       streamsLive = Number(streamsLiveRes.count ?? 0);
+    }
+
+    const channelsTotalRes = await admin
+      .from("channels")
+      .select("id", { count: "exact", head: true });
+    if (!channelsTotalRes.error) {
+      channelsTotal = Number(channelsTotalRes.count ?? 0);
+    } else if (isMissingTableError(channelsTotalRes.error.code)) {
+      warnings.push("Table `channels` introuvable.");
+    }
+
+    const channelsMissingOriginRes = await admin
+      .from("channels")
+      .select("id", { count: "exact", head: true })
+      .is("origin_hls_url", null);
+    if (!channelsMissingOriginRes.error) {
+      channelsMissingOrigin = Number(channelsMissingOriginRes.count ?? 0);
+    }
+
+    const channelsMissingTenantRes = await admin
+      .from("channels")
+      .select("id", { count: "exact", head: true })
+      .is("tenant_id", null);
+    if (!channelsMissingTenantRes.error) {
+      channelsMissingTenant = Number(channelsMissingTenantRes.count ?? 0);
     }
 
     const eventsCountRes = await admin
@@ -175,6 +203,13 @@ export async function GET() {
     }
 
     usersTotal = await usersCountPromise;
+
+    if (channelsMissingOrigin > 0) {
+      warnings.push(`${channelsMissingOrigin} chaine(s) sans origin HLS URL.`);
+    }
+    if (channelsMissingTenant > 0) {
+      warnings.push(`${channelsMissingTenant} chaine(s) sans tenant_id.`);
+    }
 
     const eventRowsRes = await admin
       .from("analytics_events")
@@ -252,6 +287,9 @@ export async function GET() {
           users_total: usersTotal,
           streams_total: streamsTotal,
           streams_live: streamsLive,
+          channels_total: channelsTotal,
+          channels_missing_origin: channelsMissingOrigin,
+          channels_missing_tenant: channelsMissingTenant,
           events_24h: events24h,
           live_sessions: liveSessions,
           ingest_configured_tenants: ingestConfiguredTenants,

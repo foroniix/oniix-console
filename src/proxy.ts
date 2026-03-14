@@ -1,11 +1,11 @@
-// middleware.ts
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 const BLOCKED_PATH_PREFIXES = ["/api/public", "/api/upload", "/api/utils/validate-hls", "/api/_debug"];
-const PUBLIC_PATH_PREFIXES = ["/we", "/web"];
+const PUBLIC_PATH_PREFIXES = ["/login", "/we", "/web"];
 const PUBLIC_API_PREFIXES = [
+  "/api/auth",
   "/api/mobile",
   "/api/analytics/ingest",
   "/api/analytics/heartbeat",
@@ -42,9 +42,9 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-function withSecurityHeaders(res: NextResponse) {
-  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => res.headers.set(key, value));
-  return res;
+function withSecurityHeaders(response: NextResponse) {
+  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => response.headers.set(key, value));
+  return response;
 }
 
 function blockedResponse(pathname: string) {
@@ -69,49 +69,44 @@ function isSameOrigin(request: NextRequest) {
   return false;
 }
 
-export function middleware(request: NextRequest) {
+function matchesPrefix(pathname: string, prefixes: string[]) {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+export function proxy(request: NextRequest) {
   const cookie = request.cookies.get(ACCESS_COOKIE);
   const { pathname } = request.nextUrl;
-  const isPublicPath = PUBLIC_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-  const isPublicApiPath = PUBLIC_API_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-  const isCsrfExemptApiPath = CSRF_EXEMPT_API_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
+  const isPublicPath = matchesPrefix(pathname, PUBLIC_PATH_PREFIXES);
+  const isPublicApiPath = matchesPrefix(pathname, PUBLIC_API_PREFIXES);
+  const isCsrfExemptApiPath = matchesPrefix(pathname, CSRF_EXEMPT_API_PREFIXES);
 
-  if (BLOCKED_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
+  if (BLOCKED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return withSecurityHeaders(blockedResponse(pathname));
   }
 
   if (pathname.startsWith("/api")) {
-    if (!request.method || !unsafeMethods.has(request.method.toUpperCase())) {
-      // noop
-    } else if (!isCsrfExemptApiPath && !isSameOrigin(request)) {
+    const method = request.method?.toUpperCase();
+    if (method && unsafeMethods.has(method) && !isCsrfExemptApiPath && !isSameOrigin(request)) {
       return withSecurityHeaders(csrfResponse());
     }
   }
 
-  // Allow login page
   if (pathname === "/login") {
-    if (cookie) return withSecurityHeaders(NextResponse.redirect(new URL("/", request.url)));
+    if (cookie) {
+      return withSecurityHeaders(NextResponse.redirect(new URL("/", request.url)));
+    }
     return withSecurityHeaders(NextResponse.next());
   }
 
-  // Allow auth API and static assets
   if (
-    pathname.startsWith("/api/auth") ||
-    isPublicApiPath ||
-    isPublicPath ||
     pathname.startsWith("/_next") ||
-    pathname.includes(".")
+    pathname.includes(".") ||
+    isPublicPath ||
+    isPublicApiPath
   ) {
     return withSecurityHeaders(NextResponse.next());
   }
 
-  // Protect everything else
   if (!cookie) {
     return withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url)));
   }
@@ -120,5 +115,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
 };

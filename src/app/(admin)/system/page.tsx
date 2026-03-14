@@ -47,12 +47,12 @@ export default function SystemPage() {
       const res = await fetch("/api/superadmin/overview", { cache: "no-store" });
       const json = (await res.json().catch(() => null)) as OverviewResponse | { error?: string } | null;
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible de charger la sante plateforme.");
+        setError((json && "error" in json && json.error) || "Impossible de charger la santé plateforme.");
         return;
       }
       setData(json);
     } catch {
-      setError("Erreur reseau sur la sante plateforme.");
+      setError("Erreur réseau sur la santé plateforme.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -85,19 +85,19 @@ export default function SystemPage() {
       <header className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-gradient-to-r from-white/[0.05] via-transparent to-primary/10 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-white sm:text-3xl">System Health</h1>
+            <h1 className="text-2xl font-bold text-white sm:text-3xl">Santé plateforme</h1>
             <Badge className="border border-emerald-500/25 bg-emerald-500/10 text-emerald-300">
-              Platform Ops
+              Opérations plateforme
             </Badge>
           </div>
           <p className="text-sm text-zinc-400">
-            Observabilite et maturite de la plateforme SaaS multi-tenant.
+            Observabilité et maturité de la plateforme SaaS multi-tenant.
           </p>
         </div>
 
         <Button variant="outline" onClick={() => load(true)}>
           <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
-          Rafraichir
+          Actualiser
         </Button>
       </header>
 
@@ -111,7 +111,7 @@ export default function SystemPage() {
         <Card>
           <CardContent className="flex min-h-[240px] items-center justify-center text-zinc-500">
             <Loader2 className="mr-2 size-4 animate-spin" />
-            Chargement de la sante...
+            Chargement de la santé...
           </CardContent>
         </Card>
       ) : (
@@ -123,7 +123,7 @@ export default function SystemPage() {
                   <ShieldCheck className="size-4 text-primary" />
                   Couverture ingest
                 </CardTitle>
-                <CardDescription>Tenants configures pour la collecte live.</CardDescription>
+                <CardDescription>Tenants configurés pour la collecte live.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-2xl font-semibold text-white">{ingestCoverage}%</div>
@@ -157,7 +157,7 @@ export default function SystemPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <CheckCircle2 className="size-4 text-primary" />
-                  Activite tenants
+                  Activité tenants
                 </CardTitle>
                 <CardDescription>Part des tenants actifs sur les 24h.</CardDescription>
               </CardHeader>
@@ -175,7 +175,7 @@ export default function SystemPage() {
           <section className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Realtime pulse</CardTitle>
+                <CardTitle>Pulse temps réel</CardTitle>
                 <CardDescription>Charge actuelle de la plateforme.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -186,13 +186,13 @@ export default function SystemPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <span className="text-zinc-400">Events analytics 24h</span>
+                  <span className="text-zinc-400">Événements analytics 24h</span>
                   <span className="font-semibold text-white">
                     {numberFormat(data?.kpis.events_24h ?? 0)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <span className="text-zinc-400">Streams live</span>
+                  <span className="text-zinc-400">Streams en direct</span>
                   <span className="font-semibold text-white">
                     {numberFormat(data?.kpis.streams_live ?? 0)}
                   </span>
@@ -206,12 +206,12 @@ export default function SystemPage() {
                   <Siren className="size-4 text-amber-300" />
                   Checkpoints ops
                 </CardTitle>
-                <CardDescription>Etat des prerequis SaaS critiques.</CardDescription>
+                <CardDescription>État des prérequis SaaS critiques.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-zinc-300">
                 {(data?.warnings ?? []).length === 0 ? (
                   <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-3 text-emerald-200">
-                    Aucun warning majeur detecte.
+                    Aucun warning majeur détecté.
                   </div>
                 ) : (
                   (data?.warnings ?? []).map((warning) => (
@@ -231,4 +231,3 @@ export default function SystemPage() {
     </div>
   );
 }
-

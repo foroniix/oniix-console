@@ -171,7 +171,7 @@ function StatCard({
         {value}
       </div>
 
-      <p className="mt-1 text-xs text-zinc-500">Période: {title.includes("(") ? "" : ""}</p>
+      <p className="mt-1 text-xs text-zinc-500">Mise à jour continue</p>
     </div>
   );
 }
@@ -214,7 +214,7 @@ function SkeletonBlock() {
 
 /* ----------------------------- Page ----------------------------- */
 
-export default function DashboardPage() {
+export default function AnalyticsDashboardPage() {
   const [period, setPeriod] = useState<DashboardPeriod>("24h");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -439,7 +439,7 @@ export default function DashboardPage() {
           recomputeLive();
         }, 5_000);
       } catch (e) {
-        console.error("Realtime init error", e);
+        console.error("realtime_init_error", e);
       }
     };
 
@@ -497,8 +497,8 @@ export default function DashboardPage() {
   const periodLabel = period === "24h" ? "24H" : period === "7d" ? "7J" : "30J";
   const selectedChannelName =
     channelFilter === "all"
-      ? "Toutes les chaines"
-      : channels.find((c) => c.id === channelFilter)?.name ?? "Chaine";
+      ? "Toutes les chaînes"
+      : channels.find((c) => c.id === channelFilter)?.name ?? "Chaîne";
 
   return (
     <div className="space-y-6 text-zinc-100">
@@ -509,7 +509,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 text-xs text-zinc-400">
                 <span className="inline-flex items-center gap-2 text-zinc-300">
                   <Sparkles className="h-4 w-4 text-indigo-400" />
-                  Console
+                  Oniix Console
                 </span>
                 <ChevronRight className="h-4 w-4 text-zinc-700" />
                 <span className="text-white">Analytics</span>
@@ -517,7 +517,7 @@ export default function DashboardPage() {
 
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-white">
-                  Dashboard
+                  Analytics temps réel
                 </h1>
 
                 <Pill>
@@ -525,7 +525,7 @@ export default function DashboardPage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-50" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
                   </span>
-                  <span className="font-semibold">Realtime</span>
+                  <span className="font-semibold">Temps réel</span>
                   <span className="text-zinc-500">•</span>
                   <span className="text-zinc-400">
                     {formatNumber(activeUsers)} actifs
@@ -548,10 +548,10 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-3">
               <Select value={channelFilter} onValueChange={setChannelFilter}>
                 <SelectTrigger className="h-9 w-[220px] border-white/10 bg-white/5 text-zinc-100">
-                  <SelectValue placeholder="Toutes les chaines" />
+                  <SelectValue placeholder="Toutes les chaînes" />
                 </SelectTrigger>
                 <SelectContent className="border-white/10 bg-zinc-950 text-zinc-100">
-                  <SelectItem value="all">Toutes les chaines</SelectItem>
+                  <SelectItem value="all">Toutes les chaînes</SelectItem>
                   {channels.map((channel) => (
                     <SelectItem key={channel.id} value={channel.id}>
                       {channel.name}
@@ -621,7 +621,7 @@ export default function DashboardPage() {
                     Audience
                   </CardTitle>
                   <CardDescription className="text-zinc-500">
-                    Viewers sur la période sélectionnée.
+                    Spectateurs actifs sur la période sélectionnée.
                   </CardDescription>
                 </div>
 
@@ -699,7 +699,7 @@ export default function DashboardPage() {
             <Card className="bg-white/5 border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
               <CardHeader className="px-4 sm:px-5 pt-4 pb-3 border-b border-white/10">
                 <CardTitle className="text-sm font-semibold text-white">
-                  Top streams (live)
+                  Top flux live
                 </CardTitle>
                 <CardDescription className="text-zinc-500">
                   Classement en temps réel.
@@ -721,7 +721,7 @@ export default function DashboardPage() {
                     >
                       <div className="min-w-0">
                         <div className="text-sm text-white truncate">{sid}</div>
-                        <div className="text-[11px] text-zinc-500">Viewers</div>
+                        <div className="text-[11px] text-zinc-500">Spectateurs actifs</div>
                       </div>
                       <div className="text-sm font-semibold text-indigo-300">
                         {formatNumber(count)}
@@ -742,7 +742,7 @@ export default function DashboardPage() {
                   Appareils
                 </CardTitle>
                 <CardDescription className="text-zinc-500">
-                  Repartition des sessions par device. Top: {topDeviceShare}
+                  Répartition des sessions par appareil. Top : {topDeviceShare}
                 </CardDescription>
               </CardHeader>
 
@@ -812,10 +812,10 @@ export default function DashboardPage() {
             <Card className="bg-white/5 border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
               <CardHeader className="px-4 sm:px-5 pt-4 pb-3 border-b border-white/10">
                 <CardTitle className="text-sm font-semibold text-white">
-                  Flux recent
+                  Flux récent
                 </CardTitle>
                 <CardDescription className="text-zinc-500">
-                  Derniers evenements captes.
+                  Derniers événements captés.
                 </CardDescription>
               </CardHeader>
 
@@ -837,7 +837,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-4 text-sm text-zinc-500 text-center">
-                    Aucun evenement recent.
+                    Aucun événement récent.
                   </div>
                 )}
               </CardContent>
@@ -857,7 +857,7 @@ export default function DashboardPage() {
                 <div className="rounded-xl border border-white/10 bg-zinc-950/30 p-3">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-zinc-500 uppercase tracking-widest">
-                      Realtime
+                      Temps réel
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="relative flex h-2 w-2">

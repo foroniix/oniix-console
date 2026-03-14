@@ -1,0 +1,14 @@
+name = "oniix-hls-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-03-09"
+
+[vars]
+STREAM_BASE_URL = "https://stream.oniix.space"
+RESOLVE_ORIGIN_URL = "https://<project-ref>.functions.supabase.co/resolve_origin"
+PLAYLIST_CACHE_TTL_SEC = "2"
+SEGMENT_CACHE_TTL_SEC = "120"
+
+# Secrets
+# wrangler secret put WORKER_RESOLVE_ORIGIN_SECRET
+# wrangler secret put HLS_TOKEN_SECRET
+# wrangler secret put ORIGIN_REF_SECRET

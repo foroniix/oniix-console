@@ -352,7 +352,7 @@ export default function StreamDetailPage() {
       for (const row of validationRows) {
         if ((row.summary === "WARN" || row.summary === "FAIL") && (!previous || previous === "OK")) {
           timeline.push(
-            `${dateLabel(row.at)} - incident detecte${row.incidents[0] ? ` - ${row.incidents[0]}` : ""}`
+            `${dateLabel(row.at)} - incident détecté${row.incidents[0] ? ` - ${row.incidents[0]}` : ""}`
           );
         } else if (row.summary === "OK" && previous && previous !== "OK") {
           timeline.push(`${dateLabel(row.at)} - incident resolu`);
@@ -391,7 +391,7 @@ export default function StreamDetailPage() {
       const issue =
         json.incidents?.[0] ?? json.checks.find((check) => check.status !== "OK")?.message ?? "Verification requise";
       if ((json.summary === "WARN" || json.summary === "FAIL") && (!previousSummaryRef.current || previousSummaryRef.current === "OK")) {
-        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident detecte - ${issue}`, ...prev]);
+        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident détecté - ${issue}`, ...prev]);
       }
       if (json.summary === "OK" && previousSummaryRef.current && previousSummaryRef.current !== "OK") {
         setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident resolu`, ...prev]);
@@ -574,7 +574,7 @@ export default function StreamDetailPage() {
         endStream: clipEndStream,
       });
 
-      addAudit("CREATE_REPLAY_CLIP", `Replay fenetre ${dateLabel(clipStartIso)} -> ${dateLabel(clipEndIso)}`);
+      addAudit("CREATE_REPLAY_CLIP", `Replay fenêtre ${dateLabel(clipStartIso)} -> ${dateLabel(clipEndIso)}`);
 
       const processRes = await fetch("/api/replays/process", {
         method: "POST",
@@ -661,8 +661,8 @@ export default function StreamDetailPage() {
     <PageShell>
       <PageHeader
         title={stream.title}
-        subtitle="Controle premium du flux HLS: etat, validation, configuration, analytics et audit."
-        breadcrumbs={[{ label: "Console Editeur", href: "/dashboard" }, { label: "Direct", href: "/streams" }, { label: "Stream details" }]}
+        subtitle="Contrôle premium du flux HLS : état, validation, configuration, analytics et audit."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Direct", href: "/streams" }, { label: "Détails du flux" }]}
         actions={
           <>
             <StatusBadge status={stream.status} />
@@ -672,7 +672,7 @@ export default function StreamDetailPage() {
               className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
             >
               {autoRefreshEnabled ? <Pause className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
-              {autoRefreshEnabled ? "Pause refresh" : "Resume refresh"}
+              {autoRefreshEnabled ? "Suspendre l'actualisation" : "Reprendre l'actualisation"}
             </Button>
             <Button
               variant="outline"
@@ -695,7 +695,7 @@ export default function StreamDetailPage() {
       <div className="rounded-xl border border-[#262b38] bg-[#151821] px-4 py-3 text-xs text-[#8b93a7]">
         Auto refresh: <span className="font-medium text-[#e6eaf2]">{autoRefreshEnabled ? "ON" : "OFF"}</span>
         {" | "}
-        Derniere synchro diagnostics: <span className="font-medium text-[#e6eaf2]">{dateLabel(lastRefreshAt)}</span>
+        Dernière synchro diagnostics : <span className="font-medium text-[#e6eaf2]">{dateLabel(lastRefreshAt)}</span>
       </div>
 
       <KpiRow>
@@ -733,7 +733,7 @@ export default function StreamDetailPage() {
                 />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#262b38] px-4 py-3">
-                <span className="text-xs text-[#8b93a7]">Derniere activite: {dateLabel(stream.updatedAt)}</span>
+                <span className="text-xs text-[#8b93a7]">Dernière activité : {dateLabel(stream.updatedAt)}</span>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => setMuted((v) => !v)} className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]">
                     {muted ? <VolumeX className="mr-2 size-4" /> : <Volume2 className="mr-2 size-4" />}
@@ -759,7 +759,7 @@ export default function StreamDetailPage() {
               <div className="mt-3 space-y-2">
                 <Button onClick={onSetLive} disabled={stream.status === "LIVE"} className="w-full justify-start bg-[#22c55e] text-black hover:bg-[#22c55e]/90"><Play className="mr-2 size-4" />Passer live</Button>
                 <Button onClick={onStop} disabled={stream.status !== "LIVE"} variant="outline" className="w-full justify-start border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#f59e0b]"><Square className="mr-2 size-4" />Arreter le flux</Button>
-                <Button onClick={onCreateReplayInstant} variant="outline" className="w-full justify-start border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"><MonitorPlay className="mr-2 size-4" />Creer replay instantane</Button>
+                <Button onClick={onCreateReplayInstant} variant="outline" className="w-full justify-start border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"><MonitorPlay className="mr-2 size-4" />Créer replay instantané</Button>
               </div>
               <div className="mt-3 space-y-2 rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3">
                 <p className="text-xs text-[#8b93a7]">Replay clip (flux continu): selectionnez debut et fin.</p>
@@ -791,7 +791,7 @@ export default function StreamDetailPage() {
                   className="w-full bg-[#4c82fb] text-white hover:bg-[#3b6fe0]"
                 >
                   {clipSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <MonitorPlay className="mr-2 size-4" />}
-                  Creer replay depuis fenetre
+                  Créer replay depuis fenêtre
                 </Button>
                 <Button
                   variant="outline"
@@ -805,7 +805,7 @@ export default function StreamDetailPage() {
               </div>
             </div>
             <div className="rounded-xl border border-[#262b38] bg-[#151821] p-4">
-              <h3 className="text-sm font-semibold">Derniere validation</h3>
+              <h3 className="text-sm font-semibold">Dernière validation</h3>
               {validation ? (
                 <div className="mt-3 space-y-2 text-sm text-[#8b93a7]">
                   <StatusBadge status={validation.summary === "OK" ? "HEALTHY" : validation.summary === "WARN" ? "DEGRADED" : "DOWN"} />
@@ -855,7 +855,7 @@ export default function StreamDetailPage() {
           </DataTableShell>
           <div className="rounded-xl border border-[#262b38] bg-[#151821] p-4">
             <h3 className="text-sm font-semibold">Timeline incidents</h3>
-            {incidents.length === 0 ? <p className="mt-2 text-sm text-[#8b93a7]">Aucun incident detecte.</p> : <div className="mt-2 space-y-2">{incidents.map((line) => <p key={line} className="text-sm text-[#8b93a7]">{line}</p>)}</div>}
+            {incidents.length === 0 ? <p className="mt-2 text-sm text-[#8b93a7]">Aucun incident détecté.</p> : <div className="mt-2 space-y-2">{incidents.map((line) => <p key={line} className="text-sm text-[#8b93a7]">{line}</p>)}</div>}
           </div>
         </TabsContent>
 

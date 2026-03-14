@@ -40,7 +40,15 @@ describe("supabaseAdmin", () => {
       "src/app/api/users/[id]/route.ts",
       "src/app/api/users/[id]/link/route.ts",
       "src/app/api/analytics/ingest/route.ts",
+      "src/app/api/analytics/collect/route.ts",
+      "src/app/api/analytics/heartbeat/route.ts",
+      "src/app/api/analytics/live/route.ts",
+      "src/app/api/analytics/stats/route.ts",
       "src/app/api/mobile/program-grid/route.ts",
+      "src/app/api/mobile/ingest-token/route.ts",
+      "src/app/api/replays/process/cron/route.ts",
+      "src/app/api/superadmin/overview/route.ts",
+      "src/app/api/superadmin/tenants/route.ts",
     ]);
 
     const offenders = routeFiles

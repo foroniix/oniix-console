@@ -30,13 +30,13 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/dashboard",
         label: "Dashboard",
-        description: "Vue operationnelle",
+        description: "Vue opérationnelle",
         icon: LayoutDashboard,
       },
       {
         href: "/channels",
-        label: "Chaines",
-        description: "Inventaire des chaines",
+        label: "Chaînes",
+        description: "Inventaire des chaînes",
         icon: Tv2,
       },
       {
@@ -54,11 +54,11 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Monetisation",
+    title: "Monétisation",
     items: [
       {
         href: "/ads",
-        label: "Publicite",
+        label: "Publicité",
         description: "Inventaire ad & campagnes",
         icon: Megaphone,
       },
@@ -71,7 +71,7 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Equipe",
+    title: "Équipe",
     items: [
       {
         href: "/users",
@@ -81,18 +81,18 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         href: "/activities",
-        label: "Activite",
+        label: "Activité",
         description: "Journal et audit",
         icon: Activity,
       },
     ],
   },
   {
-    title: "Parametres",
+    title: "Paramètres",
     items: [
       {
         href: "/settings",
-        label: "Parametres",
+        label: "Paramètres",
         description: "Configuration du workspace",
         icon: Settings,
       },
@@ -113,7 +113,7 @@ export function resolveRoute(pathname: string) {
   return {
     href: pathname,
     label: "Console",
-    description: "Pilotage diffusion",
+    description: "Pilotage de diffusion",
     icon: LayoutDashboard,
   };
 }

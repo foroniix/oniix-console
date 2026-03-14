@@ -26,6 +26,13 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+const TARGET_ICONS = {
+  STREAM: Signal,
+  USER: UserIcon,
+  NEWS: Newspaper,
+  VOD: Clapperboard,
+} as const;
+
 export default function ActivitiesPage() {
   const [data, setData] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +74,7 @@ export default function ActivitiesPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
             <Terminal className="w-8 h-8 text-indigo-500" />
-            Journal d'Activités
+            Journal d&apos;Activités
           </h1>
           <p className="text-zinc-400 mt-1 flex items-center gap-2 text-sm">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/>
@@ -125,7 +132,7 @@ export default function ActivitiesPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
              <RefreshCw className="w-8 h-8 animate-spin mb-4 opacity-50" />
-             <p>Chargement de l'historique...</p>
+             <p>Chargement de l&apos;historique...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-500 bg-zinc-900/20 rounded-xl border border-dashed border-white/5">
@@ -158,19 +165,8 @@ function ActivityItem({ activity }: { activity: Activity }) {
     }
   };
 
-  // Helper pour l'icône de cible
-  const getTargetIcon = (type: string) => {
-    switch (type) {
-      case 'STREAM': return Signal;
-      case 'USER': return UserIcon;
-      case 'NEWS': return Newspaper;
-      case 'VOD': return Clapperboard;
-      default: return Terminal;
-    }
-  };
-
   const style = getActionStyle(activity.action);
-  const TargetIcon = getTargetIcon(activity.targetType);
+  const TargetIcon = TARGET_ICONS[activity.targetType as keyof typeof TARGET_ICONS] ?? Terminal;
   const dateObj = new Date(activity.createdAt);
 
   return (
@@ -193,7 +189,7 @@ function ActivityItem({ activity }: { activity: Activity }) {
           </Avatar>
           <div className="flex flex-col overflow-hidden">
             <span className="text-sm font-medium text-zinc-200 truncate">
-              {activity.userId ? "Utilisateur" : "Systeme"}
+              {activity.userId ? "Utilisateur" : "Système"}
             </span>
           </div>
         </div>

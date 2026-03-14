@@ -43,6 +43,11 @@ function roleLabel(role?: string | null) {
   return role || "-";
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
 export default function SettingsPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
@@ -111,8 +116,8 @@ export default function SettingsPage() {
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setTenant(json.tenant);
       setMsg("Organisation mise à jour.");
-    } catch (e: any) {
-      setErr(e?.message || "Erreur mise à jour organisation");
+    } catch (e: unknown) {
+      setErr(getErrorMessage(e, "Erreur mise à jour organisation"));
     } finally {
       setSavingTenant(false);
     }
@@ -132,8 +137,8 @@ export default function SettingsPage() {
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setNewPassword("");
       setMsg("Mot de passe modifié.");
-    } catch (e: any) {
-      setErr(e?.message || "Erreur changement mot de passe");
+    } catch (e: unknown) {
+      setErr(getErrorMessage(e, "Erreur changement mot de passe"));
     } finally {
       setSavingPwd(false);
     }
@@ -154,9 +159,9 @@ export default function SettingsPage() {
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setIngest(json.ingest);
       setNewIngestKey(json.key || "");
-      setMsg("Cle ingest regeneree. Copiez-la maintenant.");
-    } catch (e: any) {
-      setErr(e?.message || "Erreur rotation cle ingest");
+      setMsg("Clé ingest régénérée. Copiez-la maintenant.");
+    } catch (e: unknown) {
+      setErr(getErrorMessage(e, "Erreur rotation clé ingest"));
     } finally {
       setRotatingIngest(false);
     }
@@ -166,21 +171,21 @@ export default function SettingsPage() {
     if (!newIngestKey) return;
     try {
       await navigator.clipboard.writeText(newIngestKey);
-      setMsg("Cle ingest copiee.");
+      setMsg("Clé ingest copiée.");
     } catch {
-      setErr("Impossible de copier la cle.");
+      setErr("Impossible de copier la clé.");
     }
   };
 
   const ingestStatusLabel = useMemo(() => {
-    if (ingest?.configured) return "Configure";
+    if (ingest?.configured) return "Configuré";
     if (ingest?.requiresMigration) return "Migration requise";
-    return "Non configure";
+    return "Non configuré";
   }, [ingest]);
 
   const ingestSourceLabel = useMemo(() => {
     if (!ingest) return "-";
-    if (ingest.source === "db") return "Base de donnees";
+    if (ingest.source === "db") return "Base de données";
     if (ingest.source === "env") return "Variable d'environnement";
     return "Aucune";
   }, [ingest]);
@@ -299,7 +304,7 @@ export default function SettingsPage() {
                 Organisation
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                Parametres de l'organisation.
+                Paramètres de l&apos;organisation.
               </CardDescription>
             </CardHeader>
 
@@ -348,29 +353,29 @@ export default function SettingsPage() {
                 Ingest mobile
               </CardTitle>
               <CardDescription className="text-zinc-400">
-                Cle API utilisee par les apps pour envoyer les heartbeats analytics.
+                Clé API utilisée par les apps pour envoyer les heartbeats analytics.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               <div className="rounded-xl border border-white/10 bg-zinc-950/30 overflow-hidden">
-                <Row label="Etat" value={ingestStatusLabel} />
+                <Row label="État" value={ingestStatusLabel} />
                 <Divider />
                 <Row label="Source" value={ingestSourceLabel} />
                 <Divider />
-                <Row label="Derniere rotation" value={ingestRotatedLabel} mono />
+                <Row label="Dernière rotation" value={ingestRotatedLabel} mono />
               </div>
 
               {ingest?.requiresMigration && (
                 <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
-                  Migration requise: appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis l'interface.
+                  Migration requise : appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis l&apos;interface.
                 </div>
               )}
 
               {newIngestKey && (
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 space-y-2">
                   <div className="text-xs text-emerald-200 font-medium">
-                    Nouvelle cle (affichee une seule fois)
+                    Nouvelle clé (affichée une seule fois)
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Input
@@ -403,7 +408,7 @@ export default function SettingsPage() {
                   ) : (
                     <RefreshCw className="h-4 w-4 mr-2" />
                   )}
-                  Regenerer la cle ingest
+                  Régénérer la clé ingest
                 </Button>
               </div>
             </CardContent>

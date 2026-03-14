@@ -1,7 +1,15 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Channel, listChannels, toggleChannel, upsertChannel } from "@/lib/data";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import {
+  type Category,
+  Channel,
+  type ChannelRealtimeStats,
+  getChannelRealtimeStats,
+  listChannels,
+  toggleChannel,
+  upsertChannel,
+} from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,12 +55,17 @@ import {
 } from "@/components/ui/table";
 
 import {
+  Activity,
+  AlertTriangle,
   CheckCircle2,
   ChevronRight,
+  Clock3,
   Edit3,
+  Link2,
   MoreHorizontal,
   Plus,
   Power,
+  Radio,
   RefreshCw,
   Search,
   Tv,
@@ -75,16 +88,31 @@ const CATS = [
 ] as const;
 
 type ActiveFilter = "ALL" | "ACTIVE" | "INACTIVE";
+type OriginFilter = "ALL" | "CONFIGURED" | "MISSING";
+
+function formatPercent(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatMinuteBucket(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
 
 export default function ChannelsPage() {
   const [rows, setRows] = useState<Channel[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [statsByChannel, setStatsByChannel] = useState<Record<string, ChannelRealtimeStats>>({});
+  const [statsLoadingId, setStatsLoadingId] = useState<string | null>(null);
+  const [statsError, setStatsError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [catFilter, setCatFilter] = useState<string>("ALL");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("ALL");
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("ALL");
 
   const [editing, setEditing] = useState<Channel | null>(null);
   const [form, setForm] = useState<Partial<Channel>>({
@@ -114,7 +142,9 @@ export default function ChannelsPage() {
     const active = rows.filter((c) => c.active).length;
     const inactive = total - active;
     const categories = new Set(rows.map((c) => c.category)).size;
-    return { total, active, inactive, categories };
+    const withOrigin = rows.filter((c) => Boolean(c.originHlsUrl?.trim())).length;
+    const missingOrigin = total - withOrigin;
+    return { total, active, inactive, categories, withOrigin, missingOrigin };
   }, [rows]);
 
   const filteredRows = useMemo(() => {
@@ -132,9 +162,15 @@ export default function ChannelsPage() {
         (activeFilter === "ACTIVE" && row.active) ||
         (activeFilter === "INACTIVE" && !row.active);
 
-      return matchesSearch && matchesCat && matchesActive;
+      const hasOrigin = Boolean(row.originHlsUrl?.trim());
+      const matchesOrigin =
+        originFilter === "ALL" ||
+        (originFilter === "CONFIGURED" && hasOrigin) ||
+        (originFilter === "MISSING" && !hasOrigin);
+
+      return matchesSearch && matchesCat && matchesActive && matchesOrigin;
     });
-  }, [rows, searchQuery, catFilter, activeFilter]);
+  }, [rows, searchQuery, catFilter, activeFilter, originFilter]);
 
   const startCreate = () => {
     setEditing(null);
@@ -143,14 +179,30 @@ export default function ChannelsPage() {
       slug: "",
       category: "Autre",
       active: true,
-      logo: ""
+      logo: "",
+      originHlsUrl: ""
     });
+    setStatsError("");
     setOpen(true);
+  };
+
+  const loadChannelStats = async (channelId: string) => {
+    setStatsLoadingId(channelId);
+    setStatsError("");
+    try {
+      const stats = await getChannelRealtimeStats(channelId, { minutes: 5 });
+      setStatsByChannel((prev) => ({ ...prev, [channelId]: stats }));
+    } catch (error) {
+      setStatsError(error instanceof Error ? error.message : "Impossible de charger les stats OTT.");
+    } finally {
+      setStatsLoadingId((current) => (current === channelId ? null : current));
+    }
   };
 
   const startEdit = (c: Channel) => {
     setEditing(c);
     setForm({ ...c });
+    void loadChannelStats(c.id);
     setOpen(true);
   };
 
@@ -188,7 +240,7 @@ export default function ChannelsPage() {
 
     try {
       await toggleChannel(c.id, newValue);
-    } catch (e) {
+    } catch {
       setRows((prev) =>
         prev.map((x) => (x.id === c.id ? { ...x, active: !newValue } : x))
       );
@@ -199,7 +251,11 @@ export default function ChannelsPage() {
     setSearchQuery("");
     setCatFilter("ALL");
     setActiveFilter("ALL");
+    setOriginFilter("ALL");
   };
+
+  const editingStats = editing ? statsByChannel[editing.id] ?? null : null;
+  const isStatsLoading = Boolean(editing && statsLoadingId === editing.id);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -368,9 +424,9 @@ export default function ChannelsPage() {
                         <div className="grid gap-2">
                           <Label className="text-zinc-300">Catégorie</Label>
                           <Select
-                            value={(form.category as any) || "Autre"}
+                            value={(form.category as Category | undefined) || "Autre"}
                             onValueChange={(v) =>
-                              setForm((f) => ({ ...f, category: v as any }))
+                              setForm((f) => ({ ...f, category: v as Category }))
                             }
                           >
                             <SelectTrigger className="h-9 bg-zinc-950/40 border-white/10">
@@ -437,6 +493,166 @@ export default function ChannelsPage() {
                       </div>
                     </section>
 
+                    <section className="space-y-4">
+                      <div>
+                        <p className="text-sm font-semibold text-white">Distribution OTT</p>
+                        <p className="text-xs text-zinc-400">
+                          URL HLS d’origine éditeur. Le player mobile passera ensuite par `stream.oniix.space`.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <Label className="text-zinc-300">Origin HLS URL</Label>
+                          <span className="inline-flex items-center gap-2 text-[11px] text-zinc-500">
+                            <Link2 className="h-3.5 w-3.5" />
+                            Proxy Oniix requis
+                          </span>
+                        </div>
+                        <Input
+                          placeholder="https://origin.example/live/master.m3u8"
+                          value={form.originHlsUrl || ""}
+                          onChange={(e) =>
+                            setForm((f) => ({ ...f, originHlsUrl: e.target.value }))
+                          }
+                          className="h-9 bg-zinc-950/40 border-white/10 font-mono text-xs"
+                        />
+                      </div>
+                    </section>
+
+                    {editing ? (
+                      <section className="space-y-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-white">Observabilité OTT</p>
+                            <p className="text-xs text-zinc-400">
+                              KPIs quasi temps réel et santé de diffusion pour cette chaîne.
+                            </p>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void loadChannelStats(editing.id)}
+                            className="h-8 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                          >
+                            <RefreshCw className={cn("mr-2 h-3.5 w-3.5", isStatsLoading && "animate-spin")} />
+                            Actualiser
+                          </Button>
+                        </div>
+
+                        {statsError ? (
+                          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                            {statsError}
+                          </div>
+                        ) : null}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <MiniMetricCard
+                            title="Viewers actifs"
+                            value={editingStats ? String(editingStats.activeViewers) : "—"}
+                            hint="Lecture active maintenant"
+                            icon={Radio}
+                          />
+                          <MiniMetricCard
+                            title="Sessions aujourd’hui"
+                            value={editingStats ? String(editingStats.sessionsToday) : "—"}
+                            hint="Démarrages du jour"
+                            icon={Activity}
+                          />
+                          <MiniMetricCard
+                            title="Watch time"
+                            value={editingStats ? `${editingStats.watchMinutesToday} min` : "—"}
+                            hint="Temps de visionnage"
+                            icon={Clock3}
+                          />
+                          <MiniMetricCard
+                            title="Buffer ratio"
+                            value={editingStats ? formatPercent(editingStats.bufferRatio) : "—"}
+                            hint="Buffer / watch"
+                            icon={AlertTriangle}
+                          />
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium text-white">Santé du flux</p>
+                              <p className="text-xs text-zinc-400">
+                                Codes HTTP master / media / segment.
+                              </p>
+                            </div>
+                            <HealthBadge status={editingStats?.health.status ?? null} />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                            <div className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Master</p>
+                              <p className="mt-1 text-zinc-100">
+                                {editingStats?.health.masterPlaylistHttpCode ?? "—"}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Media</p>
+                              <p className="mt-1 text-zinc-100">
+                                {editingStats?.health.mediaPlaylistHttpCode ?? "—"}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2">
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Segment</p>
+                              <p className="mt-1 text-zinc-100">
+                                {editingStats?.health.segmentHttpCode ?? "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-zinc-400">
+                            {editingStats?.health.message || "Aucun contrôle de santé disponible pour le moment."}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium text-white">5 dernières minutes</p>
+                              <p className="text-xs text-zinc-400">
+                                Buckets minute par minute.
+                              </p>
+                            </div>
+                            <Badge className="border-white/10 bg-white/5 text-zinc-200">
+                              {editingStats ? editingStats.errorsToday : "—"} erreurs aujourd’hui
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-2">
+                            {editingStats?.lastMinutes?.length ? (
+                              editingStats.lastMinutes.slice(-5).map((point) => (
+                                <div
+                                  key={point.bucketMinute}
+                                  className="grid grid-cols-[64px_1fr] items-center gap-3 rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2"
+                                >
+                                  <div className="text-xs font-mono text-zinc-400">
+                                    {formatMinuteBucket(point.bucketMinute)}
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                    <span className="text-zinc-200">{point.activeViewers} live</span>
+                                    <span className="text-zinc-300">{point.sessionsStarted} sessions</span>
+                                    <span className="text-zinc-300">{point.watchSeconds}s watch</span>
+                                    <span className="text-zinc-300">{point.errorCount} erreurs</span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-sm text-zinc-500">
+                                Pas encore de buckets minute pour cette chaîne.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </section>
+                    ) : null}
+
                     {editing ? (
                       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                         <p className="text-xs text-zinc-500">
@@ -487,8 +703,14 @@ export default function ChannelsPage() {
           <StatCard title="Total" value={stats.total} tone="neutral" />
           <StatCard title="Actives" value={stats.active} tone="success" />
           <StatCard title="Inactives" value={stats.inactive} tone="muted" />
-          <StatCard title="Catégories" value={stats.categories} tone="indigo" />
+          <StatCard title="Origines OK" value={stats.withOrigin} tone="indigo" />
         </div>
+
+        {stats.missingOrigin > 0 ? (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            {stats.missingOrigin} chaîne(s) n&apos;ont pas encore d&apos;`origin_hls_url`. Tant que ce champ manque, `get_playback_url` retournera une erreur et le proxy Oniix ne pourra pas servir le flux.
+          </div>
+        ) : null}
 
         {/* Table */}
         <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
@@ -517,6 +739,17 @@ export default function ChannelsPage() {
                         {c}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={originFilter} onValueChange={(value) => setOriginFilter(value as OriginFilter)}>
+                  <SelectTrigger className="h-9 w-full sm:w-[220px] bg-zinc-950/40 border-white/10">
+                    <SelectValue placeholder="Origine HLS" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+                    <SelectItem value="ALL">Toutes origines</SelectItem>
+                    <SelectItem value="CONFIGURED">Origine configurée</SelectItem>
+                    <SelectItem value="MISSING">Origine manquante</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -552,6 +785,11 @@ export default function ChannelsPage() {
                 <Badge className="h-9 px-3 bg-white/5 border border-white/10 text-zinc-200 inline-flex items-center">
                   {filteredRows.length} résultat{filteredRows.length > 1 ? "s" : ""}
                 </Badge>
+                {stats.missingOrigin > 0 ? (
+                  <Badge className="h-9 px-3 bg-amber-500/10 border border-amber-500/20 text-amber-100 inline-flex items-center">
+                    {stats.missingOrigin} origine(s) manquante(s)
+                  </Badge>
+                ) : null}
               </div>
             </div>
           </div>
@@ -563,6 +801,7 @@ export default function ChannelsPage() {
                   <TableHead className="text-zinc-400 pl-6">Chaîne</TableHead>
                   <TableHead className="text-zinc-400">Catégorie</TableHead>
                   <TableHead className="text-zinc-400">Slug</TableHead>
+                  <TableHead className="text-zinc-400">Origine HLS</TableHead>
                   <TableHead className="text-zinc-400">Statut</TableHead>
                   <TableHead className="text-right text-zinc-400 pr-6">
                     Actions
@@ -575,7 +814,7 @@ export default function ChannelsPage() {
                   <LoadingRows />
                 ) : filteredRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-52 text-center">
+                    <TableCell colSpan={6} className="h-52 text-center">
                       <div className="mx-auto max-w-md space-y-2">
                         <p className="text-sm font-medium text-zinc-200">
                           Aucun résultat
@@ -631,6 +870,20 @@ export default function ChannelsPage() {
                         <code className="text-xs text-zinc-300 bg-zinc-950/40 px-2 py-1 rounded-md border border-white/10">
                           /{c.slug}
                         </code>
+                      </TableCell>
+
+                      <TableCell>
+                        {c.originHlsUrl ? (
+                          <span className="inline-flex items-center gap-2 text-sm text-emerald-300">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Configurée
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-2 text-sm text-amber-300">
+                            <AlertTriangle className="h-4 w-4" />
+                            Manquante
+                          </span>
+                        )}
                       </TableCell>
 
                       <TableCell>
@@ -736,6 +989,65 @@ function StatCard({
   );
 }
 
+function MiniMetricCard({
+  title,
+  value,
+  hint,
+  icon: Icon,
+}: {
+  title: string;
+  value: string;
+  hint: string;
+  icon: ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">{title}</p>
+        <Icon className="h-4 w-4 text-zinc-400" />
+      </div>
+      <p className="mt-2 text-xl font-semibold tracking-tight text-white">{value}</p>
+      <p className="mt-1 text-xs text-zinc-500">{hint}</p>
+    </div>
+  );
+}
+
+function HealthBadge({ status }: { status: "ok" | "degraded" | "down" | null }) {
+  if (status === "ok") {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        OK
+      </span>
+    );
+  }
+
+  if (status === "degraded") {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs text-amber-200">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        Dégradé
+      </span>
+    );
+  }
+
+  if (status === "down") {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-200">
+        <XCircle className="h-3.5 w-3.5" />
+        Down
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
+      <Clock3 className="h-3.5 w-3.5" />
+      Non contrôlé
+    </span>
+  );
+}
+
 function SegBtn({
   active,
   onClick,
@@ -780,6 +1092,9 @@ function LoadingRows() {
           </TableCell>
           <TableCell>
             <div className="h-6 w-36 bg-white/5 rounded animate-pulse" />
+          </TableCell>
+          <TableCell>
+            <div className="h-6 w-24 bg-white/5 rounded animate-pulse" />
           </TableCell>
           <TableCell>
             <div className="h-6 w-24 bg-white/5 rounded animate-pulse" />

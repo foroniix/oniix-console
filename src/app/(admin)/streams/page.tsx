@@ -62,7 +62,7 @@ export default function StreamsPage() {
       setChannels(channelRows);
       setLastUpdated(new Date());
     } catch {
-      setLoadError("Impossible de charger les flux. Verifiez la connexion puis reessayez.");
+      setLoadError("Impossible de charger les flux. Vérifiez la connexion puis réessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +83,7 @@ export default function StreamsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer ce flux ? Cette action est irreversible.")) return;
+    if (!confirm("Supprimer ce flux ? Cette action est irréversible.")) return;
     await removeStream(id);
     await loadData(true);
   };
@@ -129,7 +129,7 @@ export default function StreamsPage() {
         title="Direct"
         subtitle="Surveillez et pilotez vos flux HLS depuis un espace unique."
         breadcrumbs={[
-          { label: "Console Editeur", href: "/dashboard" },
+          { label: "Oniix Console", href: "/dashboard" },
           { label: "Direct" },
         ]}
         icon={<RadioTower className="size-5" />}
@@ -165,14 +165,14 @@ export default function StreamsPage() {
           value={stats.alerts}
           tone={stats.alerts > 0 ? "warning" : "neutral"}
           icon={<TriangleAlert className="size-4" />}
-          hint={stats.alerts > 0 ? "Au moins un flux est degrade ou hors ligne." : "Aucune alerte active."}
+          hint={stats.alerts > 0 ? "Au moins un flux est dégradé ou hors ligne." : "Aucune alerte active."}
           loading={isLoading}
         />
         <KpiCard
-          label="Derniere sync"
+          label="Dernière synchro"
           value={stats.updatedAt}
           tone="info"
-          hint="Mise a jour manuelle pour eviter le polling global."
+          hint="Mise à jour manuelle pour éviter le polling global."
           loading={isLoading}
         />
       </KpiRow>
@@ -192,10 +192,10 @@ export default function StreamsPage() {
 
         <Select value={channelFilter} onValueChange={setChannelFilter}>
           <SelectTrigger className="w-full border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] sm:w-[220px]">
-            <SelectValue placeholder="Toutes les chaines" />
+            <SelectValue placeholder="Toutes les chaînes" />
           </SelectTrigger>
           <SelectContent className="border-[#262b38] bg-[#151821] text-[#e6eaf2]">
-            <SelectItem value="ALL">Toutes les chaines</SelectItem>
+            <SelectItem value="ALL">Toutes les chaînes</SelectItem>
             {channels.map((channel) => (
               <SelectItem key={channel.id} value={String(channel.id)}>
                 {channel.name}
@@ -236,7 +236,7 @@ export default function StreamsPage() {
         emptyAction={
           <Button onClick={handleCreateNew} className="mt-2 bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">
             <Plus className="mr-2 size-4" />
-            Creer votre premier flux
+            Créer votre premier flux
           </Button>
         }
       >

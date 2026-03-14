@@ -24,18 +24,27 @@ export async function PATCH(
         category: z.string().optional(),
         active: z.boolean().optional(),
         logo: z.string().nullable().optional(),
+        originHlsUrl: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
       })
     );
     if (!parsed.ok) return parsed.res;
     const body = parsed.data;
+    const originHlsUrl =
+      body.originHlsUrl === undefined || body.originHlsUrl === null || body.originHlsUrl === ""
+        ? null
+        : body.originHlsUrl;
     const supa = supabaseUser(ctx.accessToken);
 
     const updateData: any = {};
     if (body.name !== undefined) updateData.name = body.name;
     if (body.slug !== undefined) updateData.slug = body.slug;
     if (body.category !== undefined) updateData.category = body.category;
-    if (body.active !== undefined) updateData.active = body.active;
+    if (body.active !== undefined) {
+      updateData.active = body.active;
+      updateData.is_active = body.active;
+    }
     if (body.logo !== undefined) updateData.logo = body.logo;
+    if (body.originHlsUrl !== undefined) updateData.origin_hls_url = originHlsUrl;
     updateData.updated_at = new Date().toISOString();
 
     const { data, error } = await supa

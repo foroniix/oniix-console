@@ -1,0 +1,10 @@
+{
+  "main_module": "index.mjs",
+  "compatibility_date": "2026-03-09",
+  "bindings": [
+    { "name": "STREAM_BASE_URL", "type": "plain_text", "text": "https://stream.oniix.space" },
+    { "name": "RESOLVE_ORIGIN_URL", "type": "plain_text", "text": "https://cuidbajziiltoujmiylm.functions.supabase.co/resolve_origin" },
+    { "name": "PLAYLIST_CACHE_TTL_SEC", "type": "plain_text", "text": "2" },
+    { "name": "SEGMENT_CACHE_TTL_SEC", "type": "plain_text", "text": "120" }
+  ]
+}

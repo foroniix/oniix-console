@@ -3,41 +3,20 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Sparkles, Tv2 } from "lucide-react";
+import { LogOut, Mail, Sparkles, Tv2 } from "lucide-react";
 
+import { useConsoleIdentity } from "@/components/layout/console-identity";
 import { NAV_SECTIONS, isRouteActive } from "@/components/layout/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  buildInitials,
+  CONSOLE_PRODUCT_NAME,
+  formatRoleLabel,
+  SUPPORT_EMAIL,
+  SUPPORT_MAILTO,
+} from "@/lib/console-branding";
 import { cn } from "@/lib/utils";
-
-type MeResponse =
-  | {
-      ok: true;
-      user: {
-        email?: string | null;
-        full_name?: string | null;
-        role?: string | null;
-        avatar_url?: string | null;
-      };
-    }
-  | { ok: false; error?: string };
-
-function buildInitials(name?: string | null, email?: string | null) {
-  const source = String(name || email || "CE").trim();
-  if (!source) return "CE";
-  const parts = source.split(/\s+/).filter(Boolean);
-  const a = (parts[0]?.[0] ?? "C").toUpperCase();
-  const b = (parts[1]?.[0] ?? parts[0]?.[1] ?? "E").toUpperCase();
-  return `${a}${b}`;
-}
-
-function formatRoleLabel(value: string) {
-  const role = value.trim().toLowerCase();
-  if (["superadmin", "admin", "owner", "tenant_admin"].includes(role)) return "Admin";
-  if (["editor", "editeur"].includes(role)) return "Editeur";
-  if (["analyst", "analyste"].includes(role)) return "Analyste";
-  return "Viewer";
-}
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -94,30 +73,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 function SidebarFooter() {
   const router = useRouter();
-  const [name, setName] = React.useState("Admin Editeur");
-  const [email, setEmail] = React.useState<string | null>(null);
-  const [role, setRole] = React.useState<string>("admin");
-  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        const json = (await res.json().catch(() => null)) as MeResponse | null;
-        if (!mounted || !res.ok || !json || !("ok" in json) || !json.ok) return;
-        setName(json.user.full_name?.trim() || "Admin Editeur");
-        setEmail(json.user.email?.trim() || null);
-        setRole((json.user.role?.trim() || "admin").toLowerCase());
-        setAvatarUrl(json.user.avatar_url?.trim() || null);
-      } catch {
-        // ignore profile fetch errors
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const { avatarUrl, displayName, email, role, workspaceName } = useConsoleIdentity();
 
   const handleLogout = React.useCallback(async () => {
     try {
@@ -134,16 +90,32 @@ function SidebarFooter() {
       <div className="rounded-2xl border border-[#262b38] bg-[#1b1f2a] p-3">
         <div className="flex items-center gap-3">
           <Avatar className="size-10 border border-[#262b38]">
-            {avatarUrl ? <AvatarImage src={avatarUrl} alt={name} /> : null}
+            {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
             <AvatarFallback className="bg-[#1c2a4a] text-[#4c82fb]">
-              {buildInitials(name, email)}
+              {buildInitials(displayName, email)}
             </AvatarFallback>
           </Avatar>
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-[#e6eaf2]">{name}</p>
-            <p className="truncate text-xs text-[#8b93a7]">{formatRoleLabel(role)}</p>
+            <p className="truncate text-sm font-semibold text-[#e6eaf2]">{displayName}</p>
+            <p className="truncate text-xs text-[#8b93a7]">
+              {workspaceName} · {formatRoleLabel(role)}
+            </p>
           </div>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-[#262b38] bg-[#151821] p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b93a7]">Support</p>
+          <a
+            href={SUPPORT_MAILTO}
+            className="mt-2 flex items-center gap-2 text-sm font-medium text-[#e6eaf2] transition hover:text-[#4c82fb]"
+          >
+            <Mail className="size-4 text-[#4c82fb]" />
+            {SUPPORT_EMAIL}
+          </a>
+          <p className="mt-1 text-[11px] text-[#8b93a7]">
+            Incident, accès, onboarding éditeur et assistance opérationnelle.
+          </p>
         </div>
 
         <Button
@@ -152,7 +124,7 @@ function SidebarFooter() {
           className="mt-3 w-full justify-start border border-transparent text-[#ef4444] hover:border-[#ef4444]/30 hover:bg-[#ef4444]/10 hover:text-[#ef4444]"
         >
           <LogOut className="mr-2 size-4" />
-          Deconnexion
+          Déconnexion
         </Button>
       </div>
     </div>
@@ -168,10 +140,10 @@ export default function Sidebar() {
             <Tv2 className="size-5 text-[#4c82fb]" />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-base font-bold text-[#e6eaf2]">Console Editeur</span>
+            <span className="block truncate text-base font-bold text-[#e6eaf2]">{CONSOLE_PRODUCT_NAME}</span>
             <span className="mt-0.5 flex items-center gap-1.5 text-xs text-[#8b93a7]">
               <Sparkles className="size-3.5 text-[#4c82fb]" />
-              Pilotage de diffusion OTT
+              Pilotage OTT multi-tenant
             </span>
           </span>
         </Link>

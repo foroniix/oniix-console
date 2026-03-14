@@ -85,7 +85,7 @@ export default function TenantsPage() {
       }
       setItems(json.tenants ?? []);
     } catch {
-      setError("Erreur reseau sur la liste des tenants.");
+      setError("Erreur réseau sur la liste des tenants.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -120,7 +120,7 @@ export default function TenantsPage() {
         | { ok?: boolean; error?: string }
         | null;
       if (!res.ok || !json?.ok) {
-        setError(json?.error || "Impossible de creer le tenant.");
+        setError(json?.error || "Impossible de créer le tenant.");
         return;
       }
       setCreateName("");
@@ -128,7 +128,7 @@ export default function TenantsPage() {
       setOpenCreate(false);
       await load(true, search);
     } catch {
-      setError("Erreur reseau sur la creation de tenant.");
+      setError("Erreur réseau sur la création de tenant.");
     } finally {
       setCreating(false);
     }
@@ -167,14 +167,14 @@ export default function TenantsPage() {
             </Badge>
           </div>
           <p className="text-sm text-zinc-400">
-            Gestion complete des editeurs TV, adoption et sante de provisioning.
+            Gestion complète des éditeurs TV, adoption et santé de provisioning.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={() => load(true, search)}>
             <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
-            Rafraichir
+            Actualiser
           </Button>
 
           <Dialog open={openCreate} onOpenChange={setOpenCreate}>
@@ -186,7 +186,7 @@ export default function TenantsPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[520px]">
               <DialogHeader>
-                <DialogTitle>Creer un tenant</DialogTitle>
+                <DialogTitle>Créer un tenant</DialogTitle>
               </DialogHeader>
               <form onSubmit={onCreateTenant} className="space-y-4">
                 <div className="space-y-2">
@@ -208,7 +208,7 @@ export default function TenantsPage() {
                   />
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs text-zinc-400">
-                  Si un owner email est fourni, une invitation est envoyee automatiquement.
+                  Si un owner email est fourni, une invitation est envoyée automatiquement.
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOpenCreate(false)}>
@@ -254,13 +254,13 @@ export default function TenantsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Events 24h</CardDescription>
+            <CardDescription>Événements 24h</CardDescription>
             <CardTitle>{numberFormat(totals.events24h)}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Ingest configure</CardDescription>
+            <CardDescription>Ingest configuré</CardDescription>
             <CardTitle>{numberFormat(totals.ingestConfigured)}</CardTitle>
           </CardHeader>
         </Card>
@@ -307,7 +307,7 @@ export default function TenantsPage() {
                   <TableHead>Owner</TableHead>
                   <TableHead className="text-right">Membres</TableHead>
                   <TableHead className="text-right">Streams</TableHead>
-                  <TableHead className="text-right">Events 24h</TableHead>
+                  <TableHead className="text-right">Événements 24h</TableHead>
                   <TableHead className="text-right">Ingest</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                   <TableHead className="text-right">Creation</TableHead>
@@ -364,11 +364,10 @@ export default function TenantsPage() {
             Standard SaaS: onboarding rapide, observabilite live, gouvernance role-based.
           </div>
           <Button asChild variant="outline">
-            <a href="/system">Voir la sante systeme</a>
+            <a href="/system">Voir la santé système</a>
           </Button>
         </CardContent>
       </Card>
     </div>
   );
 }
-
