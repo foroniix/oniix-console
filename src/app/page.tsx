@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
+import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRight,
   Building2,
@@ -41,7 +42,7 @@ const PRODUCTION_PILLARS = [
 
 const STUDIO_LANES = [
   {
-    title: "Chaînes & éditeurs",
+    title: "Chaînes et éditeurs",
     body: "Branding, programmation, replays, rôles, workspaces et exploitation du catalogue dans la même grammaire.",
     icon: Tv2,
   },
@@ -51,7 +52,7 @@ const STUDIO_LANES = [
     icon: Smartphone,
   },
   {
-    title: "Direction produit & ops",
+    title: "Direction produit et ops",
     body: "Une interface qui sert la décision et l’action, pas une couche marketing plaquée sur des écrans d’admin.",
     icon: Clapperboard,
   },
@@ -72,7 +73,7 @@ export default async function HomePage() {
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[1440px] flex-col px-4 pb-10 pt-5 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 rounded-[30px] border border-[#ddd3c5] bg-[rgba(243,236,226,0.82)] px-5 py-4 shadow-[0_18px_48px_rgba(39,37,33,0.08)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <OniixLogo size="lg" subtitle="Plateforme de production OTT pour chaînes, éditeurs et apps mobiles" />
+          <OniixLogo size="lg" subtitle="Plateforme de production OTT pour chaînes, éditeurs et applications mobiles" />
 
           <div className="flex flex-wrap items-center gap-3">
             <SupportMailLink className="text-sm font-medium text-[#6d655c] transition hover:text-slate-950">
@@ -214,10 +215,15 @@ export default async function HomePage() {
                 </div>
 
                 <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#040816]">
-                  <video autoPlay loop muted playsInline preload="auto" className="aspect-[16/13] w-full object-cover">
-                    <source src="/branding/oniix-animated.mp4" type="video/mp4" />
-                  </video>
-                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,19,0.08),rgba(7,11,19,0.18),rgba(7,11,19,0.65))]" />
+                  <Image
+                    src="/branding/stills/live-operations-room.jpg"
+                    alt="Régie de diffusion avec mur de contrôle et monitoring multi-caméras"
+                    width={1000}
+                    height={750}
+                    className="aspect-[16/13] w-full object-cover"
+                    priority
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(7,11,19,0.08),rgba(7,11,19,0.18),rgba(7,11,19,0.68))]" />
 
                   <div className="absolute left-4 right-4 top-4 flex flex-wrap gap-2">
                     <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-100">
@@ -251,11 +257,15 @@ export default async function HomePage() {
 
             <div className="grid gap-4 lg:grid-cols-[0.94fr_1.06fr]">
               <div className="rounded-[30px] border border-[#d8cdbe] bg-[rgba(239,231,220,0.88)] p-5 shadow-[0_18px_52px_rgba(39,37,33,0.08)]">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d655c]">Signal mobile</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d655c]">Post-production</div>
                 <div className="mt-3 overflow-hidden rounded-[24px] border border-[#d8cdbe] bg-[#0b1020]">
-                  <video autoPlay loop muted playsInline preload="metadata" className="aspect-[5/4] w-full object-cover">
-                    <source src="/branding/oniix-logo-loop.mp4" type="video/mp4" />
-                  </video>
+                  <Image
+                    src="/branding/stills/post-production-suite.jpg"
+                    alt="Suite de post-production avec caméra, écran de contrôle et station de travail"
+                    width={1000}
+                    height={1500}
+                    className="aspect-[5/4] w-full object-cover"
+                  />
                 </div>
                 <p className="mt-4 text-sm leading-7 text-[#60594f]">
                   L’application et la console ne vivent plus côte à côte. La lecture, les events runtime et l’analytics
@@ -265,25 +275,37 @@ export default async function HomePage() {
 
               <div className="rounded-[30px] border border-[#d8cdbe] bg-[rgba(250,245,238,0.78)] p-5 shadow-[0_18px_52px_rgba(39,37,33,0.08)]">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d655c]">Cadence Oniix</div>
-                <div className="mt-4 space-y-4">
-                  <div className="rounded-2xl border border-[#d8cdbe] bg-white/80 p-4">
-                    <div className="flex items-center gap-3">
-                      <CalendarClock className="size-4 text-[#3549be]" />
-                      <div className="text-sm font-semibold text-slate-950">Programmation et diffusion dans la même boucle</div>
+                <div className="mt-4 grid gap-4 lg:grid-cols-[1.02fr_0.98fr]">
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-[#d8cdbe] bg-white/80 p-4">
+                      <div className="flex items-center gap-3">
+                        <CalendarClock className="size-4 text-[#3549be]" />
+                        <div className="text-sm font-semibold text-slate-950">Programmation et diffusion dans la même boucle</div>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-[#60594f]">
+                        L’outil doit ressembler à la réalité métier: préparer, lancer, surveiller, rejouer, mesurer.
+                      </p>
                     </div>
-                    <p className="mt-3 text-sm leading-6 text-[#60594f]">
-                      L’outil doit ressembler à la réalité métier: préparer, lancer, surveiller, rejouer, mesurer.
-                    </p>
+
+                    <div className="rounded-2xl border border-[#d8cdbe] bg-white/80 p-4">
+                      <div className="flex items-center gap-3">
+                        <ShieldCheck className="size-4 text-[#3549be]" />
+                        <div className="text-sm font-semibold text-slate-950">Sécurité de plateforme, pas vernis marketing</div>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-[#60594f]">
+                        Authentification, rôles, invitations, tenancy et lecture signée doivent se sentir sérieux au premier regard.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="rounded-2xl border border-[#d8cdbe] bg-white/80 p-4">
-                    <div className="flex items-center gap-3">
-                      <ShieldCheck className="size-4 text-[#3549be]" />
-                      <div className="text-sm font-semibold text-slate-950">Sécurité de plateforme, pas vernis marketing</div>
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-[#60594f]">
-                      Authentification, rôles, invitations, tenancy et lecture signée doivent se sentir sérieux au premier regard.
-                    </p>
+                  <div className="overflow-hidden rounded-[24px] border border-[#d8cdbe] bg-[#151922]">
+                    <Image
+                      src="/branding/stills/broadcast-control-room.jpg"
+                      alt="Poste de contrôle broadcast avec moniteurs et instrumentation de diffusion"
+                      width={1000}
+                      height={1500}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                 </div>
               </div>

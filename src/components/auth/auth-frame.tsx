@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
@@ -62,9 +63,14 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
 
             <div className="mt-8 grid gap-4 xl:grid-cols-[1.04fr_0.96fr]">
               <div className="relative overflow-hidden rounded-[30px] border border-[#1f232b] bg-[#0d121b]">
-                <video autoPlay loop muted playsInline preload="auto" className="aspect-[4/5] w-full object-cover">
-                  <source src="/branding/oniix-animated.mp4" type="video/mp4" />
-                </video>
+                <Image
+                  src="/branding/stills/broadcast-control-room.jpg"
+                  alt="Régie broadcast avec mur d'écrans et instrumentation de diffusion"
+                  width={1000}
+                  height={750}
+                  className="aspect-[4/5] w-full object-cover"
+                  priority
+                />
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,12,18,0.10),rgba(8,12,18,0.18),rgba(8,12,18,0.75))]" />
                 <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
                   <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-white">
@@ -84,9 +90,13 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
 
               <div className="space-y-4">
                 <div className="overflow-hidden rounded-[28px] border border-[#d8cdbe] bg-[#101522]">
-                  <video autoPlay loop muted playsInline preload="metadata" className="aspect-[5/4] w-full object-cover">
-                    <source src="/branding/oniix-logo-loop.mp4" type="video/mp4" />
-                  </video>
+                  <Image
+                    src="/branding/stills/post-production-suite.jpg"
+                    alt="Suite de post-production avec moniteurs d'étalonnage et station de travail"
+                    width={1000}
+                    height={1500}
+                    className="aspect-[5/4] w-full object-cover"
+                  />
                 </div>
 
                 <div className="rounded-[28px] border border-[#d8cdbe] bg-[rgba(250,245,238,0.74)] p-5">
