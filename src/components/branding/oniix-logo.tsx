@@ -17,13 +17,13 @@ const SIZE_STYLES = {
   md: {
     root: "gap-3",
     mark: "size-11 rounded-[18px]",
-    word: "text-[2.35rem]",
+    word: "text-[2.3rem]",
     subtitle: "text-xs",
   },
   lg: {
     root: "gap-3.5",
     mark: "size-14 rounded-[22px]",
-    word: "text-[2.95rem]",
+    word: "text-[2.9rem]",
     subtitle: "text-sm",
   },
 } as const;
@@ -41,7 +41,7 @@ export function OniixLogo({
       {showMark ? (
         <span
           className={cn(
-            "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-[#c8d3ff] bg-[linear-gradient(180deg,#f9fbff,#eef2ff)] shadow-[0_20px_50px_-34px_rgba(64,86,200,0.55)]",
+            "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-[#cbc5ba] bg-[linear-gradient(180deg,#f8f2ea,#efe6da)] shadow-[0_18px_40px_-28px_rgba(39,37,33,0.35)]",
             styles.mark
           )}
           aria-hidden="true"
@@ -66,14 +66,14 @@ export function OniixLogo({
       <span className="min-w-0">
         <span
           className={cn(
-            "block whitespace-nowrap font-[var(--font-oniix-brand)] text-[#4056c8] italic font-black leading-none tracking-[-0.08em]",
+            "block whitespace-nowrap font-[var(--font-oniix-brand)] text-[#3549be] italic font-black leading-none tracking-[-0.08em]",
             styles.word
           )}
         >
           Oniix
         </span>
         {subtitle ? (
-          <span className={cn("mt-1 block whitespace-nowrap font-medium text-slate-500", styles.subtitle)}>
+          <span className={cn("mt-1 block whitespace-nowrap font-medium text-[#6d655c]", styles.subtitle)}>
             {subtitle}
           </span>
         ) : null}
