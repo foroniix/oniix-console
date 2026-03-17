@@ -54,7 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Monetisation",
+    title: "Monétisation",
     items: [
       {
         href: "/ads",
@@ -71,7 +71,7 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Equipe",
+    title: "Équipe",
     items: [
       {
         href: "/users",

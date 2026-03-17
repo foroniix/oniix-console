@@ -3,19 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Mail, Sparkles, Tv2 } from "lucide-react";
+import { LogOut, Mail } from "lucide-react";
 
+import { OniixLogo } from "@/components/branding/oniix-logo";
 import { useConsoleIdentity } from "@/components/layout/console-identity";
 import { NAV_SECTIONS, isRouteActive } from "@/components/layout/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  buildInitials,
-  CONSOLE_PRODUCT_NAME,
-  formatRoleLabel,
-  SUPPORT_EMAIL,
-  SUPPORT_MAILTO,
-} from "@/lib/console-branding";
+import { buildInitials, formatRoleLabel, SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/console-branding";
 import { cn } from "@/lib/utils";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
@@ -137,19 +132,8 @@ export default function Sidebar() {
   return (
     <aside className="hidden h-[calc(100vh-2rem)] w-[292px] shrink-0 flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff,#f8fafc)] shadow-[0_24px_60px_rgba(15,23,42,0.08)] lg:flex dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,16,28,0.96),rgba(12,22,36,0.94))] dark:shadow-none">
       <div className="border-b border-slate-200 p-5 dark:border-white/10">
-        <Link href="/dashboard" className="group flex items-center gap-3">
-          <span className="inline-flex size-12 items-center justify-center rounded-[18px] border border-sky-200 bg-sky-50 shadow-[0_18px_40px_-24px_rgba(37,99,235,0.22)] dark:border-[#60a5fa]/35 dark:bg-[#10203d] dark:shadow-[0_18px_40px_-24px_rgba(37,99,235,0.55)]">
-            <Tv2 className="size-5 text-sky-600 dark:text-[#7cb4ff]" />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-base font-bold text-slate-950 dark:text-white">
-              {CONSOLE_PRODUCT_NAME}
-            </span>
-            <span className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <Sparkles className="size-3.5 text-sky-600 dark:text-[#7cb4ff]" />
-              Console de pilotage
-            </span>
-          </span>
+        <Link href="/dashboard" className="group">
+          <OniixLogo size="md" subtitle="Console de pilotage" />
         </Link>
       </div>
 

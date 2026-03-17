@@ -206,10 +206,7 @@ export default function SignupPage() {
           <div className="text-sm font-semibold text-slate-950">Niveau de sécurité requis</div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {checks.map((rule) => (
-              <div
-                key={rule.id}
-                className="inline-flex items-center gap-2 text-sm text-slate-600"
-              >
+              <div key={rule.id} className="inline-flex items-center gap-2 text-sm text-slate-600">
                 <span
                   className={
                     rule.valid
@@ -232,9 +229,7 @@ export default function SignupPage() {
             onChange={(event) => setAcceptedTerms(event.target.checked)}
             className="mt-0.5 size-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
           />
-          <span>
-            J’accepte les conditions d’utilisation et la création sécurisée de mon espace de travail Oniix.
-          </span>
+          <span>J’accepte les conditions d’utilisation et la création sécurisée de mon espace de travail Oniix.</span>
         </label>
 
         {error ? (
@@ -249,7 +244,11 @@ export default function SignupPage() {
           </div>
         ) : null}
 
-        <Button type="submit" disabled={isLoading} className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700">
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700"
+        >
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (

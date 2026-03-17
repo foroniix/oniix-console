@@ -127,7 +127,11 @@ export default function LoginPage() {
           </div>
         ) : null}
 
-        <Button type="submit" disabled={isLoading} className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700">
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700"
+        >
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (

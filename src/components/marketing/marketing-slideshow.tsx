@@ -10,7 +10,8 @@ export type MarketingSlide = {
   eyebrow: string;
   title: string;
   description: string;
-  imageSrc: string;
+  imageSrc?: string;
+  videoSrc?: string;
   metric: string;
   metricLabel: string;
   icon: "tv" | "analytics" | "security";
@@ -18,14 +19,13 @@ export type MarketingSlide = {
 
 export const MARKETING_SLIDES: MarketingSlide[] = [
   {
-    eyebrow: "Pilotage live",
-    title: "Supervisez vos chaînes TV depuis une seule surface produit.",
+    eyebrow: "Signature Oniix",
+    title: "Pilotez chaînes TV, flux live et audience depuis un cockpit unifié.",
     description:
-      "Monitoring, programmation, incidents et analytics en direct pour les opérations OTT multi-chaînes.",
-    imageSrc:
-      "https://images.unsplash.com/photo-1492619375914-88005aa9e8fb?auto=format&fit=crop&w=1800&q=80",
-    metric: "99,95 %",
-    metricLabel: "Disponibilité ciblée",
+      "Branding, exploitation OTT, sécurité d’accès et analytics temps réel convergent dans une surface lisible pour les équipes média.",
+    videoSrc: "/branding/oniix-animated.mp4",
+    metric: "Multi-surface",
+    metricLabel: "Marque cohérente",
     icon: "tv",
   },
   {
@@ -101,14 +101,27 @@ export function MarketingSlideshow({
                 active ? "opacity-100" : "pointer-events-none opacity-0"
               )}
             >
-              <Image
-                src={slide.imageSrc}
-                alt={slide.title}
-                fill
-                priority={slideIndex === 0}
-                className="object-cover"
-                sizes={compact ? "(max-width: 1024px) 100vw, 520px" : "(max-width: 1024px) 100vw, 720px"}
-              />
+              {slide.videoSrc ? (
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload={slideIndex === 0 ? "auto" : "metadata"}
+                  className="h-full w-full object-cover"
+                >
+                  <source src={slide.videoSrc} type="video/mp4" />
+                </video>
+              ) : slide.imageSrc ? (
+                <Image
+                  src={slide.imageSrc}
+                  alt={slide.title}
+                  fill
+                  priority={slideIndex === 0}
+                  className="object-cover"
+                  sizes={compact ? "(max-width: 1024px) 100vw, 520px" : "(max-width: 1024px) 100vw, 720px"}
+                />
+              ) : null}
 
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(15,23,42,0.18)),linear-gradient(180deg,rgba(15,23,42,0.02),rgba(15,23,42,0.76))]" />
               <div className="absolute inset-0 ring-1 ring-inset ring-white/20" />

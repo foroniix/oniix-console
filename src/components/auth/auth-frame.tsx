@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, ShieldCheck, Sparkles, Tv2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 
+import { OniixLogo } from "@/components/branding/oniix-logo";
 import { MarketingSlideshow } from "@/components/marketing/marketing-slideshow";
-import { CONSOLE_PRODUCT_NAME, SUPPORT_EMAIL } from "@/lib/console-branding";
+import { SUPPORT_EMAIL } from "@/lib/console-branding";
 
 type AuthFrameProps = {
   eyebrow: string;
@@ -46,14 +47,13 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               </div>
             </div>
 
-            <div className="mt-8 flex items-center gap-3">
-              <div className="inline-flex size-12 items-center justify-center rounded-[18px] border border-sky-200 bg-sky-50 text-sky-700">
-                <Tv2 className="size-5" />
+            <div className="mt-8 flex items-center gap-4">
+              <div className="inline-flex size-16 overflow-hidden rounded-[22px] border border-slate-900/10 bg-[#040816] shadow-[0_22px_52px_-36px_rgba(15,23,42,0.72)]">
+                <video autoPlay loop muted playsInline preload="metadata" className="h-full w-full object-cover">
+                  <source src="/branding/oniix-logo-loop.mp4" type="video/mp4" />
+                </video>
               </div>
-              <div>
-                <div className="text-base font-semibold text-slate-950">{CONSOLE_PRODUCT_NAME}</div>
-                <div className="text-sm text-slate-500">Control plane OTT et mobile</div>
-              </div>
+              <OniixLogo size="lg" subtitle="Control plane OTT et mobile" />
             </div>
 
             <div className="mt-8">

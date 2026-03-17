@@ -17,6 +17,7 @@ import {
   UserCircle2,
 } from "lucide-react";
 
+import { OniixLogo } from "@/components/branding/oniix-logo";
 import { useConsoleIdentity } from "@/components/layout/console-identity";
 import NotificationCenter from "@/components/layout/notification-center";
 import { SidebarNav } from "@/components/layout/Sidebar";
@@ -86,7 +87,11 @@ export default function Topbar() {
       <div className="flex h-16 items-center gap-3 px-3 sm:px-5 lg:px-6">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="border-slate-200 bg-white text-slate-700 lg:hidden dark:border-white/10 dark:bg-white/[0.04] dark:text-white">
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-slate-200 bg-white text-slate-700 lg:hidden dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
+            >
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
@@ -94,8 +99,9 @@ export default function Topbar() {
           <SheetContent side="left" className="w-[320px] border-white/10 bg-[#0b1622] p-0">
             <div className="border-b border-white/10 px-4 py-5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Navigation</p>
-              <p className="mt-1 text-sm font-semibold text-white">{CONSOLE_PRODUCT_NAME}</p>
-              <p className="mt-1 text-xs text-slate-400">Pilotage OTT, analytics et opérations.</p>
+              <div className="mt-3">
+                <OniixLogo size="sm" subtitle="Pilotage OTT, analytics et opérations." />
+              </div>
             </div>
             <SidebarNav />
           </SheetContent>
@@ -141,7 +147,10 @@ export default function Topbar() {
                 <Plus className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
+            <DropdownMenuContent
+              align="end"
+              className="w-56 border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white"
+            >
               <DropdownMenuItem asChild>
                 <Link href="/channels">Nouvelle chaîne</Link>
               </DropdownMenuItem>
@@ -154,7 +163,11 @@ export default function Topbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button asChild variant="outline" className="hidden rounded-2xl border-slate-200 bg-white text-slate-700 xl:inline-flex dark:border-white/10 dark:bg-white/[0.04] dark:text-white">
+          <Button
+            asChild
+            variant="outline"
+            className="hidden rounded-2xl border-slate-200 bg-white text-slate-700 xl:inline-flex dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
+          >
             <a href={SUPPORT_MAILTO}>
               <LifeBuoy className="mr-2 size-4" />
               Support
@@ -178,10 +191,15 @@ export default function Topbar() {
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60 border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
+            <DropdownMenuContent
+              align="end"
+              className="w-60 border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white"
+            >
               <DropdownMenuLabel className="space-y-1 px-2 py-2">
                 <p className="truncate text-sm font-semibold text-slate-950 dark:text-white">{displayName}</p>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{email ?? CONSOLE_PRODUCT_DESCRIPTION}</p>
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {email ?? CONSOLE_PRODUCT_DESCRIPTION}
+                </p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
               <DropdownMenuItem>
@@ -220,7 +238,9 @@ export default function Topbar() {
                           <span className="size-4" />
                         )}
                         <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">{formatRoleLabel(workspace.role)}</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {formatRoleLabel(workspace.role)}
+                        </span>
                       </DropdownMenuItem>
                     );
                   })}
