@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { OniixLogo } from "@/components/branding/oniix-logo";
+import { SupportMailLink } from "@/components/support/support-mail-link";
 import { useConsoleIdentity } from "@/components/layout/console-identity";
 import NotificationCenter from "@/components/layout/notification-center";
 import { SidebarNav } from "@/components/layout/Sidebar";
@@ -41,7 +42,6 @@ import {
   CONSOLE_PRODUCT_NAME,
   formatRoleLabel,
   SUPPORT_EMAIL,
-  SUPPORT_MAILTO,
 } from "@/lib/console-branding";
 
 export default function Topbar() {
@@ -100,7 +100,7 @@ export default function Topbar() {
             <div className="border-b border-white/10 px-4 py-5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Navigation</p>
               <div className="mt-3">
-                <OniixLogo size="sm" subtitle="Pilotage OTT, analytics et opérations." />
+                <OniixLogo size="sm" subtitle="Pilotage OTT, analytics et opérations" />
               </div>
             </div>
             <SidebarNav />
@@ -130,7 +130,7 @@ export default function Topbar() {
         </form>
 
         <div className="flex items-center gap-2">
-          <Badge className="hidden border border-sky-300/70 bg-sky-50 text-sky-700 lg:inline-flex dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-300">
+          <Badge className="hidden border border-[#ccd6ff] bg-[#eef2ff] text-[#4056c8] lg:inline-flex dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-300">
             {workspaceName}
           </Badge>
           <Badge className="hidden border border-slate-200 bg-white text-slate-700 md:inline-flex dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
@@ -168,10 +168,10 @@ export default function Topbar() {
             variant="outline"
             className="hidden rounded-2xl border-slate-200 bg-white text-slate-700 xl:inline-flex dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
           >
-            <a href={SUPPORT_MAILTO}>
+            <SupportMailLink>
               <LifeBuoy className="mr-2 size-4" />
               Support
-            </a>
+            </SupportMailLink>
           </Button>
 
           <NotificationCenter />
@@ -181,7 +181,7 @@ export default function Topbar() {
               <Button variant="ghost" className="h-10 gap-2 rounded-xl px-2 sm:px-3">
                 <Avatar className="size-8 border border-slate-200 dark:border-white/15">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-                  <AvatarFallback className="bg-sky-50 text-sky-700 dark:bg-[#10203d] dark:text-[#7cb4ff]">
+                  <AvatarFallback className="bg-[#eef2ff] text-[#4056c8] dark:bg-[#10203d] dark:text-[#7cb4ff]">
                     {buildInitials(displayName, email)}
                   </AvatarFallback>
                 </Avatar>
@@ -207,11 +207,11 @@ export default function Topbar() {
                 Mon compte
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href={SUPPORT_MAILTO}>
+                <SupportMailLink>
                   <Mail className="mr-2 size-4" />
                   <span>Contacter le support</span>
                   <span className="ml-auto text-[11px] text-slate-500 dark:text-slate-400">{SUPPORT_EMAIL}</span>
-                </a>
+                </SupportMailLink>
               </DropdownMenuItem>
               {workspaces.length > 1 ? (
                 <>

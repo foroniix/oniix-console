@@ -24,7 +24,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { SUPPORT_MAILTO } from "@/lib/console-branding";
+import { SupportMailLink } from "@/components/support/support-mail-link";
 
 type NotificationSeverity = "info" | "success" | "warning" | "critical";
 
@@ -61,7 +61,7 @@ function getSeverityMeta(severity: NotificationSeverity) {
       return {
         icon: CircleCheck,
         badgeClassName: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
-        label: "Succes",
+        label: "Succès",
       };
     case "warning":
       return {
@@ -219,11 +219,11 @@ export default function NotificationCenter() {
             <div className="rounded-2xl border border-dashed border-[#262b38] bg-[#1b1f2a] p-5 text-sm text-[#8b93a7]">
               <p className="font-medium text-[#e6eaf2]">Aucune notification pour le moment.</p>
               <p className="mt-2">
-                La plateforme vous remontera ici les incidents, les actions requises et les messages operationnels.
+                La plateforme vous remontera ici les incidents, les actions requises et les messages opérationnels.
               </p>
-              <a href={SUPPORT_MAILTO} className="mt-4 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
+              <SupportMailLink className="mt-4 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
                 Contacter le support
-              </a>
+              </SupportMailLink>
             </div>
           ) : (
             <div className="space-y-3">
@@ -318,10 +318,10 @@ export default function NotificationCenter() {
 
         <div className="px-5 py-4 text-xs text-[#8b93a7]">
           <p className="font-medium text-[#e6eaf2]">Besoin d&apos;aide ?</p>
-          <p className="mt-1">Le support Oniix reste joignable pour les incidents, acces et besoins d&apos;onboarding.</p>
-          <a href={SUPPORT_MAILTO} className="mt-3 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
+          <p className="mt-1">Le support Oniix reste joignable pour les incidents, accès et besoins d&apos;onboarding.</p>
+          <SupportMailLink className="mt-3 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
             support@oniix.space
-          </a>
+          </SupportMailLink>
         </div>
       </SheetContent>
     </Sheet>

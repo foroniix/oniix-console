@@ -2,7 +2,6 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import {
   ArrowRight,
-  BadgeCheck,
   Building2,
   LockKeyhole,
   PlayCircle,
@@ -12,46 +11,46 @@ import {
   Tv2,
   Users,
   Waypoints,
-  Workflow,
 } from "lucide-react";
 
 import { OniixLogo } from "@/components/branding/oniix-logo";
+import { SupportMailLink } from "@/components/support/support-mail-link";
 import { Button } from "@/components/ui/button";
 import { SUPPORT_EMAIL } from "@/lib/console-branding";
 
-const CONTROL_POINTS = [
+const SIGNAL_CARDS = [
   {
-    title: "Live orchestration",
-    body: "Chaînes, grille, états de diffusion et incidents rassemblés dans un même plan de contrôle.",
+    title: "Flux live",
+    text: "Chaînes, états de diffusion et incidents suivis dans une surface unique.",
     icon: RadioTower,
   },
   {
-    title: "Playback sécurisé",
-    body: "Résolution signée des flux, surface web et mobile alignées, analytics reliées à la lecture réelle.",
+    title: "Lecture sécurisée",
+    text: "Playback signé, accès contrôlé et expérience mobile alignée à la console.",
     icon: LockKeyhole,
   },
   {
-    title: "Audience unifiée",
-    body: "Présence live, watch time, plateformes et sessions consolidés sans casser l’isolation tenant.",
+    title: "Audience consolidée",
+    text: "Watch time, présence live et plateformes réunis sans casser l’isolation tenant.",
     icon: Waypoints,
   },
 ];
 
-const OPERATING_LANES = [
+const USE_CASES = [
   {
-    title: "Éditeurs & chaînes TV",
-    text: "Branding, programmation, replays, équipes et gouvernance workspace dans un socle exploitable en production.",
+    title: "Chaînes et éditeurs",
+    text: "Branding, programmation, replays, rôles et gouvernance workspace prêts pour des équipes média réelles.",
     icon: Tv2,
   },
   {
     title: "Applications mobiles",
-    text: "Playback signé, signal live, analytics runtime et expérience éditoriale raccordés à la console.",
+    text: "Le player n’est plus isolé. Lecture, heartbeats, events et analytics vivent sur le même contrat.",
     icon: Smartphone,
   },
   {
-    title: "Ops & direction produit",
-    text: "Un cockpit lisible pour piloter le direct, observer le terrain et décider sans rupture entre métiers.",
-    icon: Workflow,
+    title: "Équipes d’exploitation",
+    text: "Une interface qui sert l’action: superviser, arbitrer, corriger et comprendre ce qui se passe sur le terrain.",
+    icon: Users,
   },
 ];
 
@@ -64,16 +63,19 @@ export default async function HomePage() {
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[linear-gradient(180deg,#f7fbff_0%,#edf3f8_100%)] text-slate-950">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-28 top-0 h-[420px] w-[420px] rounded-full bg-[#cfd8ff]/70 blur-[120px]" />
+        <div className="absolute -left-28 top-0 h-[420px] w-[420px] rounded-full bg-[#d7deff]/70 blur-[120px]" />
         <div className="absolute right-[-8%] top-20 h-[360px] w-[360px] rounded-full bg-cyan-100/70 blur-[130px]" />
         <div className="absolute bottom-[-8%] left-1/3 h-[320px] w-[320px] rounded-full bg-emerald-100/70 blur-[120px]" />
       </div>
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[1440px] flex-col px-4 pb-12 pt-5 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 rounded-[28px] border border-white/70 bg-white/76 px-5 py-4 shadow-[0_16px_48px_rgba(15,23,42,0.08)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <OniixLogo size="lg" subtitle="Operating system OTT pour éditeurs, chaînes et applications mobiles" />
+          <OniixLogo size="lg" subtitle="Operating system OTT pour chaînes, éditeurs et applications mobiles" />
 
           <div className="flex flex-wrap items-center gap-3">
+            <SupportMailLink className="text-sm font-medium text-slate-600 transition hover:text-slate-950">
+              Support
+            </SupportMailLink>
             <Link href="/login" className="text-sm font-medium text-slate-600 transition hover:text-slate-950">
               Connexion
             </Link>
@@ -89,20 +91,19 @@ export default async function HomePage() {
           </div>
         </header>
 
-        <section className="mt-6 grid gap-5 xl:grid-cols-[1.03fr_0.97fr]">
-          <div className="rounded-[36px] border border-white/80 bg-white/82 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur sm:p-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#d7ddff] bg-[#edf1ff] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4056c8]">
-              <BadgeCheck className="size-3.5" />
-              Oniix Operating Floor
+        <section className="mt-6 grid gap-5 xl:grid-cols-[1.04fr_0.96fr]">
+          <div className="rounded-[36px] border border-white/80 bg-white/84 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur sm:p-8">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#d9e1ff] bg-[#eef2ff] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4056c8]">
+              Oniix Broadcast Operating Floor
             </div>
 
             <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-tight tracking-[-0.04em] sm:text-5xl xl:text-[4rem]">
-              Oniix pilote le direct comme un produit, pas comme un empilement d’outils.
+              Oniix traite le direct comme un produit à piloter, pas comme un patchwork d’outils.
             </h1>
 
             <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 sm:text-[1.02rem]">
-              La plateforme rassemble exploitation OTT, sécurité de lecture, analytics temps réel, programmation et
-              opérations multi-tenant dans une expérience pensée pour les équipes média qui doivent agir vite et bien.
+              La plateforme rassemble exploitation OTT, sécurité de lecture, analytics temps réel, multi-tenant et
+              opérations mobiles dans un environnement clair, sérieux et exploitable par des équipes média.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -123,48 +124,49 @@ export default async function HomePage() {
                   Créer un workspace
                 </Link>
               </Button>
+              <SupportMailLink className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-5 text-sm font-semibold text-slate-700 transition hover:bg-white hover:text-[#4056c8]">
+                <ShieldCheck className="size-4" />
+                Contacter le support
+              </SupportMailLink>
             </div>
 
             <div className="mt-8 grid gap-3 lg:grid-cols-3">
-              {CONTROL_POINTS.map((point) => {
-                const Icon = point.icon;
+              {SIGNAL_CARDS.map((card) => {
+                const Icon = card.icon;
                 return (
                   <article
-                    key={point.title}
+                    key={card.title}
                     className="rounded-[24px] border border-slate-200/80 bg-[linear-gradient(180deg,#ffffff,#f8fbff)] p-4 shadow-sm"
                   >
                     <div className="inline-flex size-10 items-center justify-center rounded-2xl border border-[#d8dfff] bg-[#eef2ff] text-[#4056c8]">
                       <Icon className="size-4" />
                     </div>
-                    <h2 className="mt-4 text-base font-semibold">{point.title}</h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{point.body}</p>
+                    <h2 className="mt-4 text-base font-semibold">{card.title}</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{card.text}</p>
                   </article>
                 );
               })}
             </div>
 
-            <div className="mt-8 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+            <div className="mt-8 grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
               <div className="rounded-[28px] border border-slate-200/80 bg-slate-50/90 p-5">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Support</div>
-                <div className="mt-3 text-xl font-semibold">Un point d’appui humain pour les phases sensibles.</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Support humain</div>
+                <div className="mt-3 text-xl font-semibold">Un vrai point d’appui quand l’exploitation se tend.</div>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
-                  Mise en route, incidents, onboarding éditeur, gouvernance et exploitation quotidienne.
+                  Mise en route, incidents, onboarding éditeur, gouvernance et assistance opérationnelle.
                 </p>
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#4056c8] hover:text-[#3148be]"
-                >
+                <SupportMailLink className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#4056c8] hover:text-[#3148be]">
                   {SUPPORT_EMAIL}
                   <ArrowRight className="size-4" />
-                </a>
+                </SupportMailLink>
               </div>
 
               <div className="rounded-[28px] border border-slate-200/80 bg-white p-5">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Surface d’exploitation
+                  Ce que la plateforme absorbe
                 </div>
                 <div className="mt-4 space-y-4">
-                  {OPERATING_LANES.map((lane) => {
+                  {USE_CASES.map((lane) => {
                     const Icon = lane.icon;
                     return (
                       <div key={lane.title} className="flex gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
@@ -187,8 +189,8 @@ export default async function HomePage() {
             <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02))] p-4">
               <div className="flex items-center justify-between gap-4 px-1 pb-4">
                 <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Live Floor</div>
-                  <div className="mt-2 text-2xl font-semibold">Une identité de produit construite pour l’OTT.</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Signal wall</div>
+                  <div className="mt-2 text-2xl font-semibold">Une identité visuelle de plateforme, pas une landing générique.</div>
                 </div>
                 <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-medium text-emerald-300">
                   Daylight + secure SaaS
@@ -199,7 +201,7 @@ export default async function HomePage() {
                 <video autoPlay loop muted playsInline preload="auto" className="aspect-[16/13] w-full object-cover">
                   <source src="/branding/oniix-animated.mp4" type="video/mp4" />
                 </video>
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,32,0.06),rgba(8,17,32,0.10),rgba(8,17,32,0.55))]" />
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,32,0.06),rgba(8,17,32,0.10),rgba(8,17,32,0.58))]" />
 
                 <div className="absolute left-4 right-4 top-4 flex flex-wrap gap-2">
                   <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-100">
@@ -230,7 +232,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
+            <div className="mt-4 grid gap-4 lg:grid-cols-[0.94fr_1.06fr]">
               <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                   Signal mobile
@@ -241,39 +243,25 @@ export default async function HomePage() {
                   </video>
                 </div>
                 <p className="mt-4 text-sm leading-7 text-slate-300">
-                  L’app mobile et la console ne sont plus deux mondes séparés. Oniix relie lecture, analytics et
-                  exploitation dans une même trame.
+                  L’application et la console ne vivent plus en parallèle. La lecture, les events runtime et
+                  l’analytics partagent désormais le même plan.
                 </p>
               </div>
 
               <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-5">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Ce que la plateforme change
-                </div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pourquoi Oniix</div>
                 <div className="mt-4 grid gap-4">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="inline-flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-sky-300">
-                        <Users className="size-4" />
-                      </div>
-                      <div className="text-base font-semibold">Pour les équipes média</div>
-                    </div>
+                    <div className="text-base font-semibold">Pour les équipes média</div>
                     <p className="mt-3 text-sm leading-6 text-slate-300">
-                      Une expérience sérieuse, lisible et stable qui tient autant du produit SaaS que de l’outil
-                      d’exploitation broadcast.
+                      Une expérience lisible et stable, pensée pour des opérateurs, des éditeurs et des responsables produit.
                     </p>
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="inline-flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-cyan-300">
-                        <ShieldCheck className="size-4" />
-                      </div>
-                      <div className="text-base font-semibold">Pour la sécurité et la gouvernance</div>
-                    </div>
+                    <div className="text-base font-semibold">Pour la sécurité et la gouvernance</div>
                     <p className="mt-3 text-sm leading-6 text-slate-300">
-                      Auth, invites, rôles, workspaces actifs et lecture signée s’alignent désormais sur une logique
-                      plateforme, pas sur un prototype.
+                      Authentification, invites, rôles, workspaces actifs et lecture signée s’alignent sur une vraie logique plateforme.
                     </p>
                   </div>
                 </div>

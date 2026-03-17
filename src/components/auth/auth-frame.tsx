@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
 import { OniixLogo } from "@/components/branding/oniix-logo";
-import { MarketingSlideshow } from "@/components/marketing/marketing-slideshow";
+import { SupportMailLink } from "@/components/support/support-mail-link";
 import { SUPPORT_EMAIL } from "@/lib/console-branding";
 
 type AuthFrameProps = {
@@ -16,22 +16,22 @@ type AuthFrameProps = {
 
 const TRUST_POINTS = [
   "Sessions applicatives protégées par cookies httpOnly",
-  "Limitation de débit sur les endpoints d’authentification",
-  "Isolation workspace et rôles SaaS côté backend",
+  "Rôles et isolation workspace appliqués côté backend",
+  "Onboarding éditeur, invitations et accès consolidés",
 ];
 
 export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFrameProps) {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[linear-gradient(180deg,#f7fbff,#edf3f8)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-sky-200/60 blur-[120px]" />
+        <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#d7deff]/70 blur-[120px]" />
         <div className="absolute right-0 top-20 h-[360px] w-[360px] rounded-full bg-cyan-200/40 blur-[120px]" />
-        <div className="absolute bottom-0 left-1/3 h-[380px] w-[380px] rounded-full bg-emerald-100/70 blur-[140px]" />
+        <div className="absolute bottom-0 left-1/3 h-[360px] w-[360px] rounded-full bg-emerald-100/70 blur-[140px]" />
       </div>
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-7xl items-center px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid w-full gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-          <section className="hidden rounded-[34px] border border-white/70 bg-white/72 p-8 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur lg:flex lg:flex-col">
+        <div className="grid w-full gap-6 lg:grid-cols-[1.04fr_0.96fr]">
+          <section className="hidden rounded-[34px] border border-white/70 bg-white/76 p-8 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur lg:flex lg:flex-col">
             <div className="flex items-center justify-between gap-4">
               <Link
                 href="/"
@@ -41,52 +41,78 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
                 Retour à l’accueil
               </Link>
 
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700">
-                <Sparkles className="size-3.5" />
-                {eyebrow}
-              </div>
-            </div>
-
-            <div className="mt-8 flex items-center gap-4">
-              <div className="inline-flex size-16 overflow-hidden rounded-[22px] border border-slate-900/10 bg-[#040816] shadow-[0_22px_52px_-36px_rgba(15,23,42,0.72)]">
-                <video autoPlay loop muted playsInline preload="metadata" className="h-full w-full object-cover">
-                  <source src="/branding/oniix-logo-loop.mp4" type="video/mp4" />
-                </video>
-              </div>
-              <OniixLogo size="lg" subtitle="Control plane OTT et mobile" />
+              <SupportMailLink className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white">
+                {SUPPORT_EMAIL}
+              </SupportMailLink>
             </div>
 
             <div className="mt-8">
-              <h1 className="max-w-xl text-4xl font-semibold tracking-tight text-slate-950">{title}</h1>
+              <OniixLogo size="lg" subtitle="Poste de pilotage OTT, mobile et audience" />
+            </div>
+
+            <div className="mt-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#d9e1ff] bg-[#eef2ff] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4056c8]">
+                {eyebrow}
+              </div>
+              <h1 className="mt-5 max-w-xl text-4xl font-semibold tracking-tight text-slate-950">{title}</h1>
               <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600">{subtitle}</p>
             </div>
 
-            <div className="mt-8">
-              <MarketingSlideshow compact />
-            </div>
-
-            <div className="mt-6 grid gap-3">
-              {TRUST_POINTS.map((point) => (
-                <div
-                  key={point}
-                  className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3"
-                >
-                  <div className="mt-0.5 inline-flex size-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                    <CheckCircle2 className="size-4" />
-                  </div>
-                  <div className="text-sm text-slate-700">{point}</div>
+            <div className="mt-8 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+              <div className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-[#06101e]">
+                <video autoPlay loop muted playsInline preload="auto" className="aspect-[4/5] w-full object-cover">
+                  <source src="/branding/oniix-animated.mp4" type="video/mp4" />
+                </video>
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(6,16,30,0.10),rgba(6,16,30,0.18),rgba(6,16,30,0.72))]" />
+                <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
+                  <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-white">
+                    Oniix signal
+                  </span>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] text-emerald-200">
+                    Secure access
+                  </span>
                 </div>
-              ))}
+                <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 backdrop-blur">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-slate-300">Accès opérateur</div>
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    Identité de marque, contrôle d’accès et usage réel réunis dans la même surface.
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-[#08111f]">
+                  <video autoPlay loop muted playsInline preload="metadata" className="aspect-[5/4] w-full object-cover">
+                    <source src="/branding/oniix-logo-loop.mp4" type="video/mp4" />
+                  </video>
+                </div>
+
+                <div className="rounded-[28px] border border-slate-200/80 bg-slate-50/90 p-5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Confiance produit
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    {TRUST_POINTS.map((point) => (
+                      <div key={point} className="flex items-start gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm">
+                        <div className="mt-0.5 inline-flex size-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                          <CheckCircle2 className="size-4" />
+                        </div>
+                        <div className="text-sm leading-6 text-slate-700">{point}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-auto flex items-center justify-between border-t border-slate-200 pt-6 text-sm text-slate-500">
               <div className="inline-flex items-center gap-2">
-                <ShieldCheck className="size-4 text-sky-600" />
+                <ShieldCheck className="size-4 text-[#4056c8]" />
                 Accès professionnels sécurisés
               </div>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium text-slate-700 hover:text-sky-700">
+              <SupportMailLink className="font-medium text-slate-700 hover:text-[#4056c8]">
                 {SUPPORT_EMAIL}
-              </a>
+              </SupportMailLink>
             </div>
           </section>
 

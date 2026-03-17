@@ -67,13 +67,13 @@ export default function LoginPage() {
   return (
     <AuthFrame
       eyebrow="Connexion sécurisée"
-      title="Accédez à votre espace d’exploitation Oniix."
-      subtitle="Connectez-vous pour retrouver vos workspaces, vos chaînes, vos analytics et vos opérations live."
+      title="Accédez au poste de pilotage Oniix."
+      subtitle="Retrouvez vos workspaces, vos chaînes, vos analytics et vos opérations live dans un environnement unifié."
       footer={
         <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <p>
             Nouveau sur Oniix ?{" "}
-            <Link href="/signup" className="font-semibold text-sky-700 hover:text-sky-800">
+            <Link href="/signup" className="font-semibold text-[#4056c8] hover:text-[#3148be]">
               Créer un espace
             </Link>
           </p>
@@ -111,12 +111,12 @@ export default function LoginPage() {
               type="checkbox"
               checked={remember}
               onChange={(event) => setRemember(event.target.checked)}
-              className="size-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              className="size-4 rounded border-slate-300 text-[#4056c8] focus:ring-[#4056c8]"
             />
             Rester connecté sur cet appareil
           </label>
           <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
-            <ShieldCheck className="size-4 text-sky-600" />
+            <ShieldCheck className="size-4 text-[#4056c8]" />
             Session protégée
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700"
+          className="h-11 w-full rounded-xl bg-[#4056c8] text-white hover:bg-[#3148be]"
         >
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />

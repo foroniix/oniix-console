@@ -6,11 +6,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Mail } from "lucide-react";
 
 import { OniixLogo } from "@/components/branding/oniix-logo";
+import { SupportMailLink } from "@/components/support/support-mail-link";
 import { useConsoleIdentity } from "@/components/layout/console-identity";
 import { NAV_SECTIONS, isRouteActive } from "@/components/layout/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { buildInitials, formatRoleLabel, SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/console-branding";
+import { buildInitials, formatRoleLabel, SUPPORT_EMAIL } from "@/lib/console-branding";
 import { cn } from "@/lib/utils";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
@@ -37,7 +38,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   className={cn(
                     "group flex items-center gap-3 rounded-2xl border px-3 py-3 transition-all duration-200",
                     active
-                      ? "border-sky-200 bg-sky-50 text-slate-950 shadow-[0_12px_30px_-24px_rgba(37,99,235,0.35)] dark:border-[#60a5fa]/30 dark:bg-[rgba(37,99,235,0.14)] dark:text-white dark:shadow-[0_12px_30px_-24px_rgba(37,99,235,0.85)]"
+                      ? "border-[#ccd6ff] bg-[#eef2ff] text-slate-950 shadow-[0_12px_30px_-24px_rgba(64,86,200,0.42)] dark:border-[#60a5fa]/30 dark:bg-[rgba(37,99,235,0.14)] dark:text-white"
                       : "border-transparent bg-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-400 dark:hover:border-white/10 dark:hover:bg-white/[0.05] dark:hover:text-white"
                   )}
                 >
@@ -45,7 +46,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     className={cn(
                       "inline-flex size-10 items-center justify-center rounded-2xl border transition-colors",
                       active
-                        ? "border-sky-200 bg-white text-sky-600 dark:border-[#60a5fa]/30 dark:bg-[#10203d] dark:text-[#7cb4ff]"
+                        ? "border-[#ccd6ff] bg-white text-[#4056c8] dark:border-[#60a5fa]/30 dark:bg-[#10203d] dark:text-[#7cb4ff]"
                         : "border-slate-200 bg-white text-slate-400 group-hover:border-slate-300 group-hover:text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 dark:group-hover:text-white"
                     )}
                   >
@@ -86,7 +87,7 @@ function SidebarFooter() {
         <div className="flex items-center gap-3">
           <Avatar className="size-10 border border-slate-200 dark:border-white/10">
             {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-            <AvatarFallback className="bg-sky-50 text-sky-700 dark:bg-[#10203d] dark:text-[#7cb4ff]">
+            <AvatarFallback className="bg-[#eef2ff] text-[#4056c8] dark:bg-[#10203d] dark:text-[#7cb4ff]">
               {buildInitials(displayName, email)}
             </AvatarFallback>
           </Avatar>
@@ -103,13 +104,10 @@ function SidebarFooter() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             Support
           </p>
-          <a
-            href={SUPPORT_MAILTO}
-            className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-950 transition hover:text-sky-700 dark:text-white dark:hover:text-[#7cb4ff]"
-          >
-            <Mail className="size-4 text-sky-600 dark:text-[#7cb4ff]" />
+          <SupportMailLink className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-950 transition hover:text-[#4056c8] dark:text-white dark:hover:text-[#7cb4ff]">
+            <Mail className="size-4 text-[#4056c8] dark:text-[#7cb4ff]" />
             {SUPPORT_EMAIL}
-          </a>
+          </SupportMailLink>
           <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
             Incident, accès, onboarding éditeur et assistance opérationnelle.
           </p>

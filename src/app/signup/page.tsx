@@ -126,18 +126,18 @@ export default function SignupPage() {
   return (
     <AuthFrame
       eyebrow="Création d’espace"
-      title="Ouvrez votre workspace Oniix avec un parcours SaaS propre et sécurisé."
-      subtitle="Créez votre organisation, protégez vos accès et démarrez avec une base prête pour l’exploitation OTT."
+      title="Ouvrez votre workspace Oniix."
+      subtitle="Créez votre organisation, sécurisez vos accès et démarrez avec une base prête pour l’exploitation OTT."
       footer={
         <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <p>
             Déjà équipé ?{" "}
-            <Link href="/login" className="font-semibold text-sky-700 hover:text-sky-800">
+            <Link href="/login" className="font-semibold text-[#4056c8] hover:text-[#3148be]">
               Se connecter
             </Link>
           </p>
           <span className="inline-flex items-center gap-2 text-slate-500">
-            <ShieldCheck className="size-4 text-sky-600" />
+            <ShieldCheck className="size-4 text-[#4056c8]" />
             Onboarding SaaS professionnel
           </span>
         </div>
@@ -227,7 +227,7 @@ export default function SignupPage() {
             type="checkbox"
             checked={acceptedTerms}
             onChange={(event) => setAcceptedTerms(event.target.checked)}
-            className="mt-0.5 size-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            className="mt-0.5 size-4 rounded border-slate-300 text-[#4056c8] focus:ring-[#4056c8]"
           />
           <span>J’accepte les conditions d’utilisation et la création sécurisée de mon espace de travail Oniix.</span>
         </label>
@@ -247,7 +247,7 @@ export default function SignupPage() {
         <Button
           type="submit"
           disabled={isLoading}
-          className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700"
+          className="h-11 w-full rounded-xl bg-[#4056c8] text-white hover:bg-[#3148be]"
         >
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />

@@ -77,7 +77,7 @@ export default function AcceptInviteClient() {
         <Button
           onClick={accept}
           disabled={!canSubmit}
-          className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700"
+          className="h-11 w-full rounded-xl bg-[#4056c8] text-white hover:bg-[#3148be]"
         >
           {loading ? (
             <Loader2 className="size-4 animate-spin" />
