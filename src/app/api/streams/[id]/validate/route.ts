@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { auditLog } from "../../../_utils/audit";
-import { supabaseUser } from "../../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../../tenant/_utils";
 
 type Params = { params: Promise<{ id: string }> };
 type CheckStatus = "OK" | "WARN" | "FAIL";
@@ -144,25 +143,23 @@ async function probeUrl(url: string) {
 }
 
 export async function POST(_: NextRequest, { params }: Params) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "operate_live");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
-
-  const { data: stream, error: streamError } = await supa
+  const { data: stream, error: streamError } = await ctx.sb
     .from("streams")
     .select("id,hls_url,captions")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .single();
 
   if (streamError || !stream) {
     if (streamError) {
-      console.error("Stream validate lookup error", { error: streamError.message, tenantId: ctx.tenantId, id });
+      console.error("Stream validate lookup error", { error: streamError.message, tenantId: ctx.tenant_id, id });
     }
     return NextResponse.json({ ok: false, error: "Ressource introuvable." }, { status: 404 });
   }
@@ -198,9 +195,9 @@ export async function POST(_: NextRequest, { params }: Params) {
       );
       const validatedAt = new Date().toISOString();
       await auditLog({
-        sb: supa,
-        tenantId: ctx.tenantId,
-        actorUserId: ctx.userId,
+        sb: ctx.sb,
+        tenantId: ctx.tenant_id,
+        actorUserId: ctx.user_id,
         action: "STREAM_VALIDATE_HLS",
         targetType: "stream",
         targetId: id,
@@ -392,7 +389,7 @@ export async function POST(_: NextRequest, { params }: Params) {
     }
   } catch (error) {
     console.error("Stream validate fatal error", {
-      tenantId: ctx.tenantId,
+      tenantId: ctx.tenant_id,
       id,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -414,9 +411,9 @@ export async function POST(_: NextRequest, { params }: Params) {
   const validatedAt = new Date().toISOString();
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "STREAM_VALIDATE_HLS",
     targetType: "stream",
     targetId: id,

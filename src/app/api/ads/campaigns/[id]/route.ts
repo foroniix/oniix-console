@@ -1,26 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant, requireRole } from "../../../_utils/auth";
-import { supabaseUser } from "../../../_utils/supabase";
+import { requireTenantAccess } from "../../../tenant/_utils";
 import { parseJson } from "../../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const CAMPAIGNS_RW_ROLES = ["owner", "admin", "tenant_admin", "superadmin"] as const;
-
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-
-  const tRes = await requireTenant(auth.ctx);
-  if (tRes) return tRes;
-
-  const rRes = requireRole(auth.ctx, CAMPAIGNS_RW_ROLES as unknown as string[]);
-  if (rRes) return rRes;
+  const ctx = await requireTenantAccess("manage_monetization");
+  if (!ctx.ok) return ctx.res;
 
   const { id } = await context.params;
   if (!id) return NextResponse.json({ ok: false, error: "Identifiant manquant." }, { status: 400 });
@@ -40,9 +31,7 @@ export async function PATCH(
   if (!parsed.ok) return parsed.res;
   const body = parsed.data;
 
-  const sb = supabaseUser(auth.ctx.accessToken);
-
-  const patch: any = {
+  const patch: Record<string, unknown> = {
     name: body.name,
     type: body.type,
     priority: typeof body.priority === "number" ? body.priority : undefined,
@@ -54,16 +43,16 @@ export async function PATCH(
 
   Object.keys(patch).forEach((k) => patch[k] === undefined && delete patch[k]);
 
-  const { data, error } = await sb
+  const { data, error } = await ctx.sb
     .from("ad_campaigns")
     .update(patch)
     .eq("id", id)
-    .eq("tenant_id", auth.ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .select("*")
     .maybeSingle();
 
   if (error) {
-    console.error("Campaign update error", { error: error.message, tenantId: auth.ctx.tenantId, id });
+    console.error("Campaign update error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
   }
   if (!data) return NextResponse.json({ ok: false, error: "Ressource introuvable." }, { status: 404 });
@@ -75,28 +64,20 @@ export async function DELETE(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-
-  const tRes = await requireTenant(auth.ctx);
-  if (tRes) return tRes;
-
-  const rRes = requireRole(auth.ctx, CAMPAIGNS_RW_ROLES as unknown as string[]);
-  if (rRes) return rRes;
+  const ctx = await requireTenantAccess("manage_monetization");
+  if (!ctx.ok) return ctx.res;
 
   const { id } = await context.params;
   if (!id) return NextResponse.json({ ok: false, error: "Identifiant manquant." }, { status: 400 });
 
-  const sb = supabaseUser(auth.ctx.accessToken);
-
-  const { error } = await sb
+  const { error } = await ctx.sb
     .from("ad_campaigns")
     .update({ status: "ARCHIVED", active: false })
     .eq("id", id)
-    .eq("tenant_id", auth.ctx.tenantId);
+    .eq("tenant_id", ctx.tenant_id);
 
   if (error) {
-    console.error("Campaign archive error", { error: error.message, tenantId: auth.ctx.tenantId, id });
+    console.error("Campaign archive error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
   }
   return NextResponse.json({ ok: true }, { status: 200 });

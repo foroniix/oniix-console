@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { requireAuth, requireTenant } from "../../../_utils/auth";
-import { supabaseUser } from "../../../_utils/supabase";
+import { requireTenantAccess } from "../../../tenant/_utils";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -23,19 +22,15 @@ function average(values: number[]) {
 }
 
 export async function GET(_: NextRequest, { params }: Params) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await requireTenantAccess("view_analytics");
+  if (!ctx.ok) return ctx.res;
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data: stream, error: streamError } = await supa
+  const { data: stream, error: streamError } = await ctx.sb
     .from("streams")
     .select("id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .single();
 
@@ -43,7 +38,7 @@ export async function GET(_: NextRequest, { params }: Params) {
     if (streamError) {
       console.error("Stream analytics lookup error", {
         error: streamError.message,
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenant_id,
         id,
       });
     }
@@ -53,17 +48,17 @@ export async function GET(_: NextRequest, { params }: Params) {
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const since1h = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("stream_stats")
     .select("viewers,bitrate_kbps,errors,created_at")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("stream_id", id)
     .gte("created_at", since24h)
     .order("created_at", { ascending: true })
     .limit(6000);
 
   if (error) {
-    console.error("Stream analytics load error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Stream analytics load error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 

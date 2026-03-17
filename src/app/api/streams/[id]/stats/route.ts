@@ -1,39 +1,33 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireAuth, requireTenant } from "../../../_utils/auth";
-import { supabaseUser } from "../../../_utils/supabase";
+import { requireTenantAccess } from "../../../tenant/_utils";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_: NextRequest, { params }: Params) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await requireTenantAccess("view_analytics");
+  if (!ctx.ok) return ctx.res;
 
   const { id } = await params;
 
-  const supa = supabaseUser(ctx.accessToken);
-
   // Ensure the stream belongs to this tenant
-  const { data: stream, error: se } = await supa
+  const { data: stream, error: se } = await ctx.sb
     .from("streams")
     .select("id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .single();
 
   if (se || !stream) {
     if (se) {
-      console.error("Stream stats lookup error", { error: se.message, tenantId: ctx.tenantId, id });
+      console.error("Stream stats lookup error", { error: se.message, tenantId: ctx.tenant_id, id });
     }
     return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
   }
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("stream_stats")
     .select("viewers, bitrate_kbps, errors, created_at")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("stream_id", id)
     .order("created_at", { ascending: false })
     .limit(1)

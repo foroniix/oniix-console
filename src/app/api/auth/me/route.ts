@@ -23,7 +23,6 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: true,
-        access_token: ctx.accessToken,
         user: {
           id: user.id,
           email: user.email ?? null,
@@ -35,8 +34,10 @@ export async function GET() {
       },
       { status: 200 }
     );
-  } catch (e: any) {
-    console.error("Auth me error", { error: e?.message });
+  } catch (error: unknown) {
+    console.error("Auth me error", {
+      error: error instanceof Error ? error.message : "unknown",
+    });
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 }

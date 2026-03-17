@@ -138,7 +138,7 @@ export default function StreamsPage() {
             <Button
               variant="outline"
               onClick={() => void loadData(true)}
-              className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] hover:bg-[#1c2a4a]"
+              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
             >
               <RefreshCw className={`mr-2 size-4 ${isLoading ? "animate-spin" : ""}`} />
               Actualiser
@@ -186,15 +186,15 @@ export default function StreamsPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Rechercher un flux (nom, ID, URL)"
-            className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+            className="border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
           />
         </div>
 
         <Select value={channelFilter} onValueChange={setChannelFilter}>
-          <SelectTrigger className="w-full border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] sm:w-[220px]">
+          <SelectTrigger className="w-full border-slate-200 bg-white text-slate-700 sm:w-[220px] dark:border-white/10 dark:bg-white/[0.04] dark:text-white">
             <SelectValue placeholder="Toutes les chaînes" />
           </SelectTrigger>
-          <SelectContent className="border-[#262b38] bg-[#151821] text-[#e6eaf2]">
+          <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
             <SelectItem value="ALL">Toutes les chaînes</SelectItem>
             {channels.map((channel) => (
               <SelectItem key={channel.id} value={String(channel.id)}>
@@ -214,8 +214,8 @@ export default function StreamsPage() {
               onClick={() => setStatusFilter(filter.value)}
               className={
                 statusFilter === filter.value
-                  ? "border-[#4c82fb]/40 bg-[#1c2a4a] text-[#4c82fb]"
-                  : "border-[#262b38] bg-[#1b1f2a] text-[#8b93a7]"
+                  ? "border-sky-300/70 bg-sky-50 text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-300"
+                  : "border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400"
               }
             >
               {filter.label}
@@ -226,13 +226,13 @@ export default function StreamsPage() {
 
       <DataTableShell
         title="Liste des flux"
-        description={`${filteredStreams.length} resultat(s) sur ${streams.length} flux.`}
+        description={`${filteredStreams.length} résultat(s) sur ${streams.length} flux.`}
         loading={isLoading}
         error={loadError}
         onRetry={() => void loadData(false)}
         isEmpty={!isLoading && !loadError && filteredStreams.length === 0}
-        emptyTitle="Aucun flux trouve"
-        emptyDescription="Ajustez les filtres ou creez votre premier flux HLS."
+        emptyTitle="Aucun flux trouvé"
+        emptyDescription="Ajustez les filtres ou créez votre premier flux HLS."
         emptyAction={
           <Button onClick={handleCreateNew} className="mt-2 bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">
             <Plus className="mr-2 size-4" />

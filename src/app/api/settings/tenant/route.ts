@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
+import { requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,10 @@ export async function PATCH(req: Request) {
   if (tenantErr) return tenantErr;
 
   const sb = supabaseUser(ctx.accessToken);
+  const permission = await requireTenantCapability(sb, ctx.tenantId!, ctx.userId, "manage_workspace");
+  if (!permission.ok) {
+    return NextResponse.json({ ok: false, error: permission.error }, { status: 403 });
+  }
 
   const parsed = await parseJson(
     req,

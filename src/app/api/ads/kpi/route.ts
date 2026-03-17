@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
-import { supabaseUser } from "../../_utils/supabase";
+import { requireTenantAccess } from "../../tenant/_utils";
 import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(req: Request) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-
-  const ctx = auth.ctx;
-  const tenantRes = await requireTenant(ctx);
-  if (tenantRes) return tenantRes;
+  const ctx = await requireTenantAccess("view_analytics");
+  if (!ctx.ok) return ctx.res;
 
   const query = parseQuery(
     req,
@@ -25,9 +20,8 @@ export async function GET(req: Request) {
   const hours = Math.min(Math.max(Number(query.data.hours ?? 24), 1), 168);
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
 
-  const sb = supabaseUser(ctx.accessToken);
-
-  const tenant_id = ctx.tenantId as string;
+  const sb = ctx.sb;
+  const tenant_id = ctx.tenant_id;
 
   // Counts
   const { count: impressions } = await sb

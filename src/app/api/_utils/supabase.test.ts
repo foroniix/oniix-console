@@ -3,6 +3,10 @@ import path from "path";
 import { describe, expect, it } from "vitest";
 import { supabaseAdmin } from "./supabase";
 
+type GlobalWithOptionalWindow = typeof globalThis & {
+  window?: unknown;
+};
+
 function walk(dir: string, files: string[] = []) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
@@ -18,16 +22,17 @@ function walk(dir: string, files: string[] = []) {
 
 describe("supabaseAdmin", () => {
   it("throws in browser context", () => {
+    const globalWithWindow = globalThis as GlobalWithOptionalWindow;
     const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, "window");
-    const originalWindow = (globalThis as any).window;
-    (globalThis as any).window = {};
+    const originalWindow = globalWithWindow.window;
+    globalWithWindow.window = {};
 
     expect(() => supabaseAdmin()).toThrow();
 
     if (hadWindow) {
-      (globalThis as any).window = originalWindow;
+      globalWithWindow.window = originalWindow;
     } else {
-      delete (globalThis as any).window;
+      delete globalWithWindow.window;
     }
   });
 
@@ -44,9 +49,16 @@ describe("supabaseAdmin", () => {
       "src/app/api/analytics/heartbeat/route.ts",
       "src/app/api/analytics/live/route.ts",
       "src/app/api/analytics/stats/route.ts",
+      "src/app/api/ads/decide/route.ts",
+      "src/app/api/ads/decision/route.ts",
+      "src/app/api/ads/event/route.ts",
       "src/app/api/mobile/program-grid/route.ts",
       "src/app/api/mobile/ingest-token/route.ts",
+      "src/app/api/mobile/playback-url/route.ts",
+      "src/app/api/playback/hls/[channelId]/[file]/route.ts",
+      "src/app/api/tenant/workspaces/route.ts",
       "src/app/api/replays/process/cron/route.ts",
+      "src/app/api/superadmin/channel-backfill/route.ts",
       "src/app/api/superadmin/overview/route.ts",
       "src/app/api/superadmin/tenants/route.ts",
     ]);

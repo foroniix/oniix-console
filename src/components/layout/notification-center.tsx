@@ -61,7 +61,7 @@ function getSeverityMeta(severity: NotificationSeverity) {
       return {
         icon: CircleCheck,
         badgeClassName: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
-        label: "Succès",
+        label: "Succes",
       };
     case "warning":
       return {
@@ -128,28 +128,31 @@ export default function NotificationCenter() {
   React.useEffect(() => {
     if (!open) return;
     void loadNotifications(true);
-  }, [open, loadNotifications]);
+  }, [loadNotifications, open]);
 
-  const markOne = React.useCallback(async (id: string) => {
-    setNotifications((current) =>
-      current.map((item) =>
-        item.id === id
-          ? { ...item, isRead: true, readAt: item.readAt ?? new Date().toISOString() }
-          : item
-      )
-    );
-    setUnreadCount((current) => Math.max(0, current - 1));
+  const markOne = React.useCallback(
+    async (id: string) => {
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === id
+            ? { ...item, isRead: true, readAt: item.readAt ?? new Date().toISOString() }
+            : item
+        )
+      );
+      setUnreadCount((current) => Math.max(0, current - 1));
 
-    try {
-      await fetch(`/api/notifications/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ read: true }),
-      });
-    } catch {
-      void loadNotifications(true);
-    }
-  }, [loadNotifications]);
+      try {
+        await fetch(`/api/notifications/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ read: true }),
+        });
+      } catch {
+        void loadNotifications(true);
+      }
+    },
+    [loadNotifications]
+  );
 
   const markAllRead = React.useCallback(async () => {
     setNotifications((current) =>
@@ -216,7 +219,7 @@ export default function NotificationCenter() {
             <div className="rounded-2xl border border-dashed border-[#262b38] bg-[#1b1f2a] p-5 text-sm text-[#8b93a7]">
               <p className="font-medium text-[#e6eaf2]">Aucune notification pour le moment.</p>
               <p className="mt-2">
-                La plateforme vous remontera ici les incidents, les actions requises et les messages opérationnels.
+                La plateforme vous remontera ici les incidents, les actions requises et les messages operationnels.
               </p>
               <a href={SUPPORT_MAILTO} className="mt-4 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
                 Contacter le support
@@ -288,10 +291,13 @@ export default function NotificationCenter() {
                               </Button>
                             ) : (
                               <Button asChild variant="ghost" size="sm" className="text-[#4c82fb] hover:text-[#7ea8ff]">
-                                <Link href={item.actionUrl} onClick={() => {
-                                  void markOne(item.id);
-                                  setOpen(false);
-                                }}>
+                                <Link
+                                  href={item.actionUrl}
+                                  onClick={() => {
+                                    void markOne(item.id);
+                                    setOpen(false);
+                                  }}
+                                >
                                   {item.actionLabel ?? "Ouvrir"}
                                   <ExternalLink className="ml-2 size-4" />
                                 </Link>
@@ -312,7 +318,7 @@ export default function NotificationCenter() {
 
         <div className="px-5 py-4 text-xs text-[#8b93a7]">
           <p className="font-medium text-[#e6eaf2]">Besoin d&apos;aide ?</p>
-          <p className="mt-1">Le support Oniix reste joignable pour les incidents, accès et besoins d&apos;onboarding.</p>
+          <p className="mt-1">Le support Oniix reste joignable pour les incidents, acces et besoins d&apos;onboarding.</p>
           <a href={SUPPORT_MAILTO} className="mt-3 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
             support@oniix.space
           </a>

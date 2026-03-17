@@ -224,26 +224,26 @@ export default function ChannelBackfillPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-gradient-to-r from-white/[0.05] via-transparent to-primary/10 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+    <div className="console-page">
+      <header className="console-hero flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-white sm:text-3xl">Backfill des chaînes</h1>
-            <Badge className="border border-amber-500/25 bg-amber-500/10 text-amber-300">
+            <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Backfill des chaînes</h1>
+            <Badge className="border border-amber-300/70 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300">
               Préparation OTT
             </Badge>
           </div>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Affectez les chaînes orphelines à un tenant puis renseignez leur `origin_hls_url` pour activer le proxy Oniix.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => void load(true)}>
+          <Button variant="outline" onClick={() => void load(true)} className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]">
             <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
             Actualiser
           </Button>
-          <Button variant="outline" onClick={onAutofill} disabled={autofilling}>
+          <Button variant="outline" onClick={onAutofill} disabled={autofilling} className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]">
             {autofilling ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : (
@@ -261,14 +261,14 @@ export default function ChannelBackfillPage() {
       </header>
 
       {error ? (
-        <Card className="border-rose-500/30 bg-rose-500/10">
-          <CardContent className="p-4 text-sm text-rose-200">{error}</CardContent>
+        <Card className="border-rose-300/70 bg-rose-50 dark:border-rose-400/20 dark:bg-rose-500/10">
+          <CardContent className="p-4 text-sm text-rose-700 dark:text-rose-300">{error}</CardContent>
         </Card>
       ) : null}
 
       {notice ? (
-        <Card className="border-emerald-500/30 bg-emerald-500/10">
-          <CardContent className="p-4 text-sm text-emerald-200">{notice}</CardContent>
+        <Card className="border-emerald-300/70 bg-emerald-50 dark:border-emerald-400/20 dark:bg-emerald-500/10">
+          <CardContent className="p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</CardContent>
         </Card>
       ) : null}
 
@@ -326,12 +326,12 @@ export default function ChannelBackfillPage() {
 
         <CardContent>
           {loading ? (
-            <div className="flex min-h-[240px] items-center justify-center text-zinc-500">
+            <div className="flex min-h-[240px] items-center justify-center text-slate-500 dark:text-slate-400">
               <Loader2 className="mr-2 size-4 animate-spin" />
               Chargement des chaînes...
             </div>
           ) : filteredChannels.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center text-sm text-zinc-500">
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
               Aucune chaîne ne correspond au filtre.
             </div>
           ) : (
@@ -359,7 +359,7 @@ export default function ChannelBackfillPage() {
                         <div className="space-y-1">
                           <p className="font-medium text-white">{channel.name}</p>
                           <p className="font-mono text-xs text-zinc-500">/{channel.slug || channel.id.slice(0, 8)}</p>
-                          <p className="text-xs text-zinc-500">Maj : {dateTimeFormat(channel.updated_at)}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Maj : {dateTimeFormat(channel.updated_at)}</p>
                         </div>
                       </TableCell>
 
@@ -389,7 +389,7 @@ export default function ChannelBackfillPage() {
                               ))}
                             </SelectContent>
                           </Select>
-                          <p className="text-xs text-zinc-500">Actuel : {channel.tenant_name ?? "Non affecté"}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Actuel : {channel.tenant_name ?? "Non affecté"}</p>
                         </div>
                       </TableCell>
 
@@ -409,7 +409,7 @@ export default function ChannelBackfillPage() {
                             placeholder="https://origin.example/live/master.m3u8"
                             className="min-w-[320px] font-mono text-xs"
                           />
-                          <p className="text-xs text-zinc-500">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             {channel.origin_hls_url ? "Origine configurée." : "Origine manquante."}
                           </p>
                         </div>

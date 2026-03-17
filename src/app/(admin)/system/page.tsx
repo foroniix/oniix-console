@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Loader2, RefreshCw, ShieldCheck, Siren, Waves } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/console/page-header";
+import { PageShell } from "@/components/console/page-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -42,6 +43,7 @@ export default function SystemPage() {
   const load = useCallback(async (soft = false) => {
     if (soft) setRefreshing(true);
     else setLoading(true);
+
     setError("");
     try {
       const res = await fetch("/api/superadmin/overview", { cache: "no-store" });
@@ -50,6 +52,7 @@ export default function SystemPage() {
         setError((json && "error" in json && json.error) || "Impossible de charger la santé plateforme.");
         return;
       }
+
       setData(json);
     } catch {
       setError("Erreur réseau sur la santé plateforme.");
@@ -60,8 +63,11 @@ export default function SystemPage() {
   }, []);
 
   useEffect(() => {
-    load(false);
-    const timer = window.setInterval(() => load(true), 30000);
+    void load(false);
+    const timer = window.setInterval(() => {
+      void load(true);
+    }, 30_000);
+
     return () => window.clearInterval(timer);
   }, [load]);
 
@@ -81,35 +87,36 @@ export default function SystemPage() {
   }, [data]);
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-gradient-to-r from-white/[0.05] via-transparent to-primary/10 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-white sm:text-3xl">Santé plateforme</h1>
-            <Badge className="border border-emerald-500/25 bg-emerald-500/10 text-emerald-300">
-              Opérations plateforme
-            </Badge>
-          </div>
-          <p className="text-sm text-zinc-400">
-            Observabilité et maturité de la plateforme SaaS multi-tenant.
-          </p>
-        </div>
-
-        <Button variant="outline" onClick={() => load(true)}>
-          <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
-          Actualiser
-        </Button>
-      </header>
+    <PageShell>
+      <PageHeader
+        title="Santé plateforme"
+        subtitle="Observabilité et maturité d’exploitation de la plateforme SaaS multi-tenant."
+        breadcrumbs={[
+          { label: "Oniix Console", href: "/dashboard" },
+          { label: "Système" },
+        ]}
+        icon={<ShieldCheck className="size-5" />}
+        actions={
+          <Button
+            variant="outline"
+            onClick={() => void load(true)}
+            className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+          >
+            <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
+            Actualiser
+          </Button>
+        }
+      />
 
       {error ? (
-        <Card className="border-rose-500/30 bg-rose-500/10">
-          <CardContent className="p-4 text-sm text-rose-200">{error}</CardContent>
+        <Card className="border-rose-300/70 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">
+          <CardContent className="p-4 text-sm">{error}</CardContent>
         </Card>
       ) : null}
 
       {loading ? (
         <Card>
-          <CardContent className="flex min-h-[240px] items-center justify-center text-zinc-500">
+          <CardContent className="flex min-h-[240px] items-center justify-center text-slate-500 dark:text-slate-400">
             <Loader2 className="mr-2 size-4 animate-spin" />
             Chargement de la santé...
           </CardContent>
@@ -126,9 +133,9 @@ export default function SystemPage() {
                 <CardDescription>Tenants configurés pour la collecte live.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="text-2xl font-semibold text-white">{ingestCoverage}%</div>
+                <div className="text-2xl font-semibold text-slate-950 dark:text-white">{ingestCoverage}%</div>
                 <Progress value={ingestCoverage} />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {numberFormat(data?.kpis.ingest_configured_tenants ?? 0)} /{" "}
                   {numberFormat(data?.kpis.tenants_total ?? 0)} tenants.
                 </p>
@@ -141,12 +148,12 @@ export default function SystemPage() {
                   <Waves className="size-4 text-primary" />
                   Occupation live
                 </CardTitle>
-                <CardDescription>Ratio streams actuellement en LIVE.</CardDescription>
+                <CardDescription>Ratio des streams actuellement en direct.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="text-2xl font-semibold text-white">{streamLiveRatio}%</div>
+                <div className="text-2xl font-semibold text-slate-950 dark:text-white">{streamLiveRatio}%</div>
                 <Progress value={streamLiveRatio} />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {numberFormat(data?.kpis.streams_live ?? 0)} /{" "}
                   {numberFormat(data?.kpis.streams_total ?? 0)} streams.
                 </p>
@@ -159,12 +166,12 @@ export default function SystemPage() {
                   <CheckCircle2 className="size-4 text-primary" />
                   Activité tenants
                 </CardTitle>
-                <CardDescription>Part des tenants actifs sur les 24h.</CardDescription>
+                <CardDescription>Part des tenants actifs sur les dernières 24 heures.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="text-2xl font-semibold text-white">{activityCoverage}%</div>
+                <div className="text-2xl font-semibold text-slate-950 dark:text-white">{activityCoverage}%</div>
                 <Progress value={activityCoverage} />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {numberFormat(data?.kpis.tenants_active_24h ?? 0)} /{" "}
                   {numberFormat(data?.kpis.tenants_total ?? 0)} tenants.
                 </p>
@@ -179,21 +186,21 @@ export default function SystemPage() {
                 <CardDescription>Charge actuelle de la plateforme.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <span className="text-zinc-400">Sessions live</span>
-                  <span className="font-semibold text-white">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+                  <span className="text-slate-500 dark:text-slate-400">Sessions live</span>
+                  <span className="font-semibold text-slate-950 dark:text-white">
                     {numberFormat(data?.kpis.live_sessions ?? 0)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <span className="text-zinc-400">Événements analytics 24h</span>
-                  <span className="font-semibold text-white">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+                  <span className="text-slate-500 dark:text-slate-400">Événements analytics 24 h</span>
+                  <span className="font-semibold text-slate-950 dark:text-white">
                     {numberFormat(data?.kpis.events_24h ?? 0)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                  <span className="text-zinc-400">Streams en direct</span>
-                  <span className="font-semibold text-white">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+                  <span className="text-slate-500 dark:text-slate-400">Streams en direct</span>
+                  <span className="font-semibold text-slate-950 dark:text-white">
                     {numberFormat(data?.kpis.streams_live ?? 0)}
                   </span>
                 </div>
@@ -203,21 +210,21 @@ export default function SystemPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Siren className="size-4 text-amber-300" />
+                  <Siren className="size-4 text-amber-500 dark:text-amber-300" />
                   Checkpoints ops
                 </CardTitle>
                 <CardDescription>État des prérequis SaaS critiques.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm text-zinc-300">
+              <CardContent className="space-y-2 text-sm">
                 {(data?.warnings ?? []).length === 0 ? (
-                  <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-3 text-emerald-200">
-                    Aucun warning majeur détecté.
+                  <div className="rounded-2xl border border-emerald-300/70 bg-emerald-50 px-3 py-3 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    Aucun avertissement majeur détecté.
                   </div>
                 ) : (
                   (data?.warnings ?? []).map((warning) => (
                     <div
                       key={warning}
-                      className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-3 text-amber-200"
+                      className="rounded-2xl border border-amber-300/70 bg-amber-50 px-3 py-3 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300"
                     >
                       {warning}
                     </div>
@@ -228,6 +235,6 @@ export default function SystemPage() {
           </section>
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

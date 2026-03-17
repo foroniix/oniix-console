@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { auditLog } from "../../../_utils/audit";
 import { canTransitionReplayStatus } from "../../../_utils/programming";
-import { supabaseUser } from "../../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../../tenant/_utils";
 
 function notFoundResponse() {
   return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
@@ -20,24 +19,23 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("replays")
     .select("id, hls_url, available_from, available_to, replay_status")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Replay publish lookup error", { error: currentError.message, tenantId: ctx.tenantId, id });
+    console.error("Replay publish lookup error", { error: currentError.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
@@ -52,28 +50,28 @@ export async function POST(
   }
 
   const now = new Date().toISOString();
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("replays")
     .update({
       replay_status: "published",
       available_from: current.available_from ?? now,
       updated_at: now,
-      updated_by: ctx.userId,
+      updated_by: ctx.user_id,
     })
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("*, stream:streams(id,title,status), channel:channels(id,name,logo,category)")
     .single();
 
   if (error) {
-    console.error("Replay publish error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Replay publish error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "replay.publish",
     targetType: "replay",
     targetId: data.id,

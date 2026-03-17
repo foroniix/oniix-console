@@ -2,7 +2,7 @@
 
 ## Events
 
-- `session_start` après réponse `get_playback_url`
+- `session_start` après réponse `POST /api/mobile/playback-url`
 - `play` seulement quand `player.isPlaying == true`
 - `heartbeat` toutes les 15 secondes si `isPlaying`
 - `buffer_start` sur `STATE_BUFFERING`

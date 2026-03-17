@@ -1,5 +1,7 @@
 # Oniix OTT Runbook
 
+Legacy note: ce document decrit le runbook du prototype Worker Cloudflare. La cible officielle actuelle est documentee dans `docs/ADR_001_MEDIA_GATEWAY_NO_CLOUDFLARE.md`.
+
 ## Monitoring Targets
 
 - disponibilité master playlist

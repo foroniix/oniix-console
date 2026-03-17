@@ -1,4 +1,3 @@
-import { supabaseBrowser } from "@/lib/supabase/browser";
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,16 +32,6 @@ type LiveSnapshotResponse = {
   sessions?: LiveSessionRow[] | null;
 };
 
-type AnalyticsEventRow = {
-  session_id?: string | null;
-  event_type?: string | null;
-  created_at?: string | null;
-};
-
-type RealtimePayload = {
-  new?: AnalyticsEventRow;
-};
-
 type SupabaseChannel = Parameters<typeof supabase.removeChannel>[0];
 
 const INITIAL_STATS: UIStats = {
@@ -58,7 +47,6 @@ const INITIAL_STATS: UIStats = {
 const LIVE_WINDOW_SEC = 35;
 const LIVE_POLL_MS = 15_000;
 const LIVE_PURGE_MS = 5_000;
-const LIVE_DEBOUNCE_MS = 500;
 const LEGACY_STATS_MAX_AGE_MS = 30_000;
 const LIVE_STATS_V2_ENABLED = process.env.NEXT_PUBLIC_LIVE_STATS_V2 !== "false";
 
@@ -92,11 +80,8 @@ export function useLiveStatsRealtime(
     let alive = true;
     const shouldUseAnalytics = LIVE_STATS_V2_ENABLED && enableBackgroundPolling;
     let qualityChannel: SupabaseChannel | null = null;
-    let analyticsChannel: SupabaseChannel | null = null;
-    let analyticsClient: ReturnType<typeof supabaseBrowser> | null = null;
     let livePollTimer: ReturnType<typeof setInterval> | null = null;
     let livePurgeTimer: ReturnType<typeof setInterval> | null = null;
-    let liveRefreshTimer: ReturnType<typeof setTimeout> | null = null;
     let visibilityListener: (() => void) | null = null;
     let analyticsHasSignal = false;
 
@@ -190,14 +175,6 @@ export function useLiveStatsRealtime(
       }
     };
 
-    const scheduleLiveRefresh = (delay = LIVE_DEBOUNCE_MS) => {
-      if (liveRefreshTimer) return;
-      liveRefreshTimer = setTimeout(() => {
-        liveRefreshTimer = null;
-        void loadLiveSnapshot();
-      }, delay);
-    };
-
     const initQualityStream = async () => {
       const { data } = await supabase
         .from("stream_stats")
@@ -231,66 +208,6 @@ export function useLiveStatsRealtime(
         .subscribe();
     };
 
-    const initAnalyticsRealtime = async () => {
-      try {
-        const tokenRes = await fetch("/api/auth/realtime-token", { cache: "no-store" });
-        const tokenJson = await tokenRes.json().catch(() => null);
-        const accessToken =
-          tokenRes.ok && tokenJson?.ok && typeof tokenJson.access_token === "string"
-            ? (tokenJson.access_token as string)
-            : null;
-        if (!alive || !accessToken) return;
-
-        analyticsClient = supabaseBrowser(accessToken);
-        analyticsChannel = analyticsClient
-          .channel(`stream-live:${streamId}`)
-          .on(
-            "postgres_changes",
-            {
-              event: "INSERT",
-              schema: "public",
-              table: "analytics_events",
-              filter: `stream_id=eq.${streamId}`,
-            },
-            (payload: RealtimePayload) => {
-              const row = payload.new;
-              const sessionId = (row?.session_id ?? "").trim();
-              if (!sessionId) {
-                scheduleLiveRefresh();
-                return;
-              }
-
-              const eventType = (row?.event_type ?? "").trim().toUpperCase();
-              if (
-                eventType === "STOP" ||
-                eventType === "STOP_STREAM" ||
-                eventType === "END" ||
-                eventType === "END_STREAM" ||
-                eventType === "END_VIEW"
-              ) {
-                liveSessions.delete(sessionId);
-                recomputeFromSessions();
-                scheduleLiveRefresh(1_500);
-                return;
-              }
-
-              if (eventType === "START_STREAM" || eventType === "HEARTBEAT") {
-                analyticsHasSignal = true;
-                const parsed = Date.parse(row?.created_at ?? "");
-                liveSessions.set(sessionId, Number.isFinite(parsed) ? parsed : Date.now());
-                recomputeFromSessions();
-                return;
-              }
-
-              scheduleLiveRefresh();
-            }
-          )
-          .subscribe();
-      } catch (error) {
-        console.error("Stream live realtime init error", error);
-      }
-    };
-
     audioIntervalRef.current = setInterval(() => {
       setStats((prev) => ({
         ...prev,
@@ -317,7 +234,6 @@ export function useLiveStatsRealtime(
       if (typeof document !== "undefined") {
         document.addEventListener("visibilitychange", visibilityListener);
       }
-      void initAnalyticsRealtime();
     }
 
     return () => {
@@ -325,18 +241,11 @@ export function useLiveStatsRealtime(
       if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
       if (livePollTimer) clearInterval(livePollTimer);
       if (livePurgeTimer) clearInterval(livePurgeTimer);
-      if (liveRefreshTimer) clearTimeout(liveRefreshTimer);
       if (visibilityListener && typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", visibilityListener);
       }
       try {
         if (qualityChannel) supabase.removeChannel(qualityChannel);
-      } catch {}
-      try {
-        if (analyticsChannel) analyticsChannel.unsubscribe();
-      } catch {}
-      try {
-        analyticsClient?.removeAllChannels();
       } catch {}
     };
   }, [streamId, isLive, enableBackgroundPolling]);

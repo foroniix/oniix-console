@@ -73,7 +73,7 @@ export function TabsList({ className, ...props }: TabsListProps) {
     <div
       role="tablist"
       className={cn(
-        "inline-flex items-center justify-start gap-1 rounded-lg border border-white/10 bg-white/5 p-1",
+        "inline-flex items-center justify-start gap-1 rounded-2xl border border-slate-200/80 bg-slate-50/90 p-1 dark:border-white/10 dark:bg-white/[0.04]",
         className
       )}
       {...props}
@@ -115,9 +115,9 @@ export function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
       onClick={() => ctx.setValue(value)}
       onKeyDown={onKeyDown}
       className={cn(
-        "min-w-24 rounded-md px-3 py-2 text-sm font-semibold outline-none transition",
-        "text-zinc-300 hover:text-white",
-        "data-[state=active]:bg-white data-[state=active]:text-[#0B0B0C]",
+        "min-w-24 rounded-xl px-3 py-2 text-sm font-semibold outline-none transition",
+        "text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+        "data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm dark:data-[state=active]:bg-white dark:data-[state=active]:text-slate-950",
         "data-[state=inactive]:bg-transparent",
         className
       )}

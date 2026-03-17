@@ -1,13 +1,13 @@
 import {
   Activity,
   BadgeDollarSign,
+  CalendarClock,
   LayoutDashboard,
+  Megaphone,
   RadioTower,
   Settings,
   Tv2,
   Users,
-  CalendarClock,
-  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,53 +30,53 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/dashboard",
         label: "Dashboard",
-        description: "Vue opérationnelle",
+        description: "Vue d'ensemble et analytics",
         icon: LayoutDashboard,
       },
       {
         href: "/channels",
         label: "Chaînes",
-        description: "Inventaire des chaînes",
+        description: "Catalogue et branding",
         icon: Tv2,
       },
       {
         href: "/streams",
         label: "Direct",
-        description: "Supervision des flux HLS",
+        description: "Pilotage des flux live",
         icon: RadioTower,
       },
       {
         href: "/programming",
         label: "Programmation",
-        description: "Grille et pilotage",
+        description: "Grille et diffusion",
         icon: CalendarClock,
       },
     ],
   },
   {
-    title: "Monétisation",
+    title: "Monetisation",
     items: [
       {
         href: "/ads",
         label: "Publicité",
-        description: "Inventaire ad & campagnes",
+        description: "Campagnes et créas",
         icon: Megaphone,
       },
       {
         href: "/revenue",
         label: "Revenus",
-        description: "Performance business",
+        description: "Monétisation et KPI",
         icon: BadgeDollarSign,
       },
     ],
   },
   {
-    title: "Équipe",
+    title: "Equipe",
     items: [
       {
         href: "/users",
         label: "Utilisateurs",
-        description: "Membres et permissions",
+        description: "Membres et invitations",
         icon: Users,
       },
       {
@@ -93,7 +93,7 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/settings",
         label: "Paramètres",
-        description: "Configuration du workspace",
+        description: "Compte et sécurité",
         icon: Settings,
       },
     ],
@@ -113,7 +113,7 @@ export function resolveRoute(pathname: string) {
   return {
     href: pathname,
     label: "Console",
-    description: "Pilotage de diffusion",
+    description: "Pilotage SaaS OTT",
     icon: LayoutDashboard,
   };
 }

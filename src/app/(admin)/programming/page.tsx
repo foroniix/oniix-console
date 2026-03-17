@@ -30,7 +30,7 @@ export default function ProgrammingPage() {
           <Button
             variant="outline"
             onClick={() => void vm.loadAll(true)}
-            className="h-9 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] hover:bg-[#1c2a4a]"
+            className="h-9 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${vm.refreshing ? "animate-spin" : ""}`} />
             Actualiser
@@ -39,7 +39,7 @@ export default function ProgrammingPage() {
       />
 
       {vm.loadError ? (
-        <div className="rounded-xl border border-[#ef4444]/30 bg-[#ef4444]/10 px-4 py-3 text-sm text-[#ef4444]">
+        <div className="rounded-2xl border border-rose-300/70 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">
           {vm.loadError}
         </div>
       ) : null}
@@ -48,8 +48,8 @@ export default function ProgrammingPage() {
         <div
           className={`rounded-xl border px-4 py-3 text-sm ${
             vm.feedback.kind === "error"
-              ? "border-[#ef4444]/30 bg-[#ef4444]/10 text-[#ef4444]"
-              : "border-[#22c55e]/30 bg-[#22c55e]/10 text-[#22c55e]"
+              ? "border-rose-300/70 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300"
+              : "border-emerald-300/70 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300"
           }`}
         >
           <div className="flex items-center justify-between gap-3">
@@ -63,12 +63,12 @@ export default function ProgrammingPage() {
 
       <ProgrammingStatsCards stats={vm.stats} />
 
-      <div className="rounded-2xl border border-[#262b38] bg-[#151821] p-4 sm:p-5">
+      <div className="console-panel p-4 sm:p-5">
         <Tabs value={vm.tab} onValueChange={(value) => vm.setTab(value as typeof vm.tab)}>
-          <TabsList className="border border-[#262b38] bg-[#1b1f2a]">
+          <TabsList>
             <TabsTrigger value="grid">Grille</TabsTrigger>
             <TabsTrigger value="programs">Programmes</TabsTrigger>
-            <TabsTrigger value="slots">A suivre</TabsTrigger>
+            <TabsTrigger value="slots">À suivre</TabsTrigger>
             <TabsTrigger value="replays">Replays</TabsTrigger>
           </TabsList>
 

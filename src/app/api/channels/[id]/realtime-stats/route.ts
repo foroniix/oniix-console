@@ -1,20 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { getChannelOttRealtimeStats } from "../../../_utils/ott-channel-stats";
-import { supabaseUser } from "../../../_utils/supabase";
+import { requireTenantAccess } from "../../../tenant/_utils";
 import { parseQuery } from "../../../_utils/validate";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await requireTenantAccess("view_analytics");
+  if (!ctx.ok) return ctx.res;
 
   const { id } = await params;
   const query = parseQuery(
@@ -25,10 +21,9 @@ export async function GET(
   );
   if (!query.ok) return query.res;
 
-  const supa = supabaseUser(ctx.accessToken);
   const result = await getChannelOttRealtimeStats({
-    sb: supa,
-    tenantId: ctx.tenantId!,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
     channelId: id,
     rangeMinutes: query.data.minutes ?? 5,
   });
@@ -42,7 +37,7 @@ export async function GET(
     }
 
     console.error("Channel OTT realtime stats error", {
-      tenantId: ctx.tenantId,
+      tenantId: ctx.tenant_id,
       channelId: id,
       error: result.error,
       code: result.code ?? null,

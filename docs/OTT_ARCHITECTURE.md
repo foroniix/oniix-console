@@ -1,5 +1,7 @@
 # Oniix OTT HLS Proxy Architecture
 
+Legacy note: ce document decrit le prototype initial base sur un Worker Cloudflare. La cible officielle actuelle est documentee dans `docs/ADR_001_MEDIA_GATEWAY_NO_CLOUDFLARE.md`.
+
 ## Project Tree
 
 ```text

@@ -25,7 +25,7 @@ export function DataTableShell({
   loading = false,
   error,
   isEmpty = false,
-  emptyTitle = "Aucune donnee",
+  emptyTitle = "Aucune donnée",
   emptyDescription = "Aucune ligne ne correspond aux filtres actuels.",
   emptyAction,
   onRetry,
@@ -34,45 +34,45 @@ export function DataTableShell({
   className,
 }: DataTableShellProps) {
   return (
-    <section className={cn("overflow-hidden rounded-xl border border-[#262b38] bg-[#151821]", className)}>
-      <div className="border-b border-[#262b38] px-4 py-3 sm:px-5">
-        <h2 className="text-sm font-semibold text-[#e6eaf2]">{title}</h2>
-        {description ? <p className="mt-1 text-xs text-[#8b93a7]">{description}</p> : null}
+    <section className={cn("console-panel overflow-hidden", className)}>
+      <div className="border-b border-slate-200/80 px-4 py-3 sm:px-5 dark:border-white/10">
+        <h2 className="text-sm font-semibold text-slate-950 dark:text-white">{title}</h2>
+        {description ? <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{description}</p> : null}
       </div>
 
       {loading ? (
-        <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm text-[#8b93a7]">
+        <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="size-4 animate-spin" />
           Chargement...
         </div>
       ) : error ? (
         <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 px-4 text-center">
-          <div className="inline-flex size-10 items-center justify-center rounded-full border border-[#ef4444]/40 bg-[#ef4444]/10 text-[#ef4444]">
+          <div className="inline-flex size-10 items-center justify-center rounded-full border border-rose-300/70 bg-rose-50 text-rose-600 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-300">
             <AlertTriangle className="size-5" />
           </div>
-          <p className="text-sm text-[#e6eaf2]">{error}</p>
+          <p className="text-sm text-slate-950 dark:text-white">{error}</p>
           {onRetry ? (
             <Button
               type="button"
               variant="outline"
               onClick={onRetry}
-              className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100"
             >
-              Retry
+              Réessayer
             </Button>
           ) : null}
         </div>
       ) : isEmpty ? (
         <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 px-4 text-center">
-          <p className="text-sm font-semibold text-[#e6eaf2]">{emptyTitle}</p>
-          <p className="max-w-md text-sm text-[#8b93a7]">{emptyDescription}</p>
+          <p className="text-sm font-semibold text-slate-950 dark:text-white">{emptyTitle}</p>
+          <p className="max-w-md text-sm text-slate-500 dark:text-slate-400">{emptyDescription}</p>
           {emptyAction}
         </div>
       ) : (
         <div>{children}</div>
       )}
 
-      {footer ? <div className="border-t border-[#262b38] px-4 py-3 sm:px-5">{footer}</div> : null}
+      {footer ? <div className="border-t border-slate-200/80 px-4 py-3 sm:px-5 dark:border-white/10">{footer}</div> : null}
     </section>
   );
 }

@@ -76,7 +76,6 @@ type StreamQueryRow = {
   id: string;
   channel_id: string | null;
   title: string | null;
-  hls_url: string | null;
   poster: string | null;
   status: "OFFLINE" | "LIVE" | "ENDED";
   updated_at: string | null;
@@ -169,7 +168,7 @@ export async function GET(req: NextRequest) {
 
   let streamsQuery = admin
     .from("streams")
-    .select("id,channel_id,title,hls_url,poster,status,updated_at")
+    .select("id,channel_id,title,poster,status,updated_at")
     .eq("tenant_id", tenantAuth.tenantId)
     .eq("status", "LIVE")
     .order("updated_at", { ascending: false })
@@ -190,8 +189,8 @@ export async function GET(req: NextRequest) {
     string,
     {
       id: string;
+      channel_id: string;
       title: string;
-      hls_url: string | null;
       poster: string | null;
       status: "OFFLINE" | "LIVE" | "ENDED";
       updated_at: string | null;
@@ -203,8 +202,8 @@ export async function GET(req: NextRequest) {
     if (!streamChannelId || liveStreamByChannel.has(streamChannelId)) continue;
     liveStreamByChannel.set(streamChannelId, {
       id: row.id,
+      channel_id: streamChannelId,
       title: row.title?.trim() || "Live",
-      hls_url: row.hls_url ?? null,
       poster: row.poster ?? null,
       status: row.status,
       updated_at: row.updated_at ?? null,

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import {
@@ -76,7 +76,7 @@ const CATS = [
   "Actualité",
   "Sports",
   "Music",
-  "Réligion",
+  "Religion",
   "Films et Séries",
   "Documentaire",
   "Art",
@@ -258,35 +258,30 @@ export default function ChannelsPage() {
   const isStatsLoading = Boolean(editing && statsLoadingId === editing.id);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Background */}
-      <div className="fixed inset-0 -z-10 bg-zinc-950" />
-      <div className="fixed inset-0 -z-10 opacity-70 [background:radial-gradient(900px_circle_at_15%_0%,rgba(99,102,241,0.14),transparent_55%),radial-gradient(900px_circle_at_85%_25%,rgba(16,185,129,0.08),transparent_55%)]" />
-      <div className="fixed inset-x-0 top-0 -z-10 h-24 bg-gradient-to-b from-black/35 to-transparent" />
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="console-page">
+      <div className="mx-auto max-w-[1240px] space-y-6">
         {/* Top bar */}
-        <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-zinc-950/70 backdrop-blur-xl border-b border-white/5">
+        <div className="console-hero sticky top-0 z-30 -mx-4 px-4 py-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
-                <span className="text-zinc-300">Console</span>
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <span className="text-slate-600 dark:text-slate-300">Console</span>
                 <ChevronRight className="h-3.5 w-3.5" />
-                <span className="text-zinc-300">Catalogue</span>
+                <span className="text-slate-600 dark:text-slate-300">Catalogue</span>
                 <ChevronRight className="h-3.5 w-3.5" />
-                <span className="text-white">Chaînes TV</span>
+                <span className="text-slate-950 dark:text-white">Chaînes TV</span>
               </div>
 
               <div className="mt-2 flex items-start gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                  <Tv className="h-5 w-5 text-indigo-300" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.05]">
+                  <Tv className="h-5 w-5 text-primary" />
                 </div>
 
                 <div className="min-w-0">
-                  <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-white">
+                  <h1 className="text-lg font-semibold tracking-tight text-slate-950 dark:text-white sm:text-xl">
                     Chaînes TV
                   </h1>
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
                     Catalogue, identité visuelle et disponibilité.
                   </p>
                 </div>
@@ -298,7 +293,7 @@ export default function ChannelsPage() {
                 variant="outline"
                 size="sm"
                 onClick={loadData}
-                className="h-9 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                className="h-9 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
               >
                 <RefreshCw
                   className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")}
@@ -322,20 +317,20 @@ export default function ChannelsPage() {
                 <SheetContent
                   side="right"
                   className={cn(
-                    "p-0 bg-zinc-950 text-zinc-100 border-l border-white/10",
+                    "border-l border-slate-200 bg-white p-0 text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white",
                     "w-[520px] max-w-[95vw] sm:max-w-[520px]",
                     "h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden"
                   )}
                 >
                   {/* Compact header */}
-                  <div className="shrink-0 px-5 sm:px-6 pt-5 pb-4 border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl">
+                  <div className="shrink-0 border-b border-slate-200 px-5 pb-4 pt-5 dark:border-white/10 sm:px-6">
                     <SheetHeader className="space-y-3">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                           <SheetTitle className="text-base font-semibold tracking-tight">
                             {editing ? "Modifier la chaîne" : "Créer une chaîne"}
                           </SheetTitle>
-                          <SheetDescription className="text-zinc-400">
+                          <SheetDescription className="text-slate-500 dark:text-slate-400">
                             Renseignez les informations essentielles.
                           </SheetDescription>
                         </div>
@@ -346,7 +341,7 @@ export default function ChannelsPage() {
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300 shrink-0">
+                          <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
                             <span className="h-1.5 w-1.5 rounded-full bg-zinc-500" />
                             Inactive
                           </span>
@@ -354,23 +349,23 @@ export default function ChannelsPage() {
                       </div>
 
                       {/* Minimal preview row */}
-                      <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                        <Avatar className="h-9 w-9 rounded-xl border border-white/10 bg-zinc-900 shrink-0">
+                      <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
+                        <Avatar className="h-9 w-9 shrink-0 rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.05]">
                           <AvatarImage src={form.logo || ""} className="object-cover" />
-                          <AvatarFallback className="rounded-xl bg-zinc-900 text-zinc-400 text-xs font-semibold">
+                          <AvatarFallback className="rounded-xl bg-slate-100 text-xs font-semibold text-slate-500 dark:bg-white/[0.08] dark:text-slate-400">
                             {(form.name || "TV").slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
 
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-white truncate">
+                          <p className="truncate text-sm font-medium text-slate-950 dark:text-white">
                             {form.name?.trim() ? form.name : "Nom de la chaîne"}
                           </p>
-                          <p className="text-xs text-zinc-400 truncate">
-                            <span className="font-mono text-zinc-200">
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-mono text-slate-700 dark:text-slate-200">
                               {form.slug?.trim() ? `/${form.slug}` : "—"}
                             </span>
-                            <span className="mx-2 text-zinc-600">·</span>
+                            <span className="mx-2 text-slate-300 dark:text-slate-600">·</span>
                             <span>{String(form.category || "Autre")}</span>
                           </p>
                         </div>
@@ -378,7 +373,7 @@ export default function ChannelsPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="h-8 px-3 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                          className="h-8 border-slate-200 bg-white px-3 text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                           onClick={() =>
                             setForm((f) => ({ ...f, active: !Boolean(f.active) }))
                           }
@@ -394,14 +389,14 @@ export default function ChannelsPage() {
                     {/* Identity */}
                     <section className="space-y-4">
                       <div>
-                        <p className="text-sm font-semibold text-white">Identité</p>
-                        <p className="text-xs text-zinc-400">
+                        <p className="text-sm font-semibold text-slate-950 dark:text-white">Identité</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           Nom, catégorie, slug.
                         </p>
                       </div>
 
                       <div className="grid gap-2">
-                        <Label className="text-zinc-300">Nom</Label>
+                        <Label className="text-slate-700 dark:text-slate-300">Nom</Label>
                         <Input
                           placeholder="Ex: ONIIX Sports 1"
                           value={form.name || ""}
@@ -416,23 +411,23 @@ export default function ChannelsPage() {
                                   : f.slug
                             }));
                           }}
-                          className="h-9 bg-zinc-950/40 border-white/10"
+                          className="console-field h-9"
                         />
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                          <Label className="text-zinc-300">Catégorie</Label>
+                          <Label className="text-slate-700 dark:text-slate-300">Catégorie</Label>
                           <Select
                             value={(form.category as Category | undefined) || "Autre"}
                             onValueChange={(v) =>
                               setForm((f) => ({ ...f, category: v as Category }))
                             }
                           >
-                            <SelectTrigger className="h-9 bg-zinc-950/40 border-white/10">
+                            <SelectTrigger className="console-field h-9">
                               <SelectValue placeholder="Choisir" />
                             </SelectTrigger>
-                            <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+                            <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                               {CATS.map((c) => (
                                 <SelectItem key={c} value={c}>
                                   {c}
@@ -444,11 +439,11 @@ export default function ChannelsPage() {
 
                         <div className="grid gap-2">
                           <div className="flex items-center justify-between">
-                            <Label className="text-zinc-300">Slug</Label>
+                            <Label className="text-slate-700 dark:text-slate-300">Slug</Label>
                             <Button
                               type="button"
                               variant="ghost"
-                              className="h-7 px-2 text-xs text-zinc-400 hover:text-white hover:bg-white/5"
+                              className="h-7 px-2 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white"
                               onClick={() =>
                                 setForm((f) => ({
                                   ...f,
@@ -465,7 +460,7 @@ export default function ChannelsPage() {
                             onChange={(e) =>
                               setForm((f) => ({ ...f, slug: e.target.value }))
                             }
-                            className="h-9 bg-zinc-950/40 border-white/10 font-mono text-xs"
+                            className="console-field h-9 font-mono text-xs"
                           />
                         </div>
                       </div>
@@ -474,36 +469,36 @@ export default function ChannelsPage() {
                     {/* Visual */}
                     <section className="space-y-4">
                       <div>
-                        <p className="text-sm font-semibold text-white">Logo</p>
-                        <p className="text-xs text-zinc-400">
+                        <p className="text-sm font-semibold text-slate-950 dark:text-white">Logo</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           PNG/SVG carré recommandé.
                         </p>
                       </div>
 
                       <div className="grid gap-2">
-                        <Label className="text-zinc-300">URL du logo</Label>
+                        <Label className="text-slate-700 dark:text-slate-300">URL du logo</Label>
                         <Input
                           placeholder="https://…"
                           value={form.logo || ""}
                           onChange={(e) =>
                             setForm((f) => ({ ...f, logo: e.target.value }))
                           }
-                          className="h-9 bg-zinc-950/40 border-white/10"
+                          className="console-field h-9"
                         />
                       </div>
                     </section>
 
                     <section className="space-y-4">
                       <div>
-                        <p className="text-sm font-semibold text-white">Distribution OTT</p>
-                        <p className="text-xs text-zinc-400">
+                        <p className="text-sm font-semibold text-slate-950 dark:text-white">Distribution OTT</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           URL HLS d’origine éditeur. Le player mobile passera ensuite par `stream.oniix.space`.
                         </p>
                       </div>
 
                       <div className="grid gap-2">
                         <div className="flex items-center justify-between gap-3">
-                          <Label className="text-zinc-300">Origin HLS URL</Label>
+                          <Label className="text-slate-700 dark:text-slate-300">Origin HLS URL</Label>
                           <span className="inline-flex items-center gap-2 text-[11px] text-zinc-500">
                             <Link2 className="h-3.5 w-3.5" />
                             Proxy Oniix requis
@@ -515,7 +510,7 @@ export default function ChannelsPage() {
                           onChange={(e) =>
                             setForm((f) => ({ ...f, originHlsUrl: e.target.value }))
                           }
-                          className="h-9 bg-zinc-950/40 border-white/10 font-mono text-xs"
+                          className="console-field h-9 font-mono text-xs"
                         />
                       </div>
                     </section>
@@ -524,8 +519,8 @@ export default function ChannelsPage() {
                       <section className="space-y-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">Observabilité OTT</p>
-                            <p className="text-xs text-zinc-400">
+                            <p className="text-sm font-semibold text-slate-950 dark:text-white">Observabilité OTT</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
                               KPIs quasi temps réel et santé de diffusion pour cette chaîne.
                             </p>
                           </div>
@@ -535,7 +530,7 @@ export default function ChannelsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => void loadChannelStats(editing.id)}
-                            className="h-8 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                            className="h-8 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                           >
                             <RefreshCw className={cn("mr-2 h-3.5 w-3.5", isStatsLoading && "animate-spin")} />
                             Actualiser
@@ -575,11 +570,11 @@ export default function ChannelsPage() {
                           />
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                        <div className="console-panel-muted space-y-3 p-4">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
-                              <p className="text-sm font-medium text-white">Santé du flux</p>
-                              <p className="text-xs text-zinc-400">
+                              <p className="text-sm font-medium text-slate-950 dark:text-white">Santé du flux</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
                                 Codes HTTP master / media / segment.
                               </p>
                             </div>
@@ -587,40 +582,40 @@ export default function ChannelsPage() {
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                            <div className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2">
+                            <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/[0.05]">
                               <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Master</p>
-                              <p className="mt-1 text-zinc-100">
+                              <p className="mt-1 text-slate-950 dark:text-white">
                                 {editingStats?.health.masterPlaylistHttpCode ?? "—"}
                               </p>
                             </div>
-                            <div className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2">
+                            <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/[0.05]">
                               <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Media</p>
-                              <p className="mt-1 text-zinc-100">
+                              <p className="mt-1 text-slate-950 dark:text-white">
                                 {editingStats?.health.mediaPlaylistHttpCode ?? "—"}
                               </p>
                             </div>
-                            <div className="rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2">
+                            <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/[0.05]">
                               <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Segment</p>
-                              <p className="mt-1 text-zinc-100">
+                              <p className="mt-1 text-slate-950 dark:text-white">
                                 {editingStats?.health.segmentHttpCode ?? "—"}
                               </p>
                             </div>
                           </div>
 
-                          <div className="text-xs text-zinc-400">
+                          <div className="text-xs text-slate-500 dark:text-slate-400">
                             {editingStats?.health.message || "Aucun contrôle de santé disponible pour le moment."}
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                        <div className="console-panel-muted space-y-3 p-4">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-sm font-medium text-white">5 dernières minutes</p>
-                              <p className="text-xs text-zinc-400">
+                              <p className="text-sm font-medium text-slate-950 dark:text-white">5 dernières minutes</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
                                 Buckets minute par minute.
                               </p>
                             </div>
-                            <Badge className="border-white/10 bg-white/5 text-zinc-200">
+                            <Badge className="border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
                               {editingStats ? editingStats.errorsToday : "—"} erreurs aujourd’hui
                             </Badge>
                           </div>
@@ -630,16 +625,16 @@ export default function ChannelsPage() {
                               editingStats.lastMinutes.slice(-5).map((point) => (
                                 <div
                                   key={point.bucketMinute}
-                                  className="grid grid-cols-[64px_1fr] items-center gap-3 rounded-xl border border-white/10 bg-zinc-950/40 px-3 py-2"
+                                  className="grid grid-cols-[64px_1fr] items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 dark:border-white/10 dark:bg-white/[0.05]"
                                 >
-                                  <div className="text-xs font-mono text-zinc-400">
+                                  <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
                                     {formatMinuteBucket(point.bucketMinute)}
                                   </div>
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                                     <span className="text-zinc-200">{point.activeViewers} live</span>
-                                    <span className="text-zinc-300">{point.sessionsStarted} sessions</span>
-                                    <span className="text-zinc-300">{point.watchSeconds}s watch</span>
-                                    <span className="text-zinc-300">{point.errorCount} erreurs</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{point.sessionsStarted} sessions</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{point.watchSeconds}s watch</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{point.errorCount} erreurs</span>
                                   </div>
                                 </div>
                               ))
@@ -654,11 +649,11 @@ export default function ChannelsPage() {
                     ) : null}
 
                     {editing ? (
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="text-xs text-zinc-500">
+                      <div className="console-panel-muted p-4">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           ID{" "}
-                          <span className="mx-1 text-zinc-700">·</span>
-                          <span className="font-mono text-zinc-300">
+                          <span className="mx-1 text-slate-300 dark:text-slate-600">·</span>
+                          <span className="font-mono text-slate-700 dark:text-slate-200">
                             {editing.id}
                           </span>
                         </p>
@@ -667,12 +662,12 @@ export default function ChannelsPage() {
                   </div>
 
                   {/* Footer */}
-                  <div className="shrink-0 border-t border-white/10 bg-zinc-950/70 backdrop-blur-xl px-5 sm:px-6 py-4">
+                  <div className="shrink-0 border-t border-slate-200 px-5 py-4 dark:border-white/10 sm:px-6">
                     <SheetFooter className="gap-2">
                       <Button
                         onClick={() => setOpen(false)}
                         variant="outline"
-                        className="h-9 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                        className="h-9 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                       >
                         Annuler
                       </Button>
@@ -708,14 +703,14 @@ export default function ChannelsPage() {
 
         {stats.missingOrigin > 0 ? (
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            {stats.missingOrigin} chaîne(s) n&apos;ont pas encore d&apos;`origin_hls_url`. Tant que ce champ manque, `get_playback_url` retournera une erreur et le proxy Oniix ne pourra pas servir le flux.
+            {stats.missingOrigin} chaîne(s) n&apos;ont pas encore d&apos;`origin_hls_url`. Tant que ce champ manque, `/api/mobile/playback-url` retournera une erreur et la gateway Oniix ne pourra pas servir le flux.
           </div>
         ) : null}
 
         {/* Table */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
+        <div className="console-toolbar overflow-hidden">
           {/* Toolbar */}
-          <div className="p-4 sm:p-5 border-b border-white/10">
+          <div className="border-b border-slate-200/80 p-4 dark:border-white/10 sm:p-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="relative flex-1 max-w-xl">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
@@ -723,16 +718,16 @@ export default function ChannelsPage() {
                   placeholder="Rechercher par nom ou slug…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-9 pl-9 bg-zinc-950/40 border-white/10"
+                  className="console-field h-9 pl-9"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                 <Select value={catFilter} onValueChange={setCatFilter}>
-                  <SelectTrigger className="h-9 w-full sm:w-[220px] bg-zinc-950/40 border-white/10">
+                  <SelectTrigger className="console-field h-9 w-full sm:w-[220px]">
                     <SelectValue placeholder="Catégorie" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+                  <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                     <SelectItem value="ALL">Toutes catégories</SelectItem>
                     {CATS.map((c) => (
                       <SelectItem key={c} value={c}>
@@ -743,17 +738,17 @@ export default function ChannelsPage() {
                 </Select>
 
                 <Select value={originFilter} onValueChange={(value) => setOriginFilter(value as OriginFilter)}>
-                  <SelectTrigger className="h-9 w-full sm:w-[220px] bg-zinc-950/40 border-white/10">
+                  <SelectTrigger className="console-field h-9 w-full sm:w-[220px]">
                     <SelectValue placeholder="Origine HLS" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+                  <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                     <SelectItem value="ALL">Toutes origines</SelectItem>
                     <SelectItem value="CONFIGURED">Origine configurée</SelectItem>
                     <SelectItem value="MISSING">Origine manquante</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <div className="inline-flex rounded-xl border border-white/10 bg-zinc-950/40 p-1">
+                <div className="inline-flex rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1 dark:border-white/10 dark:bg-white/[0.04]">
                   <SegBtn
                     active={activeFilter === "ALL"}
                     onClick={() => setActiveFilter("ALL")}
@@ -776,13 +771,13 @@ export default function ChannelsPage() {
 
                 <Button
                   variant="outline"
-                  className="h-9 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                  className="h-9 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                   onClick={resetFilters}
                 >
                   Réinitialiser
                 </Button>
 
-                <Badge className="h-9 px-3 bg-white/5 border border-white/10 text-zinc-200 inline-flex items-center">
+                <Badge className="inline-flex h-9 items-center border border-slate-200 bg-white px-3 text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
                   {filteredRows.length} résultat{filteredRows.length > 1 ? "s" : ""}
                 </Badge>
                 {stats.missingOrigin > 0 ? (
@@ -796,14 +791,14 @@ export default function ChannelsPage() {
 
           <div className="min-h-[520px]">
             <Table>
-              <TableHeader className="bg-zinc-950/30 sticky top-0 z-10">
+              <TableHeader className="sticky top-0 z-10 bg-slate-50/90 dark:bg-white/[0.03]">
                 <TableRow className="border-white/10 hover:bg-transparent">
-                  <TableHead className="text-zinc-400 pl-6">Chaîne</TableHead>
-                  <TableHead className="text-zinc-400">Catégorie</TableHead>
-                  <TableHead className="text-zinc-400">Slug</TableHead>
-                  <TableHead className="text-zinc-400">Origine HLS</TableHead>
-                  <TableHead className="text-zinc-400">Statut</TableHead>
-                  <TableHead className="text-right text-zinc-400 pr-6">
+                  <TableHead className="pl-6 text-slate-500 dark:text-slate-400">Chaîne</TableHead>
+                  <TableHead className="text-slate-500 dark:text-slate-400">Catégorie</TableHead>
+                  <TableHead className="text-slate-500 dark:text-slate-400">Slug</TableHead>
+                  <TableHead className="text-slate-500 dark:text-slate-400">Origine HLS</TableHead>
+                  <TableHead className="text-slate-500 dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="pr-6 text-right text-slate-500 dark:text-slate-400">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -838,11 +833,11 @@ export default function ChannelsPage() {
                   filteredRows.map((c) => (
                     <TableRow
                       key={c.id}
-                      className="border-white/10 hover:bg-white/5 transition-colors"
+                      className="border-slate-200/80 transition-colors hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/[0.04]"
                     >
                       <TableCell className="pl-6">
                         <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-10 w-10 rounded-xl border border-white/10 bg-zinc-900 shrink-0">
+                          <Avatar className="h-10 w-10 shrink-0 rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.05]">
                             <AvatarImage src={c.logo || ""} className="object-cover" />
                             <AvatarFallback className="rounded-xl text-xs font-semibold text-zinc-500">
                               {c.name.substring(0, 2).toUpperCase()}
@@ -850,7 +845,7 @@ export default function ChannelsPage() {
                           </Avatar>
 
                           <div className="min-w-0">
-                            <div className="font-medium text-zinc-100 truncate">
+                            <div className="truncate font-medium text-slate-950 dark:text-white">
                               {c.name}
                             </div>
                             <div className="text-[10px] text-zinc-500 font-mono">
@@ -861,13 +856,13 @@ export default function ChannelsPage() {
                       </TableCell>
 
                       <TableCell>
-                        <Badge className="bg-white/5 border border-white/10 text-zinc-200">
+                        <Badge className="border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
                           {c.category}
                         </Badge>
                       </TableCell>
 
                       <TableCell>
-                        <code className="text-xs text-zinc-300 bg-zinc-950/40 px-2 py-1 rounded-md border border-white/10">
+                        <code className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200">
                           /{c.slug}
                         </code>
                       </TableCell>
@@ -905,7 +900,7 @@ export default function ChannelsPage() {
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              className="h-9 w-9 p-0 text-zinc-400 hover:text-white hover:bg-white/5"
+                              className="h-9 w-9 p-0 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white"
                             >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -913,14 +908,14 @@ export default function ChannelsPage() {
 
                           <DropdownMenuContent
                             align="end"
-                            className="bg-zinc-950 border-white/10 text-zinc-200"
+                            className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white"
                           >
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-white/10" />
 
                             <DropdownMenuItem
                               onClick={() => startEdit(c)}
-                              className="focus:bg-white/5 cursor-pointer"
+                              className="cursor-pointer focus:bg-slate-100 dark:focus:bg-white/[0.08]"
                             >
                               <Edit3 className="mr-2 h-4 w-4" />
                               Modifier
@@ -928,7 +923,7 @@ export default function ChannelsPage() {
 
                             <DropdownMenuItem
                               onClick={() => onToggle(c)}
-                              className="focus:bg-white/5 cursor-pointer"
+                              className="cursor-pointer focus:bg-slate-100 dark:focus:bg-white/[0.08]"
                             >
                               <Power
                                 className={cn(
@@ -968,23 +963,23 @@ function StatCard({
     tone === "success"
       ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-100"
       : tone === "muted"
-      ? "bg-white/5 border-white/10 text-zinc-100"
+      ? "border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200"
       : tone === "indigo"
       ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-100"
-      : "bg-white/5 border-white/10 text-zinc-100";
+      : "border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200";
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
+    <div className="console-panel p-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-zinc-400">{title}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">{title}</p>
         <span className={cn("text-xs px-2 py-1 rounded-full border", toneClasses)}>
           Live
         </span>
       </div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-white">
+      <div className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
         {value}
       </div>
-      <p className="mt-1 text-xs text-zinc-500">Mise à jour du catalogue</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Mise à jour du catalogue</p>
     </div>
   );
 }
@@ -1001,13 +996,13 @@ function MiniMetricCard({
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+    <div className="console-panel-muted px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">{title}</p>
-        <Icon className="h-4 w-4 text-zinc-400" />
+        <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{title}</p>
+        <Icon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
       </div>
-      <p className="mt-2 text-xl font-semibold tracking-tight text-white">{value}</p>
-      <p className="mt-1 text-xs text-zinc-500">{hint}</p>
+      <p className="mt-2 text-xl font-semibold tracking-tight text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>
     </div>
   );
 }
@@ -1041,7 +1036,7 @@ function HealthBadge({ status }: { status: "ok" | "degraded" | "down" | null }) 
   }
 
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-300">
+    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
       <Clock3 className="h-3.5 w-3.5" />
       Non contrôlé
     </span>
@@ -1064,8 +1059,8 @@ function SegBtn({
       className={cn(
         "h-7 px-3 rounded-lg text-xs transition",
         active
-          ? "bg-white/10 text-white"
-          : "text-zinc-400 hover:text-white hover:bg-white/5"
+          ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
+          : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white"
       )}
     >
       {children}
@@ -1077,7 +1072,7 @@ function LoadingRows() {
   return (
     <>
       {Array.from({ length: 8 }).map((_, i) => (
-        <TableRow key={i} className="border-white/10">
+        <TableRow key={i} className="border-slate-200/80 dark:border-white/10">
           <TableCell className="pl-6">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 animate-pulse" />

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
-import { supabaseUser } from "../../_utils/supabase";
+import { supabaseAdmin } from "../../_utils/supabase";
 import { parseJson } from "../../_utils/validate";
+import { requireAdRuntimeAuth } from "../_runtime-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,7 +25,7 @@ type Body = {
   country?: string | null;
 };
 
-function ok(data: any) {
+function ok(data: unknown) {
   return NextResponse.json(data, { status: 200 });
 }
 
@@ -44,36 +44,17 @@ function normCountry(v: unknown) {
   return s ? s.toUpperCase() : null;
 }
 
-function isEvent(x: any): x is AdEventType {
+function isEvent(x: unknown): x is AdEventType {
   return ["IMPRESSION", "CLICK", "START", "COMPLETE", "SKIP"].includes(String(x));
 }
 
-function isPlacement(x: any): x is Placement {
+function isPlacement(x: unknown): x is Placement {
   return ["PLAYER_START", "EVERY_X_MIN", "ON_EVENT", "MANUAL_TRIGGER"].includes(String(x));
 }
 
-async function safeGetUserId(sb: ReturnType<typeof supabaseUser>) {
-  // Optional: only if you want user_id filled.
-  // If it fails, we return null (tracking still works).
-  try {
-    const { data, error } = await sb.auth.getUser();
-    if (error) return null;
-    return data?.user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(req: Request) {
-  // Auth console (session)
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-
-  const ctx = auth.ctx;
-
-  // Must have tenant in JWT (app_metadata.tenant_id)
-  const tenantRes = await requireTenant(ctx);
-  if (tenantRes) return tenantRes;
+  const auth = await requireAdRuntimeAuth(req);
+  if (!auth.ok) return auth.res;
 
   const parsed = await parseJson(
     req,
@@ -109,15 +90,18 @@ export async function POST(req: Request) {
   const device = normStr(body.device, 32)?.toLowerCase() ?? null;
   const country = normCountry(body.country);
 
-  // Supabase client with user token (RLS applies)
-  const sb = supabaseUser(ctx.accessToken);
+  if (auth.source === "ingest" && auth.streamId) {
+    const scopedStreamId = auth.streamId.trim();
+    const requestedStreamId = stream_id?.trim() ?? "";
+    if (!requestedStreamId || requestedStreamId !== scopedStreamId) {
+      return bad("Authentification ingest invalide.", 401);
+    }
+  }
 
-  const tenant_id = ctx.tenantId as string;
+  const admin = supabaseAdmin();
 
-  const user_id = await safeGetUserId(sb);
-
-  const { error } = await sb.from("ad_events").insert({
-    tenant_id,
+  const { error } = await admin.from("ad_events").insert({
+    tenant_id: auth.tenantId,
     campaign_id,
     creative_id,
     event,
@@ -127,11 +111,11 @@ export async function POST(req: Request) {
     session_id,
     device,
     country,
-    user_id,
+    user_id: auth.userId,
   });
 
   if (error) {
-    console.error("Ad event insert error", { error: error.message, tenantId: tenant_id });
+    console.error("Ad event insert error", { error: error.message, tenantId: auth.tenantId });
     return bad("Une erreur est survenue.", 400);
   }
 

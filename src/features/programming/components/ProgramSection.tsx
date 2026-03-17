@@ -51,7 +51,7 @@ export function ProgramSection(props: ProgramSectionProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-white/10 p-3 sm:p-4">
+      <div className="console-panel-muted p-3 sm:p-4">
         <div className="grid gap-3 sm:grid-cols-6">
           <div className="sm:col-span-2 grid gap-2">
             <Label>Titre programme</Label>
@@ -59,17 +59,17 @@ export function ProgramSection(props: ProgramSectionProps) {
               value={form.title}
               onChange={(e) => onPatch({ title: e.target.value })}
               placeholder="Ex: Prime du soir"
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaine</Label>
+            <Label>Chaîne</Label>
             <Select value={form.channelId} onValueChange={(channelId) => onPatch({ channelId })}>
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 <SelectItem value={NONE_VALUE}>Aucune</SelectItem>
                 {channels.map((channel) => (
                   <SelectItem key={channel.id} value={channel.id}>
@@ -86,10 +86,10 @@ export function ProgramSection(props: ProgramSectionProps) {
               value={form.status}
               onValueChange={(status) => onPatch({ status: status as ProgramFormState["status"] })}
             >
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 {statusOptions.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
@@ -100,12 +100,12 @@ export function ProgramSection(props: ProgramSectionProps) {
           </div>
 
           <div className="sm:col-span-2 grid gap-2">
-            <Label>Categorie</Label>
+            <Label>Catégorie</Label>
             <Input
               value={form.category}
               onChange={(e) => onPatch({ category: e.target.value })}
               placeholder="Ex: News"
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
@@ -115,17 +115,17 @@ export function ProgramSection(props: ProgramSectionProps) {
               value={form.poster}
               onChange={(e) => onPatch({ poster: e.target.value })}
               placeholder="https://..."
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
           <div className="sm:col-span-2 grid gap-2">
-            <Label>Tags (comma)</Label>
+            <Label>Tags (virgules)</Label>
             <Input
               value={form.tags}
               onChange={(e) => onPatch({ tags: e.target.value })}
               placeholder="sport, prime-time"
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
@@ -134,8 +134,8 @@ export function ProgramSection(props: ProgramSectionProps) {
             <Input
               value={form.synopsis}
               onChange={(e) => onPatch({ synopsis: e.target.value })}
-              placeholder="Resume editorial"
-              className="bg-zinc-950/40 border-white/10"
+              placeholder="Résumé éditorial"
+              className="console-field"
             />
           </div>
         </div>
@@ -147,47 +147,47 @@ export function ProgramSection(props: ProgramSectionProps) {
             className="bg-indigo-600 hover:bg-indigo-500 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            {saving ? "Enregistrement..." : form.id ? "Mettre a jour programme" : "Ajouter programme"}
+            {saving ? "Enregistrement..." : form.id ? "Mettre à jour le programme" : "Ajouter le programme"}
           </Button>
           {form.id ? (
             <Button
               variant="outline"
               onClick={onReset}
-              className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
             >
-              Annuler edition
+              Annuler l’édition
             </Button>
           ) : null}
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      <div className="overflow-x-auto rounded-[22px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-950/40 text-zinc-400">
+          <thead className="bg-slate-50/90 text-slate-500 dark:bg-white/[0.03] dark:text-slate-400">
             <tr>
               <th className="text-left px-3 py-2">Titre</th>
-              <th className="text-left px-3 py-2">Chaine</th>
+              <th className="text-left px-3 py-2">Chaîne</th>
               <th className="text-left px-3 py-2">Statut</th>
-              <th className="text-left px-3 py-2">Publie</th>
+              <th className="text-left px-3 py-2">Publié</th>
               <th className="text-right px-3 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-500" colSpan={5}>
+                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={5}>
                   Chargement...
                 </td>
               </tr>
             ) : programs.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-500" colSpan={5}>
+                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={5}>
                   Aucun programme
                 </td>
               </tr>
             ) : (
               programs.map((program) => (
-                <tr key={program.id} className="border-t border-white/10">
+                <tr key={program.id} className="border-t border-slate-200/80 dark:border-white/10">
                   <td className="px-3 py-2">{program.title}</td>
                   <td className="px-3 py-2">{program.channel?.name || "-"}</td>
                   <td className="px-3 py-2">
@@ -199,9 +199,9 @@ export function ProgramSection(props: ProgramSectionProps) {
                       size="sm"
                       variant="outline"
                       onClick={() => onEdit(program)}
-                      className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                      className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                     >
-                      Editer
+                      Éditer
                     </Button>
                     {canTransitionProgramStatus(program.status, "published") &&
                     program.status !== "published" ? (

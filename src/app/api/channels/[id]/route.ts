@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
-import { supabaseUser } from "../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   try {
     const { id } = await params;
@@ -33,9 +32,8 @@ export async function PATCH(
       body.originHlsUrl === undefined || body.originHlsUrl === null || body.originHlsUrl === ""
         ? null
         : body.originHlsUrl;
-    const supa = supabaseUser(ctx.accessToken);
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (body.name !== undefined) updateData.name = body.name;
     if (body.slug !== undefined) updateData.slug = body.slug;
     if (body.category !== undefined) updateData.category = body.category;
@@ -47,16 +45,16 @@ export async function PATCH(
     if (body.originHlsUrl !== undefined) updateData.origin_hls_url = originHlsUrl;
     updateData.updated_at = new Date().toISOString();
 
-    const { data, error } = await supa
+    const { data, error } = await ctx.sb
       .from("channels")
       .update(updateData)
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id)
       .select()
       .single();
 
     if (error) {
-      console.error("Channel update error", { error: error.message, tenantId: ctx.tenantId, id });
+      console.error("Channel update error", { error: error.message, tenantId: ctx.tenant_id, id });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
     return NextResponse.json(data);
@@ -69,24 +67,23 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   try {
     const { id } = await params;
-    const supa = supabaseUser(ctx.accessToken);
 
-    const { error } = await supa
+    const { error } = await ctx.sb
       .from("channels")
       .delete()
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id);
 
     if (error) {
-      console.error("Channel delete error", { error: error.message, tenantId: ctx.tenantId, id });
+      console.error("Channel delete error", { error: error.message, tenantId: ctx.tenant_id, id });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
     return NextResponse.json({ ok: true });

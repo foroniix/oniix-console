@@ -1,10 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
 import { auditLog } from "../../_utils/audit";
 import { canTransitionSlotStatus, windowsOverlap } from "../../_utils/programming";
-import { supabaseUser } from "../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
 const SlotStatus = z.enum(["scheduled", "published", "cancelled"]);
@@ -75,11 +74,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
   const parsed = await parseJson(
@@ -97,17 +96,15 @@ export async function PATCH(
   if (!parsed.ok) return parsed.res;
   const body = parsed.data;
 
-  const supa = supabaseUser(ctx.accessToken);
-
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("program_slots")
     .select("id, starts_at, ends_at, slot_status, channel_id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Program slot lookup error", { error: currentError.message, tenantId: ctx.tenantId, id });
+    console.error("Program slot lookup error", { error: currentError.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
@@ -123,18 +120,18 @@ export async function PATCH(
   }
 
   if (body.programId !== undefined) {
-    const { data: program, error: programError } = await supa
+    const { data: program, error: programError } = await ctx.sb
       .from("programs")
       .select("id")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", body.programId)
       .maybeSingle();
     if (programError) {
-      console.error("Program lookup for slot update error", {
-        error: programError.message,
-        tenantId: ctx.tenantId,
-        id,
-        programId: body.programId,
+        console.error("Program lookup for slot update error", {
+          error: programError.message,
+          tenantId: ctx.tenant_id,
+          id,
+          programId: body.programId,
       });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
@@ -159,19 +156,19 @@ export async function PATCH(
   const nextSlotStatus = body.slotStatus ?? current.slot_status;
   if (nextChannelId && nextSlotStatus !== "cancelled") {
     const { error: conflictLookupError, conflictId } = await findSlotConflict({
-      sb: supa,
-      tenantId: ctx.tenantId as string,
+      sb: ctx.sb,
+      tenantId: ctx.tenant_id,
       channelId: nextChannelId,
       startsAt: startsAtIso,
       endsAt: endsAtIso,
       excludeId: id,
     });
     if (conflictLookupError) {
-      console.error("Program slot conflict lookup on update error", {
-        error: conflictLookupError.message,
-        tenantId: ctx.tenantId,
-        id,
-      });
+        console.error("Program slot conflict lookup on update error", {
+          error: conflictLookupError.message,
+          tenantId: ctx.tenant_id,
+          id,
+        });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
     if (conflictId) return conflictResponse();
@@ -179,7 +176,7 @@ export async function PATCH(
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
-    updated_by: ctx.userId,
+    updated_by: ctx.user_id,
   };
 
   if (body.programId !== undefined) updateData.program_id = body.programId;
@@ -190,24 +187,24 @@ export async function PATCH(
   if (body.visibility !== undefined) updateData.visibility = body.visibility;
   if (body.notes !== undefined) updateData.notes = body.notes;
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("program_slots")
     .update(updateData)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("*, program:programs(id,title,poster,status), channel:channels(id,name,logo,category)")
     .single();
 
   if (error) {
     if (isNotFound(error)) return notFoundResponse();
-    console.error("Program slot update error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Program slot update error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action:
       current.slot_status !== "published" && data.slot_status === "published"
         ? "program_slot.publish"
@@ -228,50 +225,49 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("program_slots")
     .select("id, slot_status, program_id, channel_id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Program slot lookup before delete error", {
-      error: currentError.message,
-      tenantId: ctx.tenantId,
-      id,
-    });
+      console.error("Program slot lookup before delete error", {
+        error: currentError.message,
+        tenantId: ctx.tenant_id,
+        id,
+      });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("program_slots")
     .delete()
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("id")
     .maybeSingle();
 
   if (error) {
-    console.error("Program slot delete error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Program slot delete error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   if (!data) return notFoundResponse();
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "program_slot.delete",
     targetType: "program_slot",
     targetId: current.id,

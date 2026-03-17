@@ -29,23 +29,23 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "rounded-2xl border border-[#262b38] bg-[#151821] px-5 py-4 sm:px-6",
+        "console-hero px-5 py-5 sm:px-6 sm:py-6",
         className
       )}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
           {breadcrumbs.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-1 text-xs text-[#8b93a7]">
+            <div className="flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
               {breadcrumbs.map((item, index) => (
                 <span key={`${item.label}-${index}`} className="inline-flex items-center gap-1">
                   {index > 0 ? <ChevronRight className="size-3.5" /> : null}
                   {item.href ? (
-                    <Link href={item.href} className="hover:text-[#e6eaf2]">
+                    <Link href={item.href} className="hover:text-slate-950 dark:hover:text-white">
                       {item.label}
                     </Link>
                   ) : (
-                    <span className="text-[#e6eaf2]">{item.label}</span>
+                    <span className="text-slate-950 dark:text-white">{item.label}</span>
                   )}
                 </span>
               ))}
@@ -54,13 +54,13 @@ export function PageHeader({
 
           <div className="flex items-start gap-3">
             {icon ? (
-              <span className="mt-1 inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-[#262b38] bg-[#1b1f2a] text-[#4c82fb]">
+              <span className="mt-1 inline-flex size-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/75 text-[#2563eb] dark:border-white/10 dark:bg-white/[0.05] dark:text-[#60a5fa]">
                 {icon}
               </span>
             ) : null}
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[#e6eaf2]">{title}</h1>
-              {subtitle ? <p className="mt-1 text-sm text-[#8b93a7]">{subtitle}</p> : null}
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{title}</h1>
+              {subtitle ? <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">{subtitle}</p> : null}
             </div>
           </div>
         </div>

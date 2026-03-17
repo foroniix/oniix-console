@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getTenantContext, jsonError, requireTenantAdmin } from "../_utils";
+import { getTenantContext, jsonError, requireTenantCapability } from "../_utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   if (!ctx.tenant_id) return jsonError("Acces refuse.", 403);
 
-  const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
+  const check = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user.id, "manage_workspace");
   if (!check.ok) return jsonError(check.error, check.error === "Acces refuse." ? 403 : 400);
 
   const { searchParams } = new URL(req.url);

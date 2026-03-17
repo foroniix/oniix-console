@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../_utils/auth";
 import { auditLog } from "../_utils/audit";
-import { supabaseUser } from "../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../tenant/_utils";
 import { parseJson, parseQuery } from "../_utils/validate";
 
 const ReplayStatus = z.enum(["draft", "processing", "ready", "published", "archived"]);
@@ -23,11 +22,8 @@ function notFoundResponse() {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
 
   const query = parseQuery(
     req,
@@ -48,11 +44,10 @@ export async function GET(req: NextRequest) {
   if (query.data.from && !fromIso) return invalidResponse();
   if (query.data.to && !toIso) return invalidResponse();
 
-  const supa = supabaseUser(ctx.accessToken);
-  let q = supa
+  let q = ctx.sb
     .from("replays")
     .select("*, stream:streams(id,title,status), channel:channels(id,name,logo,category)")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .order("created_at", { ascending: false });
 
   if (query.data.status) q = q.eq("replay_status", query.data.status);
@@ -65,7 +60,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await q;
   if (error) {
-    console.error("Replays load error", { error: error.message, tenantId: ctx.tenantId });
+    console.error("Replays load error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
@@ -73,11 +68,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const parsed = await parseJson(
     req,
@@ -102,7 +97,6 @@ export async function POST(req: NextRequest) {
   );
   if (!parsed.ok) return parsed.res;
   const body = parsed.data;
-  const supa = supabaseUser(ctx.accessToken);
 
   const availableFromIso =
     body.availableFrom === undefined
@@ -137,17 +131,17 @@ export async function POST(req: NextRequest) {
   } | null = null;
 
   if (body.streamId) {
-    const { data: stream, error: streamError } = await supa
+    const { data: stream, error: streamError } = await ctx.sb
       .from("streams")
       .select("id, title, description, hls_url, poster, channel_id")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", body.streamId)
       .maybeSingle();
 
     if (streamError) {
       console.error("Replay create stream lookup error", {
         error: streamError.message,
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenant_id,
         streamId: body.streamId,
       });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
@@ -165,10 +159,10 @@ export async function POST(req: NextRequest) {
     replayStatus === "published" ? (availableFromIso ?? now) : (availableFromIso ?? null);
   const effectiveAvailableTo = availableToIso ?? null;
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("replays")
     .insert({
-      tenant_id: ctx.tenantId,
+      tenant_id: ctx.tenant_id,
       stream_id: body.streamId ?? null,
       channel_id: body.channelId ?? streamDefaults?.channel_id ?? null,
       title: body.title?.trim() || streamDefaults?.title || "Replay",
@@ -183,22 +177,22 @@ export async function POST(req: NextRequest) {
         allow: body.geo?.allow ?? [],
         block: body.geo?.block ?? [],
       },
-      created_by: ctx.userId,
-      updated_by: ctx.userId,
+      created_by: ctx.user_id,
+      updated_by: ctx.user_id,
       updated_at: now,
     })
     .select("*, stream:streams(id,title,status), channel:channels(id,name,logo,category)")
     .single();
 
   if (error) {
-    console.error("Replay create error", { error: error.message, tenantId: ctx.tenantId });
+    console.error("Replay create error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: data.replay_status === "published" ? "replay.publish" : "replay.create",
     targetType: "replay",
     targetId: data.id,

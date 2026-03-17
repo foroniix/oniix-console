@@ -1,6 +1,8 @@
+import { formatTenantRoleLabel, normalizeTenantRole } from "@/lib/tenant-roles";
+
 export const CONSOLE_PRODUCT_NAME = "Oniix Console";
 export const CONSOLE_PRODUCT_DESCRIPTION =
-  "Console SaaS multi-tenant pour le pilotage OTT, l'observabilité et l'exploitation des chaînes.";
+  "Console SaaS multi-tenant pour le pilotage OTT, l’observabilité et l’exploitation des chaînes.";
 export const CONSOLE_DEFAULT_WORKSPACE_NAME = "Espace de travail";
 export const CONSOLE_PLATFORM_WORKSPACE_NAME = "Oniix Platform";
 export const SUPPORT_EMAIL = "support@oniix.space";
@@ -36,10 +38,8 @@ export function buildInitials(fullName?: string | null, email?: string | null) {
 export function formatRoleLabel(value?: string | null) {
   const role = normalizeWhitespace(value).toLowerCase();
   if (["superadmin", "oniix_admin", "platform_admin"].includes(role)) return "Superadmin";
-  if (["admin", "owner", "tenant_admin"].includes(role)) return "Admin";
-  if (["editor", "editeur"].includes(role)) return "Éditeur";
   if (["analyst", "analyste"].includes(role)) return "Analyste";
-  return "Membre";
+  return formatTenantRoleLabel(normalizeTenantRole(role));
 }
 
 export function defaultWorkspaceName(role?: string | null) {

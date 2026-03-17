@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { normalizeTenantRole } from "@/lib/tenant-roles";
 import { getTenantContext, jsonError } from "../../_utils";
 import { parseJson } from "../../../_utils/validate";
 import { enforceRateLimit, getRateLimitConfig } from "../../../_utils/rate-limit";
@@ -51,10 +52,12 @@ export async function POST(req: NextRequest) {
     return jsonError("Cette invitation ne correspond pas a votre email.", 403);
   }
 
+  const inviteRole = normalizeTenantRole(invite.role ?? "viewer");
+
   const { error: memErr } = await ctx.admin.from("tenant_memberships").insert({
     tenant_id: invite.tenant_id,
     user_id: user.id,
-    role: invite.role ?? "member",
+    role: inviteRole,
   });
 
   if (memErr && !String(memErr.message).toLowerCase().includes("duplicate key")) {
@@ -64,11 +67,15 @@ export async function POST(req: NextRequest) {
 
   await ctx.admin.from("tenant_invites").update({ status: "accepted" }).eq("id", invite.id);
 
-  const currentTenant = (user.app_metadata as any)?.tenant_id ?? null;
+  const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
+  const currentTenant =
+    typeof appMetadata.tenant_id === "string" && appMetadata.tenant_id.trim().length > 0
+      ? appMetadata.tenant_id
+      : null;
 
   if (!currentTenant) {
     await ctx.admin.auth.admin.updateUserById(user.id, {
-      app_metadata: { ...(user.app_metadata as any), tenant_id: invite.tenant_id },
+      app_metadata: { ...appMetadata, tenant_id: invite.tenant_id },
     });
   }
 

@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { requireAuth, requireTenant } from "../../../_utils/auth";
-import { supabaseUser } from "../../../_utils/supabase";
+import { requireTenantAccess } from "../../../tenant/_utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,19 +9,15 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await requireTenantAccess("view_workspace");
+  if (!ctx.ok) return ctx.res;
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("replays")
     .select("id,replay_status,generated_manifest,processing_error,updated_at")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
@@ -30,7 +25,7 @@ export async function GET(
     console.error("Replay clip manifest load error", {
       error: error.message,
       code: error.code,
-      tenantId: ctx.tenantId,
+      tenantId: ctx.tenant_id,
       replayId: id,
     });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });

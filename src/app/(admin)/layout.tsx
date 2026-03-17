@@ -6,16 +6,16 @@ import Topbar from "@/components/layout/Topbar";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="relative h-screen overflow-hidden bg-[#090c13]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(76,130,251,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(34,197,94,0.14),_transparent_28%)]" />
+    <div className="relative h-screen overflow-hidden bg-[#08111c]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.22),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(20,184,166,0.16),_transparent_24%),linear-gradient(180deg,#08111c_0%,#0d1724_100%)]" />
       <ConsoleIdentityProvider>
-        <div className="relative mx-auto flex h-full w-full max-w-[1720px] gap-4 p-4 sm:gap-5 sm:p-5 lg:gap-6 lg:p-6">
+        <div className="relative mx-auto flex h-full w-full max-w-[1520px] gap-4 p-4 sm:gap-5 sm:p-5 lg:gap-5 lg:p-5">
           <Sidebar />
 
-          <section className="flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-[24px] border border-[#262b38] bg-[#151821] shadow-[0_20px_80px_-70px_rgba(0,0,0,0.9)]">
+          <section className="flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] shadow-[0_32px_90px_-56px_rgba(0,0,0,0.95)] backdrop-blur">
             <Topbar />
-            <main className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
-              <div className="mx-auto w-full max-w-[1360px]">{children}</div>
+            <main className="min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(242,247,251,0.98),rgba(236,243,248,0.94))] px-3 py-3 sm:px-5 sm:py-5 lg:px-5 lg:py-5 dark:bg-[linear-gradient(180deg,rgba(10,14,24,0.96),rgba(10,14,24,0.94))]">
+              <div className="mx-auto w-full max-w-[1220px]">{children}</div>
             </main>
           </section>
         </div>

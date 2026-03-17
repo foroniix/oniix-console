@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { requireAuth, requireTenant } from "../../../_utils/auth";
-import { supabaseUser } from "../../../_utils/supabase";
+import { requireTenantAccess } from "../../../tenant/_utils";
 import { parseQuery } from "../../../_utils/validate";
 
 type Params = { params: Promise<{ id: string }> };
@@ -37,23 +36,18 @@ function isMissingColumnError(message: string) {
 }
 
 export async function GET(req: NextRequest, { params }: Params) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await requireTenantAccess("view_analytics");
+  if (!ctx.ok) return ctx.res;
 
   const { id } = await params;
   const query = parseQuery(req, QUERY_SCHEMA);
   if (!query.ok) return query.res;
 
   const limit = query.data.limit ?? 30;
-  const supa = supabaseUser(ctx.accessToken);
-
-  const { data: stream, error: streamError } = await supa
+  const { data: stream, error: streamError } = await ctx.sb
     .from("streams")
     .select("id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .single();
 
@@ -61,7 +55,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     if (streamError) {
       console.error("Stream audit lookup error", {
         error: streamError.message,
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenant_id,
         id,
       });
     }
@@ -73,10 +67,10 @@ export async function GET(req: NextRequest, { params }: Params) {
   let actorKey: "actor_user_id" | "actor_id" | "user_id" = "actor_user_id";
 
   for (const attempt of ACTOR_SELECT_ATTEMPTS) {
-    const result = await supa
+    const result = await ctx.sb
       .from("audit_logs")
       .select(attempt.select)
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("target_type", "stream")
       .eq("target_id", id)
       .order("created_at", { ascending: false })
@@ -94,7 +88,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   if (error) {
-    console.error("Stream audit load error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Stream audit load error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 

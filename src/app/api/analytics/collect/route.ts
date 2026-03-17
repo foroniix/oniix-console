@@ -1,19 +1,19 @@
 // src/app/api/analytics/collect/route.ts (multi-tenant)
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
 import { supabaseAdmin } from "../../_utils/supabase";
 import { parseJson } from "../../_utils/validate";
 import { touchViewerLiveSession } from "../../_utils/viewer-live";
+import { requireAnalyticsRuntimeAuth } from "../_runtime-auth";
 
 interface AnalyticsPayload {
   sessionId: string;
   eventType: string;
-  userId?: string;
-  streamId?: string;
-  deviceType?: string;
-  os?: string;
-  country?: string;
+  userId?: string | null;
+  streamId?: string | null;
+  deviceType?: string | null;
+  os?: string | null;
+  country?: string | null;
 }
 
 function normalizeEventType(eventType: string) {
@@ -33,32 +33,48 @@ function normalizeEventType(eventType: string) {
 }
 
 export async function POST(req: Request) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
-  const tenantId = ctx.tenantId;
-  if (!tenantId) return NextResponse.json({ error: "Tenant manquant." }, { status: 400 });
+  const auth = await requireAnalyticsRuntimeAuth(req);
+  if (!auth.ok) return auth.res;
 
   try {
     const parsed = await parseJson(
       req,
       z.object({
-        sessionId: z.string().min(1),
-        eventType: z.string().min(1),
-        userId: z.string().optional(),
-        streamId: z.string().optional(),
-        deviceType: z.string().optional(),
-        os: z.string().optional(),
-        country: z.string().optional(),
+        sessionId: z.string().min(1).optional(),
+        session_id: z.string().min(1).optional(),
+        eventType: z.string().min(1).optional(),
+        event_type: z.string().min(1).optional(),
+        userId: z.string().optional().nullable(),
+        user_id: z.string().optional().nullable(),
+        streamId: z.string().optional().nullable(),
+        stream_id: z.string().optional().nullable(),
+        deviceType: z.string().optional().nullable(),
+        device: z.string().optional().nullable(),
+        os: z.string().optional().nullable(),
+        country: z.string().optional().nullable(),
       })
     );
     if (!parsed.ok) return parsed.res;
-    const body: AnalyticsPayload = parsed.data;
+    const body: AnalyticsPayload = {
+      sessionId: parsed.data.sessionId ?? parsed.data.session_id ?? "",
+      eventType: parsed.data.eventType ?? parsed.data.event_type ?? "",
+      userId: parsed.data.userId ?? parsed.data.user_id ?? null,
+      streamId: parsed.data.streamId ?? parsed.data.stream_id ?? null,
+      deviceType: parsed.data.deviceType ?? parsed.data.device ?? null,
+      os: parsed.data.os ?? null,
+      country: parsed.data.country ?? null,
+    };
 
     if (!body.sessionId || !body.eventType) {
       return NextResponse.json({ error: "Donnees requises manquantes." }, { status: 400 });
+    }
+
+    if (auth.source === "ingest" && auth.streamId) {
+      const scopedStreamId = auth.streamId.trim();
+      const requestedStreamId = body.streamId?.trim() ?? "";
+      if (!requestedStreamId || requestedStreamId !== scopedStreamId) {
+        return NextResponse.json({ ok: false, error: "Authentification ingest invalide." }, { status: 401 });
+      }
     }
 
     const supa = supabaseAdmin();
@@ -66,9 +82,9 @@ export async function POST(req: Request) {
     const normalizedEventType = normalizeEventType(body.eventType);
 
     const { error } = await supa.from("analytics_events").insert({
-      tenant_id: tenantId,
+      tenant_id: auth.tenantId,
       session_id: body.sessionId,
-      user_id: body.userId || ctx.userId || null,
+      user_id: body.userId || auth.userId || null,
       event_type: normalizedEventType,
       stream_id: body.streamId || null,
       device_type: body.deviceType || "desktop",
@@ -79,10 +95,10 @@ export async function POST(req: Request) {
     if (error) throw new Error(error.message);
 
     const liveRes = await touchViewerLiveSession(supa, {
-      tenantId,
+      tenantId: auth.tenantId,
       sessionId: body.sessionId,
       streamId: body.streamId ?? null,
-      userId: body.userId || ctx.userId || null,
+      userId: body.userId || auth.userId || null,
       deviceType: body.deviceType || "desktop",
       eventType: normalizedEventType,
     });
@@ -90,7 +106,7 @@ export async function POST(req: Request) {
       console.error("Analytics collect live sync error", {
         error: liveRes.error ?? "unknown",
         code: liveRes.code ?? null,
-        tenantId,
+        tenantId: auth.tenantId,
         sessionId: body.sessionId,
         streamId: body.streamId ?? null,
         eventType: normalizedEventType,

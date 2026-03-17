@@ -87,18 +87,18 @@ function MetricCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <Card className="group border-white/10 bg-white/[0.03] transition-colors hover:bg-white/[0.05]">
+    <Card className="group rounded-[24px] border-slate-200/80 bg-white/85 shadow-[0_16px_40px_rgba(15,23,42,0.06)] transition-colors hover:bg-white dark:border-white/10 dark:bg-white/[0.04] dark:shadow-none dark:hover:bg-white/[0.06]">
       <CardHeader className="pb-3">
-        <CardDescription className="text-zinc-400">{title}</CardDescription>
+        <CardDescription className="text-slate-500 dark:text-slate-400">{title}</CardDescription>
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-2xl font-bold text-white">{value}</CardTitle>
-          <span className="inline-flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-primary">
+          <CardTitle className="text-2xl font-bold text-slate-950 dark:text-white">{value}</CardTitle>
+          <span className="inline-flex size-10 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-primary dark:border-white/10 dark:bg-white/5">
             <Icon className="size-4" />
           </span>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <p className="text-xs text-zinc-500">{subtitle}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
       </CardContent>
     </Card>
   );
@@ -156,25 +156,25 @@ export default function SuperadminDashboard() {
   const warnings = data?.warnings ?? [];
 
   return (
-    <div className="space-y-6 lg:space-y-7">
-      <header className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-gradient-to-r from-white/[0.05] via-transparent to-primary/10 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+    <div className="console-page lg:space-y-7">
+      <header className="console-hero flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold text-white sm:text-3xl">Superadmin SaaS Cockpit</h1>
-            <Badge className="border border-emerald-500/25 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20">
+            <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Pilotage plateforme</h1>
+            <Badge className="border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
               Multi-tenant
             </Badge>
           </div>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             Pilotage global des éditeurs TV, audience live, santé plateforme et adoption SaaS.
           </p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Dernière synchro : {data?.generated_at ? dateTimeFormat(data.generated_at) : "--"}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => fetchOverview(true)}>
+          <Button variant="outline" onClick={() => fetchOverview(true)} className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white">
             <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
             Actualiser
           </Button>
@@ -234,7 +234,7 @@ export default function SuperadminDashboard() {
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          title="Tenants total"
+          title="Total tenants"
           value={loading && !data ? "..." : numberFormat(kpis?.tenants_total ?? 0)}
           subtitle={`${numberFormat(kpis?.tenants_new_7d ?? 0)} nouveaux / 7 jours`}
           icon={Building2}
@@ -304,7 +304,7 @@ export default function SuperadminDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Tenant</TableHead>
-                    <TableHead className="text-right">Events 24h</TableHead>
+                    <TableHead className="text-right">Événements 24h</TableHead>
                     <TableHead className="text-right">Part</TableHead>
                   </TableRow>
                 </TableHeader>

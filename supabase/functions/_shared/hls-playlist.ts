@@ -6,6 +6,7 @@ type RewriteHlsPlaylistInput = {
   channelId: string;
   token?: string | null;
   streamBaseUrl: string;
+  proxyPathPrefix?: string;
   makeResourceRef: (absoluteUrl: string) => Promise<string> | string;
 };
 
@@ -38,13 +39,17 @@ function resolveUri(baseUrl: string, rawUri: string) {
 
 async function buildProxyUrl(
   absoluteUrl: string,
-  input: Pick<RewriteHlsPlaylistInput, "channelId" | "token" | "streamBaseUrl" | "makeResourceRef">
+  input: Pick<
+    RewriteHlsPlaylistInput,
+    "channelId" | "token" | "streamBaseUrl" | "proxyPathPrefix" | "makeResourceRef"
+  >
 ) {
   const parsed = new URL(absoluteUrl);
   const ref = await input.makeResourceRef(absoluteUrl);
+  const pathPrefix = (input.proxyPathPrefix ?? "hls").replace(/^\/+|\/+$/g, "");
   const proxyUrl = new URL(
-    `/hls/${encodeURIComponent(input.channelId)}/${encodeURIComponent(sanitizeFileName(parsed.pathname))}`,
-    input.streamBaseUrl
+    `${pathPrefix}/${encodeURIComponent(input.channelId)}/${encodeURIComponent(sanitizeFileName(parsed.pathname))}`,
+    input.streamBaseUrl.endsWith("/") ? input.streamBaseUrl : `${input.streamBaseUrl}/`
   );
   if (input.token?.trim()) {
     proxyUrl.searchParams.set("token", input.token.trim());
@@ -55,7 +60,10 @@ async function buildProxyUrl(
 
 async function rewriteUriAttribute(
   line: string,
-  input: Pick<RewriteHlsPlaylistInput, "playlistUrl" | "channelId" | "token" | "streamBaseUrl" | "makeResourceRef">
+  input: Pick<
+    RewriteHlsPlaylistInput,
+    "playlistUrl" | "channelId" | "token" | "streamBaseUrl" | "proxyPathPrefix" | "makeResourceRef"
+  >
 ) {
   const matches = Array.from(line.matchAll(/URI="([^"]+)"/g));
   if (matches.length === 0) return line;

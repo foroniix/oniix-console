@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Oniix Console
 
-## Getting Started
+Console SaaS multi-tenant pour l'exploitation OTT: tenants, chaines, direct, programmation, replays, analytics et operations.
 
-First, run the development server:
+## Perimetre
+
+- `src/`: console Next.js 16 et APIs serveur.
+- `supabase/`: migrations et Edge Functions.
+- `shared/ott/`: logique partagee HLS / OTT.
+- `mobile/`: notes d'integration iOS / Android pour le player et les analytics.
+- `docs/`: architecture, tenancy, runbooks et migrations complementaires.
+- `cloudflare/worker/`: prototype legacy. Ce n'est plus la cible d'architecture.
+
+## Architecture
+
+Le projet est organise en deux couches:
+
+- Control plane: console admin, auth, tenants, parametres, programmation, supervision, analytics.
+- Playback / data plane: securisation des URLs de lecture, masquage des origines HLS, collecte analytics, audience live.
+
+La cible actuelle n'utilise pas Cloudflare Worker en production. Le design retenu est:
+
+- `Next.js + Supabase` pour le control plane.
+- une media gateway dediee pour servir playlists et segments HLS a l'application mobile.
+
+## Stack
+
+- Next.js App Router
+- React 19
+- TypeScript
+- Supabase Auth / Postgres / Realtime / Edge Functions
+- Tailwind CSS
+- Vitest
+
+## Prerequis
+
+- Node.js 20+
+- npm
+- projet Supabase configure
+
+## Installation
+
+```bash
+npm install
+copy .env.local.example .env.local
+```
+
+Renseigner ensuite les secrets dans `.env.local`.
+
+Voir aussi:
+
+- [SETUP.md](C:/Users/53lim/Downloads/superadmin/docs/SETUP.md)
+- [TENANCY.md](C:/Users/53lim/Downloads/superadmin/docs/TENANCY.md)
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run start
+npm run lint
+npm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Documentation utile
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- [ADR_001_MEDIA_GATEWAY_NO_CLOUDFLARE.md](C:/Users/53lim/Downloads/superadmin/docs/ADR_001_MEDIA_GATEWAY_NO_CLOUDFLARE.md)
+- [ADR_002_CANONICAL_DOMAIN_MODEL.md](C:/Users/53lim/Downloads/superadmin/docs/ADR_002_CANONICAL_DOMAIN_MODEL.md)
+- [SCHEMA_MAP.md](C:/Users/53lim/Downloads/superadmin/docs/SCHEMA_MAP.md)
+- [OTT_ARCHITECTURE.md](C:/Users/53lim/Downloads/superadmin/docs/OTT_ARCHITECTURE.md)
+- [OTT_DEPLOYMENT.md](C:/Users/53lim/Downloads/superadmin/docs/OTT_DEPLOYMENT.md)
+- [OTT_RUNBOOK.md](C:/Users/53lim/Downloads/superadmin/docs/OTT_RUNBOOK.md)
+- [MOBILE_PROGRAM_GRID.md](C:/Users/53lim/Downloads/superadmin/docs/MOBILE_PROGRAM_GRID.md)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Les documents `OTT_*` decrivent encore en partie le prototype Worker historique. La cible officielle sans Cloudflare est definie dans l'ADR ci-dessus.
 
-## Learn More
+## Donnees et tenancy
 
-To learn more about Next.js, take a look at the following resources:
+- Le tenant actif provient du JWT Supabase `app_metadata.tenant_id`.
+- L'isolation multi-tenant repose sur `tenant_memberships` et les policies RLS.
+- Les routes admin console utilisent les cookies de session httpOnly, pas de token expose au navigateur.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Etat actuel
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Le repo contient deja:
 
-## Deploy on Vercel
+- gestion tenants / invites / memberships
+- channels, streams, programmation et replays
+- analytics live et historiques
+- notifications console
+- briques OTT partagees pour HLS
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Le repo contient aussi des elements historiques / transitoires qui doivent etre consolides:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- coexistence de plusieurs modeles analytics
+- dossier `cloudflare/worker` encore present mais hors cible
+- documentation et migrations a aligner avec le schema reel
+
+## Qualite
+
+Avant toute mise en production, verifier au minimum:
+
+```bash
+npm test
+npm run lint
+```
+
+Puis relire les runbooks et l'architecture avant de deployer.

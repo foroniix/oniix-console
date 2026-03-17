@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
 import { auditLog } from "../../_utils/audit";
 import { canTransitionProgramStatus, isSlotActive } from "../../_utils/programming";
-import { supabaseUser } from "../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
 const ProgramStatus = z.enum(["draft", "scheduled", "published", "cancelled"]);
@@ -43,11 +42,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
   const parsed = await parseJson(
@@ -77,16 +76,15 @@ export async function PATCH(
     return invalidResponse();
   }
 
-  const supa = supabaseUser(ctx.accessToken);
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("programs")
     .select("id, status, published_at")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Program lookup error", { error: currentError.message, tenantId: ctx.tenantId, id });
+    console.error("Program lookup error", { error: currentError.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
@@ -101,7 +99,7 @@ export async function PATCH(
   const now = new Date().toISOString();
   const updateData: Record<string, unknown> = {
     updated_at: now,
-    updated_by: ctx.userId,
+    updated_by: ctx.user_id,
   };
 
   if (body.title !== undefined) updateData.title = body.title.trim();
@@ -122,24 +120,24 @@ export async function PATCH(
     updateData.published_at = publishedAtIso;
   }
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("programs")
     .update(updateData)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("*, channel:channels(id,name,logo,category)")
     .single();
 
   if (error) {
     if (isNotFound(error)) return notFoundResponse();
-    console.error("Program update error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Program update error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: body.status === "published" && current.status !== "published" ? "program.publish" : "program.update",
     targetType: "program",
     targetId: data.id,
@@ -157,46 +155,45 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("programs")
     .select("id, status, title")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Program lookup before delete error", {
-      error: currentError.message,
-      tenantId: ctx.tenantId,
-      id,
-    });
+      console.error("Program lookup before delete error", {
+        error: currentError.message,
+        tenantId: ctx.tenant_id,
+        id,
+      });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
 
   if (current.status === "published") {
     const nowIso = new Date().toISOString();
-    const { data: slots, error: slotsError } = await supa
+    const { data: slots, error: slotsError } = await ctx.sb
       .from("program_slots")
       .select("id, slot_status, ends_at")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("program_id", id)
       .in("slot_status", ["scheduled", "published"]);
 
     if (slotsError) {
-      console.error("Program active slots lookup error", {
-        error: slotsError.message,
-        tenantId: ctx.tenantId,
-        id,
-      });
+        console.error("Program active slots lookup error", {
+          error: slotsError.message,
+          tenantId: ctx.tenant_id,
+          id,
+        });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
 
@@ -206,25 +203,25 @@ export async function DELETE(
     if (hasActiveSlots) return activeSlotsConflictResponse();
   }
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("programs")
     .delete()
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("id")
     .maybeSingle();
 
   if (error) {
-    console.error("Program delete error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Program delete error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   if (!data) return notFoundResponse();
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "program.delete",
     targetType: "program",
     targetId: current.id,

@@ -35,6 +35,10 @@ type MutResponse =
   | { ok: true; campaign: Campaign }
   | { ok: false; error: string };
 
+type DeleteResponse =
+  | { ok: true }
+  | { ok: false; error: string };
+
 function fmtDateTime(iso?: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -169,9 +173,9 @@ export default function CampaignsPage() {
     if (!ok) return;
     try {
       const res = await fetch(`/api/ads/campaigns/${c.id}`, { method: "DELETE" });
-      const json = (await res.json().catch(() => null)) as any;
+      const json = (await res.json().catch(() => null)) as DeleteResponse | null;
       if (!res.ok || !json?.ok) {
-        toast.error(json?.error || "Erreur suppression");
+        toast.error((json && "error" in json && json.error) || "Erreur suppression");
         return;
       }
       toast.success("Campagne archivée");
@@ -182,24 +186,24 @@ export default function CampaignsPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="bg-zinc-950/60 border-white/10">
+    <div className="console-page">
+      <Card>
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle className="text-white">Campagnes</CardTitle>
-            <p className="text-sm text-zinc-500 mt-1">
+            <CardTitle className="text-slate-950 dark:text-white">Campagnes</CardTitle>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Campagnes de votre organisation, visibles uniquement par votre équipe.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="h-4 w-4 text-zinc-600 absolute left-3 top-2.5" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-500" />
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Rechercher (nom, type)…"
-                className="pl-9 bg-zinc-900/50 border-white/10 text-zinc-100 w-64"
+                className="console-field w-64 pl-9"
               />
             </div>
             <Button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700">
@@ -210,28 +214,28 @@ export default function CampaignsPage() {
 
         <CardContent>
           {loading ? (
-            <div className="h-48 flex items-center justify-center text-zinc-500">
+            <div className="flex h-48 items-center justify-center text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Chargement…
             </div>
           ) : filtered.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-zinc-600">Aucune campagne.</div>
+            <div className="flex h-48 items-center justify-center text-slate-500 dark:text-slate-400">Aucune campagne.</div>
           ) : (
-            <div className="rounded-xl border border-white/10 overflow-hidden">
+            <div className="overflow-hidden rounded-[22px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-zinc-900/40 border-white/10">
-                    <TableHead className="text-zinc-400">Nom</TableHead>
-                    <TableHead className="text-zinc-400">Type</TableHead>
-                    <TableHead className="text-zinc-400">Prio</TableHead>
-                    <TableHead className="text-zinc-400">Actif</TableHead>
-                    <TableHead className="text-zinc-400">Fenêtre</TableHead>
-                    <TableHead className="text-right text-zinc-400">Actions</TableHead>
+                  <TableRow className="border-slate-200/80 bg-slate-50/90 dark:border-white/10 dark:bg-white/[0.03]">
+                    <TableHead className="text-slate-500 dark:text-slate-400">Nom</TableHead>
+                    <TableHead className="text-slate-500 dark:text-slate-400">Type</TableHead>
+                    <TableHead className="text-slate-500 dark:text-slate-400">Prio</TableHead>
+                    <TableHead className="text-slate-500 dark:text-slate-400">Actif</TableHead>
+                    <TableHead className="text-slate-500 dark:text-slate-400">Fenêtre</TableHead>
+                    <TableHead className="text-right text-slate-500 dark:text-slate-400">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((c) => (
-                    <TableRow key={c.id} className="border-white/10">
-                      <TableCell className="font-semibold text-white">
+                    <TableRow key={c.id} className="border-slate-200/80 dark:border-white/10">
+                      <TableCell className="font-semibold text-slate-950 dark:text-white">
                         <div className="flex items-center gap-2">
                           <span className="truncate max-w-[320px]">{c.name}</span>
                           {c.status === "ARCHIVED" ? (
@@ -240,9 +244,9 @@ export default function CampaignsPage() {
                             </span>
                           ) : null}
                         </div>
-                        <div className="text-[10px] text-zinc-500 font-mono">{c.id.slice(0, 8)}…</div>
+                        <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{c.id.slice(0, 8)}…</div>
                       </TableCell>
-                      <TableCell className="text-zinc-300">{c.type}</TableCell>
+                      <TableCell className="text-slate-700 dark:text-slate-300">{c.type}</TableCell>
                       <TableCell className="text-zinc-300 font-mono">{c.priority}</TableCell>
                       <TableCell>
                         <div
@@ -257,13 +261,13 @@ export default function CampaignsPage() {
                           {c.active ? "ON" : "OFF"}
                         </div>
                       </TableCell>
-                      <TableCell className="text-zinc-400 text-xs">
+                      <TableCell className="text-xs text-slate-500 dark:text-slate-400">
                         <div>Début: {fmtDateTime(c.starts_at)}</div>
-                        <div>Fin: {fmtDateTime(c.ends_at)}</div>
+                        <div>Fin : {fmtDateTime(c.ends_at)}</div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" className="hover:bg-white/5" onClick={() => openEdit(c)}>
+                          <Button variant="ghost" className="text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.08] dark:hover:text-white" onClick={() => openEdit(c)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
@@ -285,7 +289,7 @@ export default function CampaignsPage() {
       </Card>
 
       <Dialog open={open} onOpenChange={(v) => (saving ? null : setOpen(v))}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-zinc-100">
+        <DialogContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
           <DialogHeader>
             <DialogTitle>{editing ? "Modifier la campagne" : "Nouvelle campagne"}</DialogTitle>
           </DialogHeader>
@@ -293,17 +297,17 @@ export default function CampaignsPage() {
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label>Nom</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-zinc-900/50 border-white/10" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="console-field" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Type</Label>
                 <Select value={type} onValueChange={setType}>
-                  <SelectTrigger className="bg-zinc-900/50 border-white/10">
+                  <SelectTrigger className="console-field">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 border-zinc-800">
+                  <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                     <SelectItem value="HOUSE">HOUSE</SelectItem>
                     <SelectItem value="DIRECT">DIRECT</SelectItem>
                     <SelectItem value="SPONSOR">SPONSOR</SelectItem>
@@ -318,12 +322,12 @@ export default function CampaignsPage() {
                   type="number"
                   value={priority}
                   onChange={(e) => setPriority(Number(e.target.value))}
-                  className="bg-zinc-900/50 border-white/10"
+                  className="console-field"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
+            <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.04]">
               <div>
                 <div className="text-sm font-semibold">Active</div>
                 <div className="text-xs text-zinc-500">La campagne peut être sélectionnée automatiquement selon vos règles.</div>
@@ -338,7 +342,7 @@ export default function CampaignsPage() {
                   type="datetime-local"
                   value={startsAt}
                   onChange={(e) => setStartsAt(e.target.value)}
-                  className="bg-zinc-900/50 border-white/10"
+                  className="console-field"
                 />
               </div>
               <div className="grid gap-2">
@@ -347,7 +351,7 @@ export default function CampaignsPage() {
                   type="datetime-local"
                   value={endsAt}
                   onChange={(e) => setEndsAt(e.target.value)}
-                  className="bg-zinc-900/50 border-white/10"
+                  className="console-field"
                 />
               </div>
             </div>

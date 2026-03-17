@@ -1,359 +1,143 @@
 "use client";
 
+import * as React from "react";
+import Link from "next/link";
+import { ArrowRight, Loader2, Lock, Mail, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import { AuthFrame } from "@/components/auth/auth-frame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Loader2, Mail, Lock, ShieldCheck, Tv2 } from "lucide-react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
 
-type Slide = {
-  title: string;
-  desc: string;
-  imageSrc: string; // remote URL
-};
-
-const SLIDES: Slide[] = [
-  {
-    title: "Opérations OTT, sans friction",
-    desc: "Pilotez diffusion, monitoring et performance depuis une console unique.",
-    imageSrc:
-      "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=1600&q=80",
-  },
-  {
-    title: "Supervision & qualité de service",
-    desc: "Gardez le contrôle sur la disponibilité, les alertes et les incidents.",
-    imageSrc:
-      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1600&q=80",
-  },
-  {
-    title: "Sécurité et accès maîtrisés",
-    desc: "Une expérience fiable et cohérente pour vos équipes.",
-    imageSrc:
-      "https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=1600&q=80",
-  },
-];
-
-function AuthSlideshow() {
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    // Respect "reduce motion"
-    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    if (mq?.matches) return;
-
-    if (paused) return;
-
-    const t = window.setInterval(() => {
-      setIndex((i) => (i + 1) % SLIDES.length);
-    }, 4500);
-
-    return () => window.clearInterval(t);
-  }, [paused]);
-
+function Field({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
   return (
-    <div
-      className="mt-6 rounded-3xl border border-white/10 bg-zinc-900/20 p-3"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {/* ✅ Hauteur responsive */}
-      <div className="relative h-[220px] xs:h-[240px] sm:h-[300px] md:h-[320px] overflow-hidden rounded-2xl">
-        {SLIDES.map((s, i) => (
-          <div
-            key={s.imageSrc}
-            className={[
-              "absolute inset-0 transition-opacity duration-700",
-              i === index ? "opacity-100" : "opacity-0",
-            ].join(" ")}
-          >
-            <Image
-              src={s.imageSrc}
-              alt={s.title}
-              fill
-              priority={i === 0}
-              className="object-cover"
-              // ✅ important: visible sur mobile => 100vw
-              sizes="(max-width: 768px) 100vw, 520px"
-            />
-
-            {/* Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-zinc-950/35 to-zinc-950/10" />
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl" />
-
-            {/* Caption */}
-            <div className="absolute bottom-0 left-0 right-0 p-5">
-              <div className="text-sm font-semibold text-white">{s.title}</div>
-              <div className="mt-1 text-xs leading-relaxed text-zinc-300/80">{s.desc}</div>
-
-              {/* Dots */}
-              <div className="mt-4 flex items-center gap-2">
-                {SLIDES.map((_, dot) => (
-                  <button
-                    key={dot}
-                    type="button"
-                    aria-label={`Aller au slide ${dot + 1}`}
-                    onClick={() => setIndex(dot)}
-                    className={[
-                      "h-1.5 rounded-full transition-all",
-                      dot === index ? "w-6 bg-white/80" : "w-2.5 bg-white/30 hover:bg-white/45",
-                    ].join(" ")}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-500">
-        <span>{paused ? "Pause" : "Auto"}</span>
-        <span>
-          {index + 1}/{SLIDES.length}
-        </span>
+    <div className="space-y-2">
+      <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</label>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-3 top-3.5 size-4 text-slate-400" />
+        {children}
       </div>
     </div>
   );
 }
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const [orgName, setOrgName] = useState("");
-  const [remember, setRemember] = useState(true);
-
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
   const router = useRouter();
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [remember, setRemember] = React.useState(true);
+  const [error, setError] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const title = useMemo(() => (mode === "login" ? "Connexion" : "Créer un compte"), [mode]);
-
-  const subtitle = useMemo(
-    () =>
-      mode === "login"
-        ? "Accédez à la console de gestion OTT TV."
-        : "Créez votre compte pour accéder à la console.",
-    [mode]
-  );
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      const url = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
-      const body =
-        mode === "login"
-          ? { email, password, remember }
-          : { email, password, tenantName: orgName?.trim() || null };
-
-      const res = await fetch(url, {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ email, password, remember }),
       });
 
-      if (res.ok) {
-        router.push("/");
-        router.refresh();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || (mode === "login" ? "Identifiants incorrects." : "Inscription impossible."));
+      const json = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        setError(json?.error || "Identifiants invalides.");
+        return;
       }
+
+      router.push("/dashboard");
+      router.refresh();
     } catch {
-      setError(mode === "login" ? "Erreur de connexion. Réessayez." : "Erreur d'inscription. Réessayez.");
+      setError("Erreur de connexion. Réessayez.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-dvh bg-zinc-950 font-sans">
-      {/* Background */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-24 -left-24 h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-[110px]" />
-        <div className="absolute -bottom-24 -right-24 h-[520px] w-[520px] rounded-full bg-emerald-500/10 blur-[110px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%)]" />
-      </div>
+    <AuthFrame
+      eyebrow="Connexion sécurisée"
+      title="Accédez à votre espace d’exploitation Oniix."
+      subtitle="Connectez-vous pour retrouver vos workspaces, vos chaînes, vos analytics et vos opérations live."
+      footer={
+        <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            Nouveau sur Oniix ?{" "}
+            <Link href="/signup" className="font-semibold text-sky-700 hover:text-sky-800">
+              Créer un espace
+            </Link>
+          </p>
+          <Link href="/accept-invite" className="font-medium text-slate-700 hover:text-slate-950">
+            Vous avez reçu une invitation ?
+          </Link>
+        </div>
+      }
+    >
+      <form onSubmit={submit} className="space-y-5">
+        <Field label="Email" icon={Mail}>
+          <Input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@company.com"
+            autoFocus
+            className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+          />
+        </Field>
 
-      {/* ✅ mobile: items-stretch + padding plus “safe” */}
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-6xl items-stretch md:items-center justify-center px-4 py-6 sm:py-10">
-        <div className="grid w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/30 shadow-2xl backdrop-blur-xl md:grid-cols-2">
-          {/* Left panel (desktop only) */}
-          <div className="hidden flex-col justify-between p-10 md:flex">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900/60">
-                <Tv2 className="h-5 w-5 text-indigo-400" />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-white">Oniix Console</div>
-                <div className="text-xs text-zinc-400">OTT TV Operations</div>
-              </div>
-            </div>
+        <Field label="Mot de passe" icon={Lock}>
+          <Input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Votre mot de passe"
+            className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+          />
+        </Field>
 
-            <div className="mt-10 space-y-6">
-              <h2 className="text-3xl font-semibold tracking-tight text-white">
-                Console de gestion professionnelle pour plateformes OTT.
-              </h2>
-
-              <AuthSlideshow />
-            </div>
-
-            <div className="text-xs text-zinc-600">© {new Date().getFullYear()} Oniix</div>
-          </div>
-
-          {/* Right panel */}
-          <div className="p-6 sm:p-10">
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-zinc-900/50 md:hidden">
-                    <ShieldCheck className="h-5 w-5 text-indigo-400" />
-                  </div>
-                  <h1 className="text-xl font-semibold text-white truncate">{title}</h1>
-                </div>
-                <p className="mt-2 text-sm text-zinc-500">{subtitle}</p>
-              </div>
-
-              {/* Mode switch */}
-              <div className="rounded-2xl border border-white/10 bg-zinc-900/30 p-1 shrink-0">
-                <div className="grid grid-cols-2 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setMode("login")}
-                    disabled={isLoading}
-                    className={[
-                      "h-10 rounded-xl px-3 text-xs font-medium transition",
-                      mode === "login" ? "bg-white text-zinc-950" : "text-zinc-300 hover:bg-white/5",
-                    ].join(" ")}
-                  >
-                    Connexion
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("signup")}
-                    disabled={isLoading}
-                    className={[
-                      "h-10 rounded-xl px-3 text-xs font-medium transition",
-                      mode === "signup" ? "bg-white text-zinc-950" : "text-zinc-300 hover:bg-white/5",
-                    ].join(" ")}
-                  >
-                    Inscription
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={submit} className="space-y-5">
-              {mode === "signup" && (
-                <div className="space-y-2">
-                  <label className="ml-1 text-xs font-medium uppercase tracking-wider text-zinc-400">
-                    Organisation (optionnel)
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="Nom de l’organisation"
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                    className="h-11 bg-zinc-950/40 border-zinc-800 text-white placeholder:text-zinc-700"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="ml-1 text-xs font-medium uppercase tracking-wider text-zinc-400">Email</label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-zinc-600 group-focus-within:text-indigo-400 transition-colors" />
-                  <Input
-                    type="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 pl-10 bg-zinc-950/40 border-zinc-800 text-white placeholder:text-zinc-700"
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="ml-1 text-xs font-medium uppercase tracking-wider text-zinc-400">
-                  Mot de passe
-                </label>
-                <div className="relative group">
-                  <Lock className="absolute left-3 top-2.5 h-5 w-5 text-zinc-600 group-focus-within:text-indigo-400 transition-colors" />
-                  <Input
-                    type="password"
-                    placeholder="••••••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 pl-10 bg-zinc-950/40 border-zinc-800 text-white placeholder:text-zinc-700"
-                  />
-                </div>
-              </div>
-
-              {mode === "login" && (
-                <div className="flex items-center justify-between gap-3">
-                  <label className="flex items-center gap-2 text-xs text-zinc-400 select-none">
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                      className="h-4 w-4 rounded border-white/20 bg-zinc-900/60"
-                    />
-                    Rester connecté
-                  </label>
-
-                  <button
-                    type="button"
-                    className="text-xs text-zinc-400 hover:text-white transition"
-                    disabled={isLoading}
-                  >
-                    Mot de passe oublié ?
-                  </button>
-                </div>
-              )}
-
-              {error && (
-                <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-center text-xs font-medium text-rose-300">
-                  {error}
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                className="h-11 w-full bg-indigo-600 text-white hover:bg-indigo-700 font-medium"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : mode === "login" ? (
-                  <>
-                    Se connecter <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    Créer mon compte <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </form>
-
-            {/* ✅ Slideshow visible sur mobile */}
-            <div className="md:hidden">
-              <AuthSlideshow />
-              <div className="mt-4 text-center text-[11px] text-zinc-600">
-                © {new Date().getFullYear()} Oniix
-              </div>
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+          <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+              className="size-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            />
+            Rester connecté sur cet appareil
+          </label>
+          <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+            <ShieldCheck className="size-4 text-sky-600" />
+            Session protégée
           </div>
         </div>
-      </div>
-    </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
+
+        <Button type="submit" disabled={isLoading} className="h-11 w-full rounded-xl bg-sky-600 text-white hover:bg-sky-700">
+          {isLoading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <>
+              Continuer vers la console
+              <ArrowRight className="size-4" />
+            </>
+          )}
+        </Button>
+      </form>
+    </AuthFrame>
   );
 }

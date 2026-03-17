@@ -2,7 +2,7 @@
 
 ## Events
 
-- `session_start` au moment où l’app reçoit la playback URL
+- `session_start` au moment où l’app reçoit la playback URL depuis `POST /api/mobile/playback-url`
 - `play` uniquement quand `timeControlStatus == .playing`
 - `heartbeat` toutes les 15 secondes si la lecture est réellement en cours
 - `buffer_start` quand `timeControlStatus == .waitingToPlayAtSpecifiedRate`

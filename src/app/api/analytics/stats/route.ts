@@ -1,11 +1,25 @@
-// src/app/api/analytics/stats/route.ts (multi-tenant)
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
+import {
+  buildPlatformDistribution,
+  buildPlaybackOnlyRecentEvents,
+  buildTrafficSourceTimestamps,
+  buildUnifiedAnalyticsSessions,
+  countPlaybackOnlySessions,
+  formatWatchDurationSeconds,
+} from "../../_utils/analytics-summary";
+import {
+  buildPlaybackCurrentStreams,
+  getPreferredStreamsByChannel,
+  listActivePlaybackSessions,
+  listPlaybackSessionsSince,
+  resolvePlaybackChannelIds,
+} from "../../_utils/playback-session-fallback";
 import { supabaseAdmin } from "../../_utils/supabase";
 import { parseQuery } from "../../_utils/validate";
 import { resolveAnalyticsStreamFilter } from "../../_utils/analytics-stream-filter";
 import { getStreamStatsLiveFallback } from "../../_utils/stream-stats-live-fallback";
+import { requireTenantAccess } from "../../tenant/_utils";
 import {
   buildLiveSnapshotFromEvents,
   getViewerLiveSnapshot,
@@ -14,8 +28,9 @@ import {
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-const HEARTBEAT_SECONDS = 15;
+
 const LIVE_WINDOW_SEC = 35;
+const RETENTION_THRESHOLD_SECONDS = 75;
 
 interface AnalyticsEvent {
   created_at: string;
@@ -29,32 +44,52 @@ function normalizeEventType(eventType: string | null | undefined) {
   return (eventType ?? "").trim().toUpperCase();
 }
 
-function buildEmptyResponse() {
-  return {
-    traffic: [] as { time: string; viewers: number }[],
-    devices: [] as { name: string; value: number }[],
-    kpi: {
-      totalUsers: 0,
-      totalEvents: 0,
-      watchTime: 0,
-      users: 0,
-      events: 0,
-      watchTimeLabel: "0m",
-      retention: 0,
-    },
-    recentEvents: [] as { message: string; time: string }[],
-    live: { activeUsers: 0, currentStreams: {} as Record<string, number> },
-  };
+function buildTrafficBuckets(values: string[], period: string) {
+  const buckets = new Map<string, number>();
+
+  values.forEach((value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return;
+
+    const key =
+      period === "24h"
+        ? `${date.toLocaleTimeString("fr-FR", { hour: "2-digit" }).split(":")[0]}:00`
+        : date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
+    buckets.set(key, (buckets.get(key) || 0) + 1);
+  });
+
+  return Array.from(buckets.entries()).map(([time, viewers]) => ({ time, viewers }));
+}
+
+function buildDeviceDistribution(deviceNames: string[]) {
+  const counts: Record<string, number> = { Mobile: 0, Desktop: 0, Tablet: 0 };
+
+  deviceNames.forEach((value) => {
+    const normalized = value.toLowerCase();
+    let bucket = "Desktop";
+    if (normalized.includes("mobile") || normalized.includes("android") || normalized.includes("iphone")) {
+      bucket = "Mobile";
+    } else if (normalized.includes("tablet") || normalized.includes("ipad")) {
+      bucket = "Tablet";
+    }
+    counts[bucket] += 1;
+  });
+
+  const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+
+  return [
+    { name: "Mobile", value: total ? Math.round((counts["Mobile"] / total) * 100) : 0 },
+    { name: "Desktop", value: total ? Math.round((counts["Desktop"] / total) * 100) : 0 },
+    { name: "Tablet", value: total ? Math.round((counts["Tablet"] / total) * 100) : 0 },
+  ].filter((entry) => entry.value > 0);
 }
 
 export async function GET(req: Request) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
-  const tenantId = ctx.tenantId;
-  if (!tenantId) return NextResponse.json({ error: "Tenant manquant." }, { status: 400 });
+  const ctx = await requireTenantAccess("view_analytics");
+  if (!ctx.ok) return ctx.res;
+
+  const tenantId = ctx.tenant_id;
 
   try {
     const query = parseQuery(
@@ -66,15 +101,18 @@ export async function GET(req: Request) {
       })
     );
     if (!query.ok) return query.res;
-    const period = query.data.period || "24h";
 
+    const period = query.data.period || "24h";
     const supa = supabaseAdmin();
     const now = new Date();
     const startTime = new Date();
+    const periodEndIso = now.toISOString();
 
     if (period === "24h") startTime.setHours(now.getHours() - 24);
     else if (period === "7d") startTime.setDate(now.getDate() - 7);
     else if (period === "30d") startTime.setDate(now.getDate() - 30);
+
+    const liveThreshold = new Date(Date.now() - LIVE_WINDOW_SEC * 1000).toISOString();
 
     const filterRes = await resolveAnalyticsStreamFilter(supa, {
       tenantId,
@@ -89,28 +127,83 @@ export async function GET(req: Request) {
       });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
+
     const streamFilter = filterRes.filter;
     const streamIdsForFilter =
       streamFilter.mode === "none" ? [] : streamFilter.mode === "ids" ? streamFilter.streamIds : undefined;
 
-    if (streamFilter.mode === "none") {
-      const liveSnapshotRes = await getViewerLiveSnapshot(supa, {
+    const playbackChannelIdsRes = await resolvePlaybackChannelIds(supa, {
+      tenantId,
+      channelId: query.data.channelId ?? null,
+      streamIds: streamFilter.mode === "ids" ? streamFilter.streamIds : null,
+    });
+    if (!playbackChannelIdsRes.ok) {
+      console.error("Analytics stats playback filter error", {
+        error: playbackChannelIdsRes.error,
+        code: playbackChannelIdsRes.code ?? null,
         tenantId,
-        windowSec: LIVE_WINDOW_SEC,
-        expireStale: true,
-        streamIds: [],
       });
-      const payload = buildEmptyResponse();
-      if (liveSnapshotRes.ok) {
-        payload.live = {
-          activeUsers: liveSnapshotRes.snapshot.activeUsers,
-          currentStreams: liveSnapshotRes.snapshot.currentStreams,
-        };
-      }
-      return NextResponse.json(payload);
     }
 
-    const liveThreshold = new Date(Date.now() - LIVE_WINDOW_SEC * 1000).toISOString();
+    const getPlaybackLiveFallback = async () => {
+      if (!playbackChannelIdsRes.ok) return null;
+
+      const playbackRes = await listActivePlaybackSessions(supa, {
+        tenantId,
+        sinceIso: liveThreshold,
+        channelIds: playbackChannelIdsRes.data,
+      });
+      if (!playbackRes.ok) {
+        console.error("Analytics stats playback live fallback error", {
+          error: playbackRes.error,
+          code: playbackRes.code ?? null,
+          tenantId,
+        });
+        return null;
+      }
+
+      const channelIds = Array.from(new Set(playbackRes.data.map((row) => row.channel_id)));
+      const preferredStreamsRes = await getPreferredStreamsByChannel(supa, {
+        tenantId,
+        channelIds,
+      });
+      if (!preferredStreamsRes.ok) {
+        console.error("Analytics stats playback stream mapping error", {
+          error: preferredStreamsRes.error,
+          code: preferredStreamsRes.code ?? null,
+          tenantId,
+        });
+      }
+
+      return {
+        activeUsers: playbackRes.data.length,
+        currentStreams: buildPlaybackCurrentStreams(playbackRes.data, {
+          channelToStreamId: preferredStreamsRes.ok ? preferredStreamsRes.data : new Map(),
+          streamIdOverride: query.data.streamId ?? null,
+        }),
+      };
+    };
+
+    const getPlaybackHistoryFallback = async () => {
+      if (!playbackChannelIdsRes.ok) return [];
+
+      const playbackRes = await listPlaybackSessionsSince(supa, {
+        tenantId,
+        sinceIso: startTime.toISOString(),
+        untilIso: periodEndIso,
+        channelIds: playbackChannelIdsRes.data,
+      });
+      if (!playbackRes.ok) {
+        console.error("Analytics stats playback history fallback error", {
+          error: playbackRes.error,
+          code: playbackRes.code ?? null,
+          tenantId,
+        });
+        return [];
+      }
+
+      return playbackRes.data;
+    };
 
     let historicalQuery = supa
       .from("analytics_events")
@@ -130,9 +223,12 @@ export async function GET(req: Request) {
     } else if (streamFilter.mode === "ids" && streamFilter.streamIds.length > 1) {
       historicalQuery = historicalQuery.in("stream_id", streamFilter.streamIds);
       liveQuery = liveQuery.in("stream_id", streamFilter.streamIds);
+    } else if (streamFilter.mode === "none") {
+      historicalQuery = historicalQuery.eq("stream_id", "__none__");
+      liveQuery = liveQuery.eq("stream_id", "__none__");
     }
 
-    const [historicalRes, liveRes, liveSnapshotRes] = await Promise.all([
+    const [historicalRes, liveRes, liveSnapshotRes, playbackHistory] = await Promise.all([
       historicalQuery.order("created_at", { ascending: true }),
       liveQuery.order("created_at", { ascending: true }),
       getViewerLiveSnapshot(supa, {
@@ -141,6 +237,7 @@ export async function GET(req: Request) {
         expireStale: true,
         streamIds: streamIdsForFilter,
       }),
+      getPlaybackHistoryFallback(),
     ]);
 
     if (historicalRes.error || liveRes.error) {
@@ -166,7 +263,6 @@ export async function GET(req: Request) {
       });
     }
 
-    const uniqueSessions = new Set(events.map((e) => e.session_id));
     let activeUsersNow = liveSnapshot.activeUsers;
     let currentStreams = liveSnapshot.currentStreams;
 
@@ -176,6 +272,7 @@ export async function GET(req: Request) {
         windowSec: LIVE_WINDOW_SEC,
         streamIds: streamIdsForFilter,
       });
+
       if (streamStatsFallback.ok) {
         activeUsersNow = streamStatsFallback.snapshot.activeUsers;
         currentStreams = streamStatsFallback.snapshot.currentStreams;
@@ -186,76 +283,114 @@ export async function GET(req: Request) {
           tenantId,
         });
       }
+
+      if (activeUsersNow === 0) {
+        const playbackLive = await getPlaybackLiveFallback();
+        if (playbackLive) {
+          activeUsersNow = playbackLive.activeUsers;
+          currentStreams = playbackLive.currentStreams;
+        }
+      }
     }
 
-    const heartbeats = events.filter((e) => normalizeEventType(e.event_type) === "HEARTBEAT").length;
-    const totalMinutes = Math.round((heartbeats * HEARTBEAT_SECONDS) / 60);
-    const watchTimeStr =
-      totalMinutes > 60
-        ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`
-        : `${totalMinutes}m`;
-
-    const sessionActivity: Record<string, number> = {};
-    events.forEach((e) => {
-      sessionActivity[e.session_id] = (sessionActivity[e.session_id] || 0) + 1;
-    });
-    const retainedUsers = Object.values(sessionActivity).filter((count) => count > 5).length;
-    const retentionRate = uniqueSessions.size > 0 ? Math.round((retainedUsers / uniqueSessions.size) * 100) : 0;
-
-    const trafficMap = new Map<string, number>();
-    events.forEach((ev) => {
-      const date = new Date(ev.created_at);
-      let key = "";
-      if (period === "24h") {
-        key = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).split(":")[0] + ":00";
+    let channelToStreamId = new Map<string, string>();
+    if (playbackHistory.length > 0) {
+      const preferredStreamsRes = await getPreferredStreamsByChannel(supa, {
+        tenantId,
+        channelIds: Array.from(new Set(playbackHistory.map((row) => row.channel_id))),
+      });
+      if (preferredStreamsRes.ok) {
+        channelToStreamId = preferredStreamsRes.data;
       } else {
-        key = date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+        console.error("Analytics stats playback history stream mapping error", {
+          error: preferredStreamsRes.error,
+          code: preferredStreamsRes.code ?? null,
+          tenantId,
+        });
       }
-      trafficMap.set(key, (trafficMap.get(key) || 0) + 1);
+    }
+
+    const unifiedSessions = buildUnifiedAnalyticsSessions({
+      events,
+      playbackSessions: playbackHistory,
+      channelToStreamId,
+      streamIdOverride: query.data.streamId ?? null,
+      windowStartIso: startTime.toISOString(),
+      windowEndIso: periodEndIso,
     });
 
-    const traffic = Array.from(trafficMap.entries()).map(([time, viewers]) => ({ time, viewers }));
+    const totalWatchSeconds = unifiedSessions.reduce(
+      (sum, session) => sum + Math.max(0, session.watchSeconds),
+      0
+    );
+    const totalMinutes = Math.round(totalWatchSeconds / 60);
+    const watchTimeStr = formatWatchDurationSeconds(totalWatchSeconds);
 
-    const deviceCounts: Record<string, number> = { Mobile: 0, Desktop: 0, Tablet: 0 };
-    events.forEach((e) => {
-      let type = "Desktop";
-      const dbType = e.device_type?.toLowerCase() || "";
-      if (dbType.includes("mobile") || dbType.includes("android") || dbType.includes("iphone")) type = "Mobile";
-      else if (dbType.includes("tablet") || dbType.includes("ipad")) type = "Tablet";
-      deviceCounts[type]++;
-    });
+    const retentionRate =
+      unifiedSessions.length > 0
+        ? Math.round(
+            (unifiedSessions.filter((session) => session.watchSeconds >= RETENTION_THRESHOLD_SECONDS).length /
+              unifiedSessions.length) *
+              100
+          )
+        : 0;
 
-    const totalDeviceEvents = Object.values(deviceCounts).reduce((a, b) => a + b, 0);
-    const devices = [
-      { name: "Mobile", value: totalDeviceEvents ? Math.round((deviceCounts["Mobile"] / totalDeviceEvents) * 100) : 0 },
-      { name: "Desktop", value: totalDeviceEvents ? Math.round((deviceCounts["Desktop"] / totalDeviceEvents) * 100) : 0 },
-      { name: "Tablet", value: totalDeviceEvents ? Math.round((deviceCounts["Tablet"] / totalDeviceEvents) * 100) : 0 },
-    ].filter((d) => d.value > 0);
+    const traffic = buildTrafficBuckets(
+      buildTrafficSourceTimestamps({
+        events,
+        playbackSessions: playbackHistory,
+      }),
+      period
+    );
 
-    const recentEvents = events
-      .slice(-15)
-      .reverse()
-      .map((e) => {
-        let message = "Interaction détectée";
-        const normalizedType = normalizeEventType(e.event_type);
+    const devices = buildDeviceDistribution(
+      unifiedSessions.map((session) => session.deviceType)
+    );
+    const platforms = buildPlatformDistribution(unifiedSessions);
+
+    const recentEvents = [
+      ...events.map((event) => {
+        let message = "Interaction detectee";
+        const normalizedType = normalizeEventType(event.event_type);
         if (normalizedType === "START_STREAM") message = "Nouveau visionnage";
         else if (normalizedType === "HEARTBEAT") message = "Spectateur actif";
         else if (normalizedType === "ERROR") message = "Erreur de lecture";
         return {
           message,
-          time: new Date(e.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          created_at: event.created_at,
         };
-      });
+      }),
+      ...buildPlaybackOnlyRecentEvents(events, playbackHistory),
+    ]
+      .sort((left, right) => {
+        const leftMs = Date.parse(left.created_at);
+        const rightMs = Date.parse(right.created_at);
+        return rightMs - leftMs;
+      })
+      .slice(0, 15)
+      .map((event) => ({
+        message: event.message,
+        time: new Date(event.created_at).toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      }));
+
+    const totalUsers = unifiedSessions.length;
+    const totalEvents = events.length + countPlaybackOnlySessions(events, playbackHistory);
 
     return NextResponse.json({
       traffic,
       devices,
+      platforms,
       kpi: {
-        totalUsers: uniqueSessions.size,
-        totalEvents: events.length,
+        totalUsers,
+        totalEvents,
         watchTime: totalMinutes,
-        users: uniqueSessions.size,
-        events: events.length,
+        watchTimeSeconds: totalWatchSeconds,
+        users: totalUsers,
+        events: totalEvents,
         watchTimeLabel: watchTimeStr,
         retention: retentionRate,
       },

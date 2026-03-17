@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getTenantContext, jsonError } from "../../tenant/_utils";
-import { requireTenantIngestAuth } from "../../_utils/tenant-ingest-auth";
+import { jsonError } from "../../tenant/_utils";
 import { supabaseAdmin } from "../../_utils/supabase";
 import { parseJson } from "../../_utils/validate";
 import { touchViewerLiveSession } from "../../_utils/viewer-live";
+import { requireAnalyticsRuntimeAuth } from "../_runtime-auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -55,26 +55,17 @@ export async function POST(req: Request) {
   const device = parsed.data.device?.trim() ?? null;
   const eventType = normalizeEventType(parsed.data.event_type, parsed.data.kind);
 
-  const authCtx = await getTenantContext();
-  let tenantId = "";
-  let userId: string | null = null;
+  const auth = await requireAnalyticsRuntimeAuth(req);
+  if (!auth.ok) return auth.res;
 
-  if (authCtx.ok) {
-    tenantId = authCtx.tenant_id ?? "";
-    userId = authCtx.user.id;
-  } else {
-    const ingestAuth = await requireTenantIngestAuth(req);
-    if (!ingestAuth.ok) return authCtx.res;
+  const tenantId = auth.tenantId;
+  const userId = auth.userId;
 
-    tenantId = ingestAuth.tenantId;
-    userId = null;
-
-    if (ingestAuth.keySource === "token") {
-      const scopedStreamId = ingestAuth.streamId?.trim() ?? "";
-      const requestedStreamId = stream_id?.trim() ?? "";
-      if (!requestedStreamId || !scopedStreamId || requestedStreamId !== scopedStreamId) {
-        return NextResponse.json({ ok: false, error: "Authentification ingest invalide." }, { status: 401 });
-      }
+  if (auth.source === "ingest" && auth.streamId) {
+    const scopedStreamId = auth.streamId.trim();
+    const requestedStreamId = stream_id?.trim() ?? "";
+    if (!requestedStreamId || requestedStreamId !== scopedStreamId) {
+      return NextResponse.json({ ok: false, error: "Authentification ingest invalide." }, { status: 401 });
     }
   }
 

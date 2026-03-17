@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react/no-unescaped-entities */
+
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Trash2, UserPlus, Link as LinkIcon, RefreshCw, Search, MoreVertical, Mail, Shield } from "lucide-react";
 
@@ -14,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatTenantRoleLabel, normalizeTenantRole } from "@/lib/tenant-roles";
 
 // Si tu utilises "sonner" (shadcn), c'est top pour les toasts.
 // Sinon tu peux remplacer toast(...) par setMsg(...)
@@ -29,6 +32,11 @@ type Invite = {
   created_at: string;
   expires_at: string;
 };
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
 
 function fmtDate(iso?: string) {
   if (!iso) return "—";
@@ -56,10 +64,7 @@ function statusBadge(inv: Invite) {
 }
 
 function roleLabel(role?: string | null) {
-  const r = (role || "").toLowerCase();
-  if (r === "admin") return "Administrateur";
-  if (r === "member") return "Membre";
-  return role || "-";
+  return formatTenantRoleLabel(role);
 }
 
 export default function UsersPage() {
@@ -69,7 +74,7 @@ export default function UsersPage() {
 
   // form
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"member" | "admin">("member");
+  const [role, setRole] = useState<"viewer" | "editor" | "admin">("viewer");
   const [busyInvite, setBusyInvite] = useState(false);
 
   // ui state
@@ -113,8 +118,8 @@ export default function UsersPage() {
 
       setMembers(mJson.members ?? []);
       setInvites(iJson.invites ?? []);
-    } catch (e: any) {
-      setErr(e?.message || "Impossible de charger les membres/invites.");
+    } catch (error: unknown) {
+      setErr(getErrorMessage(error, "Impossible de charger les membres/invites."));
     } finally {
       setLoading(false);
     }
@@ -129,7 +134,10 @@ export default function UsersPage() {
   const stats = useMemo(() => {
     const pending = invites.filter((i) => (i.status || "").toLowerCase().includes("pending") && !isExpired(i.expires_at)).length;
     const expired = invites.filter((i) => isExpired(i.expires_at)).length;
-    const admins = members.filter((m) => (m.role || "").toLowerCase() === "admin").length;
+    const admins = members.filter((m) => {
+      const role = normalizeTenantRole(m.role);
+      return role === "owner" || role === "admin";
+    }).length;
     return { pending, expired, admins, members: members.length, invites: invites.length };
   }, [members, invites]);
 
@@ -202,8 +210,8 @@ export default function UsersPage() {
       setEmail("");
       setActiveTab("invites");
       await load();
-    } catch (e: any) {
-      setErr(e?.message || "Erreur");
+    } catch (error: unknown) {
+      setErr(getErrorMessage(error, "Erreur"));
     } finally {
       setBusyInvite(false);
     }
@@ -224,8 +232,8 @@ export default function UsersPage() {
 
       toast.success("Membre supprimé ✅");
       await load();
-    } catch (e: any) {
-      setErr(e?.message || "Erreur");
+    } catch (error: unknown) {
+      setErr(getErrorMessage(error, "Erreur"));
     } finally {
       setBusyDeleteMember(null);
     }
@@ -242,8 +250,8 @@ export default function UsersPage() {
 
       toast.success("Invitation révoquée");
       await load();
-    } catch (e: any) {
-      setErr(e?.message || "Erreur");
+    } catch (error: unknown) {
+      setErr(getErrorMessage(error, "Erreur"));
     } finally {
       setBusyInviteAction(null);
     }
@@ -260,8 +268,8 @@ export default function UsersPage() {
       toast.success("Invitation renvoyée");
       if (json.invite_url) await copy(json.invite_url, "Lien d’invite copié");
       await load();
-    } catch (e: any) {
-      setErr(e?.message || "Erreur");
+    } catch (error: unknown) {
+      setErr(getErrorMessage(error, "Erreur"));
     } finally {
       setBusyInviteAction(null);
     }
@@ -269,19 +277,19 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-200 flex items-center justify-center">
+      <div className="flex items-center justify-center py-24 text-slate-500 dark:text-slate-300">
         <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement…
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-6 text-zinc-100 space-y-6">
+    <div className="console-page">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="console-hero flex flex-col gap-3 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
         <div>
-          <h1 className="text-2xl font-bold">Utilisateurs</h1>
-          <p className="text-sm text-zinc-500">Inviter et gérer les membres de l'organisation.</p>
+          <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Utilisateurs</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-300">Inviter et gérer les membres de l'organisation.</p>
         </div>
 
         <div className="flex gap-2">
@@ -296,61 +304,65 @@ export default function UsersPage() {
 
       {/* Stats */}
       <div className="grid gap-3 md:grid-cols-4">
-        <Card className="bg-zinc-900/40 border-white/10">
+        <Card className="console-panel">
           <CardHeader className="pb-2">
-            <CardDescription className="text-zinc-500">Membres</CardDescription>
+            <CardDescription className="text-slate-500 dark:text-slate-400">Membres</CardDescription>
             <CardTitle className="text-2xl">{stats.members}</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-zinc-500 flex items-center gap-2">
+          <CardContent className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Shield className="h-4 w-4" /> {stats.admins} administrateurs
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 border-white/10">
+        <Card className="console-panel">
           <CardHeader className="pb-2">
-            <CardDescription className="text-zinc-500">Invitations</CardDescription>
+            <CardDescription className="text-slate-500 dark:text-slate-400">Invitations</CardDescription>
             <CardTitle className="text-2xl">{stats.invites}</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-zinc-500 flex items-center gap-2">
+          <CardContent className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Mail className="h-4 w-4" /> {stats.pending} en attente
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 border-white/10">
+        <Card className="console-panel">
           <CardHeader className="pb-2">
-            <CardDescription className="text-zinc-500">Expirées</CardDescription>
+            <CardDescription className="text-slate-500 dark:text-slate-400">Expirées</CardDescription>
             <CardTitle className="text-2xl">{stats.expired}</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-zinc-500">À révoquer ou renvoyer</CardContent>
+          <CardContent className="text-xs text-slate-500 dark:text-slate-400">À révoquer ou renvoyer</CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 border-white/10">
+        <Card className="console-panel">
           <CardHeader className="pb-2">
-            <CardDescription className="text-zinc-500">Actions</CardDescription>
+            <CardDescription className="text-slate-500 dark:text-slate-400">Actions</CardDescription>
             <CardTitle className="text-base">Bonnes pratiques</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-zinc-500">
+          <CardContent className="text-xs text-slate-500 dark:text-slate-400">
             Confirmer suppression • Copier lien • Suivre statut
           </CardContent>
         </Card>
       </div>
 
       {err && (
-        <Alert className="bg-rose-500/10 border-rose-500/20 text-rose-200">
+        <Alert className="border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200">
           <AlertTitle>Erreur</AlertTitle>
           <AlertDescription>{err}</AlertDescription>
         </Alert>
       )}
 
       {/* Main */}
-      <Card className="bg-zinc-900/40 border-white/10">
+      <Card className="console-panel">
         <CardHeader>
           <CardTitle>Gestion</CardTitle>
-          <CardDescription className="text-zinc-500">Membres & invitations, avec recherche et actions.</CardDescription>
+          <CardDescription className="text-slate-500 dark:text-slate-400">Membres et invitations, avec recherche et actions.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
-            <TabsList className="bg-zinc-950/40 border border-white/10">
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as "members" | "invites" | "create")}
+            className="space-y-4"
+          >
+            <TabsList className="console-panel-muted p-1">
               <TabsTrigger value="members">Membres</TabsTrigger>
               <TabsTrigger value="invites">Invitations</TabsTrigger>
               <TabsTrigger value="create">Inviter</TabsTrigger>
@@ -360,7 +372,7 @@ export default function UsersPage() {
             <TabsContent value="members" className="space-y-3">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="relative md:w-[420px]">
-                  <Search className="h-4 w-4 text-zinc-500 absolute left-3 top-2.5" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
                     value={qMembers}
                     onChange={(e) => {
@@ -368,18 +380,18 @@ export default function UsersPage() {
                       setMembersPage(1);
                     }}
                     placeholder="Rechercher par email ou rôle…"
-                    className="pl-9 bg-zinc-950/50 border-white/10"
+                    className="pl-9 border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
                   />
                 </div>
 
-                <div className="text-xs text-zinc-500">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   {filteredMembers.length} résultat(s) • page {membersPage}/{membersPages}
                 </div>
               </div>
 
-              <Separator className="bg-white/10" />
+              <Separator className="bg-slate-200 dark:bg-white/10" />
 
-              <div className="rounded-lg border border-white/10 overflow-hidden">
+              <div className="overflow-hidden rounded-[20px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.03]">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-white/10">
@@ -393,7 +405,7 @@ export default function UsersPage() {
                   <TableBody>
                     {membersSlice.length === 0 ? (
                       <TableRow className="border-white/10">
-                        <TableCell colSpan={4} className="text-zinc-500">
+                          <TableCell colSpan={4} className="text-slate-500 dark:text-slate-400">
                           Aucun membre.
                         </TableCell>
                       </TableRow>
@@ -406,7 +418,9 @@ export default function UsersPage() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={String(m.role).toLowerCase() === "admin" ? "secondary" : "outline"}>
+                            <Badge
+                              variant={["owner", "admin"].includes(normalizeTenantRole(m.role)) ? "secondary" : "outline"}
+                            >
                               {roleLabel(m.role)}
                             </Badge>
                           </TableCell>
@@ -444,7 +458,7 @@ export default function UsersPage() {
             <TabsContent value="invites" className="space-y-3">
               <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <div className="relative md:w-[420px]">
-                  <Search className="h-4 w-4 text-zinc-500 absolute left-3 top-2.5" />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                   <Input
                     value={qInvites}
                     onChange={(e) => {
@@ -452,18 +466,18 @@ export default function UsersPage() {
                       setInvitesPage(1);
                     }}
                     placeholder="Rechercher par email, rôle ou statut…"
-                    className="pl-9 bg-zinc-950/50 border-white/10"
+                    className="pl-9 border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
                   />
                 </div>
 
-                <div className="text-xs text-zinc-500">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   {filteredInvites.length} résultat(s) • page {invitesPage}/{invitesPages}
                 </div>
               </div>
 
-              <Separator className="bg-white/10" />
+              <Separator className="bg-slate-200 dark:bg-white/10" />
 
-              <div className="rounded-lg border border-white/10 overflow-hidden">
+              <div className="overflow-hidden rounded-[20px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.03]">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-white/10">
@@ -479,7 +493,7 @@ export default function UsersPage() {
                   <TableBody>
                     {invitesSlice.length === 0 ? (
                       <TableRow className="border-white/10">
-                        <TableCell colSpan={6} className="text-zinc-500">
+                          <TableCell colSpan={6} className="text-slate-500 dark:text-slate-400">
                           Aucune invitation.
                         </TableCell>
                       </TableRow>
@@ -493,7 +507,9 @@ export default function UsersPage() {
                           <TableRow key={inv.id} className="border-white/10">
                             <TableCell className="text-white">{inv.email}</TableCell>
                             <TableCell>
-                              <Badge variant={String(inv.role).toLowerCase() === "admin" ? "secondary" : "outline"}>
+                              <Badge
+                                variant={["owner", "admin"].includes(normalizeTenantRole(inv.role)) ? "secondary" : "outline"}
+                              >
                                 {roleLabel(inv.role)}
                               </Badge>
                             </TableCell>
@@ -512,7 +528,7 @@ export default function UsersPage() {
                                       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
                                     </Button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="bg-zinc-950 border-white/10">
+                                  <DropdownMenuContent align="end" className="border-slate-200 bg-white dark:border-white/10 dark:bg-[#0f1724]">
                                     <DropdownMenuItem onClick={() => copy(url, "Lien copié")}>
                                       <LinkIcon className="h-4 w-4 mr-2" /> Copier le lien
                                     </DropdownMenuItem>
@@ -549,38 +565,39 @@ export default function UsersPage() {
             {/* CREATE INVITE */}
             <TabsContent value="create" className="space-y-4">
               <div className="grid gap-6 lg:grid-cols-2">
-                <Card className="bg-zinc-950/30 border-white/10">
+                <Card className="console-panel">
                   <CardHeader>
                     <CardTitle>Créer une invitation</CardTitle>
-                    <CardDescription className="text-zinc-500">
+                    <CardDescription className="text-slate-500 dark:text-slate-400">
                       Génère une invitation. Tu peux copier le lien et l’envoyer.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest text-zinc-500">Email</label>
+                      <label className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">Email</label>
                       <Input
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="ex: user@domaine.com"
-                        className="bg-zinc-950/50 border-white/10"
+                        className="console-field"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs uppercase tracking-widest text-zinc-500">Rôle</label>
-                      <Select value={role} onValueChange={(v) => setRole(v as any)}>
-                        <SelectTrigger className="bg-zinc-950/50 border-white/10">
+                      <label className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">Rôle</label>
+                      <Select value={role} onValueChange={(v) => setRole(v as "viewer" | "editor" | "admin")}>
+                        <SelectTrigger className="console-field">
                           <SelectValue placeholder="Choisir un rôle" />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-950 border-white/10">
-                          <SelectItem value="member">Membre</SelectItem>
+                        <SelectContent className="border-slate-200 bg-white dark:border-white/10 dark:bg-[#0f1724]">
+                          <SelectItem value="viewer">Lecteur</SelectItem>
+                          <SelectItem value="editor">Editeur</SelectItem>
                           <SelectItem value="admin">Administrateur</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-zinc-500">
-                        Astuce : gardez le rôle <span className="text-zinc-300">Membre</span> par défaut,
-                        <span className="text-zinc-300"> Administrateur</span> seulement si nécessaire.
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Astuce : gardez le rôle <span className="text-slate-900 dark:text-slate-200">Membre</span> par défaut,
+                        <span className="text-slate-900 dark:text-slate-200"> Administrateur</span> seulement si nécessaire.
                       </p>
                     </div>
 
@@ -595,14 +612,14 @@ export default function UsersPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-zinc-950/30 border-white/10">
+                <Card className="console-panel">
                   <CardHeader>
                     <CardTitle>Bonnes pratiques d'équipe</CardTitle>
-                    <CardDescription className="text-zinc-500">
+                    <CardDescription className="text-slate-500 dark:text-slate-400">
                       Des accès clairs et maîtrisés pour votre organisation.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="text-sm text-zinc-300 space-y-2">
+                  <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                     <div>- Invitez les bonnes personnes au bon moment.</div>
                     <div>- Attribuez un rôle adapté à chaque besoin.</div>
                     <div>- Suivez les invitations en attente ou expirées.</div>
@@ -618,17 +635,17 @@ export default function UsersPage() {
 
       {/* Confirm delete member */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-zinc-100">
+        <DialogContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
           <DialogHeader>
             <DialogTitle>Supprimer ce membre ?</DialogTitle>
-          <DialogDescription className="text-zinc-500">
+          <DialogDescription className="text-slate-500 dark:text-slate-400">
               Cette action est définitive. Le membre perdra l’accès à l’organisation.
           </DialogDescription>
         </DialogHeader>
 
         {confirmMember && (
-          <div className="rounded-lg border border-white/10 bg-zinc-900/30 p-3">
-            <div className="text-sm text-white truncate">{confirmMember.email ?? "Compte sans email"}</div>
+          <div className="rounded-[18px] border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="truncate text-sm text-slate-950 dark:text-white">{confirmMember.email ?? "Compte sans email"}</div>
           </div>
         )}
 

@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
 import { auditLog } from "../../_utils/audit";
-import { supabaseUser } from "../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
 type StreamSnapshot = {
@@ -61,20 +60,16 @@ export async function GET(
   _: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
 
   try {
     const { id } = await params;
-    const supa = supabaseUser(ctx.accessToken);
 
-    const { data, error } = await supa
+    const { data, error } = await ctx.sb
       .from("streams")
       .select("*, channel:channels(id,name,logo,category)")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id)
       .single();
 
@@ -82,7 +77,7 @@ export async function GET(
       if (error) {
         console.error("Stream get error", {
           error: error.message,
-          tenantId: ctx.tenantId,
+          tenantId: ctx.tenant_id,
           id,
         });
       }
@@ -100,11 +95,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "operate_live");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   try {
     const { id } = await params;
@@ -129,12 +124,11 @@ export async function PATCH(
     );
     if (!parsed.ok) return parsed.res;
     const body = parsed.data;
-    const supa = supabaseUser(ctx.accessToken);
 
-    const { data: beforeStream, error: beforeError } = await supa
+    const { data: beforeStream, error: beforeError } = await ctx.sb
       .from("streams")
       .select("id,status,title,hls_url,channel_id,latency,dvr_window_sec,record,drm,geo,captions,markers")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id)
       .single();
 
@@ -142,7 +136,7 @@ export async function PATCH(
       if (beforeError) {
         console.error("Stream patch lookup error", {
           error: beforeError.message,
-          tenantId: ctx.tenantId,
+          tenantId: ctx.tenant_id,
           id,
         });
       }
@@ -166,24 +160,24 @@ export async function PATCH(
     if (body.geo !== undefined) payload.geo = body.geo;
     payload.updated_at = new Date().toISOString();
 
-    const { data, error } = await supa
+    const { data, error } = await ctx.sb
       .from("streams")
       .update(payload)
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id)
       .select()
       .single();
 
     if (error) {
-      console.error("Stream update error", { error: error.message, tenantId: ctx.tenantId, id });
+      console.error("Stream update error", { error: error.message, tenantId: ctx.tenant_id, id });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
 
     const diff = buildDiff(beforeStream as StreamSnapshot, data as StreamSnapshot);
     await auditLog({
-      sb: supa,
-      tenantId: ctx.tenantId,
-      actorUserId: ctx.userId,
+      sb: ctx.sb,
+      tenantId: ctx.tenant_id,
+      actorUserId: ctx.user_id,
       action: "STREAM_UPDATED",
       targetType: "stream",
       targetId: id,
@@ -202,20 +196,19 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "operate_live");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   try {
     const { id } = await params;
-    const supa = supabaseUser(ctx.accessToken);
 
-    const { data: beforeStream, error: beforeError } = await supa
+    const { data: beforeStream, error: beforeError } = await ctx.sb
       .from("streams")
       .select("id,status,title,hls_url,channel_id")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id)
       .single();
 
@@ -223,28 +216,28 @@ export async function DELETE(
       if (beforeError) {
         console.error("Stream delete lookup error", {
           error: beforeError.message,
-          tenantId: ctx.tenantId,
+          tenantId: ctx.tenant_id,
           id,
         });
       }
       return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
     }
 
-    const { error } = await supa
+    const { error } = await ctx.sb
       .from("streams")
       .delete()
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id);
 
     if (error) {
-      console.error("Stream delete error", { error: error.message, tenantId: ctx.tenantId, id });
+      console.error("Stream delete error", { error: error.message, tenantId: ctx.tenant_id, id });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
 
     await auditLog({
-      sb: supa,
-      tenantId: ctx.tenantId,
-      actorUserId: ctx.userId,
+      sb: ctx.sb,
+      tenantId: ctx.tenant_id,
+      actorUserId: ctx.user_id,
       action: "STREAM_DELETED",
       targetType: "stream",
       targetId: id,

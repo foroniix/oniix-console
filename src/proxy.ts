@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 const BLOCKED_PATH_PREFIXES = ["/api/public", "/api/upload", "/api/utils/validate-hls", "/api/_debug"];
-const PUBLIC_PATH_PREFIXES = ["/login", "/we", "/web"];
+const PUBLIC_PATH_PREFIXES = ["/", "/login", "/signup", "/accept-invite", "/we", "/web"];
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
   "/api/mobile",
@@ -91,9 +91,9 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  if (pathname === "/login") {
+  if (pathname === "/login" || pathname === "/signup") {
     if (cookie) {
-      return withSecurityHeaders(NextResponse.redirect(new URL("/", request.url)));
+      return withSecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
     }
     return withSecurityHeaders(NextResponse.next());
   }

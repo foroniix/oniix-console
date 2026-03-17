@@ -67,7 +67,7 @@ export default function CreativesPage() {
   }, []);
 
   const create = async () => {
-    if (!campaignId) return toast.error("Choisis une campagne");
+    if (!campaignId) return toast.error("Choisissez une campagne");
     if (!name.trim()) return toast.error("Nom obligatoire");
     if (!mediaUrl.trim()) return toast.error("media_url obligatoire");
     setSaving(true);
@@ -101,7 +101,7 @@ export default function CreativesPage() {
   };
 
   const remove = async (id: string) => {
-    const ok = confirm("Supprimer cette creative ?");
+    const ok = confirm("Supprimer cette créative ?");
     if (!ok) return;
     const res = await fetch(`/api/ads/creatives/${id}`, { method: "DELETE" });
     const json = await res.json().catch(() => null);
@@ -111,49 +111,49 @@ export default function CreativesPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="bg-zinc-950/60 border-white/10">
+    <div className="console-page">
+      <Card>
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <CardTitle className="text-white">Creatives</CardTitle>
-            <p className="text-sm text-zinc-500 mt-1">Assets pub (image / video) attachés à une campagne.</p>
+            <CardTitle className="text-slate-950 dark:text-white">Créatives</CardTitle>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Assets pub (image / video) attachés à une campagne.</p>
           </div>
 
           <Button onClick={() => setOpen(true)} className="bg-indigo-600 hover:bg-indigo-700">
-            <Plus className="h-4 w-4 mr-2" /> Nouvelle creative
+            <Plus className="h-4 w-4 mr-2" /> Nouvelle créative
           </Button>
         </CardHeader>
 
         <CardContent>
           {loading ? (
-            <div className="h-48 flex items-center justify-center text-zinc-500">
+            <div className="flex h-48 items-center justify-center text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Chargement…
             </div>
           ) : creatives.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-zinc-600">Aucune creative.</div>
+            <div className="flex h-48 items-center justify-center text-slate-500 dark:text-slate-400">Aucune créative.</div>
           ) : (
-            <div className="rounded-xl border border-white/10 overflow-hidden">
+            <div className="overflow-hidden rounded-[22px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-zinc-900/40 border-white/10">
-                    <TableHead className="text-zinc-400">Nom</TableHead>
-                    <TableHead className="text-zinc-400">Campagne</TableHead>
-                    <TableHead className="text-zinc-400">Type</TableHead>
-                    <TableHead className="text-zinc-400">Actif</TableHead>
-                    <TableHead className="text-right text-zinc-400">Actions</TableHead>
+                  <TableRow className="border-slate-200/80 bg-slate-50/90 dark:border-white/10 dark:bg-white/[0.03]">
+                    <TableHead className="text-slate-500 dark:text-slate-400">Nom</TableHead>
+                    <TableHead className="text-slate-500 dark:text-slate-400">Campagne</TableHead>
+                    <TableHead className="text-slate-500 dark:text-slate-400">Type</TableHead>
+                    <TableHead className="text-slate-500 dark:text-slate-400">Actif</TableHead>
+                    <TableHead className="text-right text-slate-500 dark:text-slate-400">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {creatives.map((c) => (
-                    <TableRow key={c.id} className="border-white/10">
-                      <TableCell className="text-white font-semibold">
+                    <TableRow key={c.id} className="border-slate-200/80 dark:border-white/10">
+                      <TableCell className="font-semibold text-slate-950 dark:text-white">
                         <div className="truncate max-w-[320px]">{c.name}</div>
-                        <div className="text-[10px] text-zinc-500 font-mono">{c.id.slice(0, 8)}…</div>
+                        <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{c.id.slice(0, 8)}…</div>
                       </TableCell>
-                      <TableCell className="text-zinc-300">
+                      <TableCell className="text-slate-700 dark:text-slate-300">
                         {campaigns.find((x) => x.id === c.campaign_id)?.name ?? c.campaign_id.slice(0, 8) + "…"}
                       </TableCell>
-                      <TableCell className="text-zinc-300">{c.media_type}</TableCell>
+                      <TableCell className="text-slate-700 dark:text-slate-300">{c.media_type}</TableCell>
                       <TableCell>
                         <div
                           className={cn(
@@ -185,19 +185,19 @@ export default function CreativesPage() {
       </Card>
 
       <Dialog open={open} onOpenChange={(v) => (saving ? null : setOpen(v))}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-zinc-100">
+        <DialogContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
           <DialogHeader>
-            <DialogTitle>Nouvelle creative</DialogTitle>
+            <DialogTitle>Nouvelle créative</DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label>Campagne</Label>
               <Select value={campaignId} onValueChange={setCampaignId}>
-                <SelectTrigger className="bg-zinc-900/50 border-white/10">
+                <SelectTrigger className="console-field">
                   <SelectValue placeholder="Choisir" />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-zinc-800">
+                <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                   {activeCampaigns.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
@@ -209,17 +209,17 @@ export default function CreativesPage() {
 
             <div className="grid gap-2">
               <Label>Nom</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} className="bg-zinc-900/50 border-white/10" />
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="console-field" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Media type</Label>
                 <Select value={mediaType} onValueChange={setMediaType}>
-                  <SelectTrigger className="bg-zinc-900/50 border-white/10">
+                  <SelectTrigger className="console-field">
                     <SelectValue placeholder="image" />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 border-zinc-800">
+                  <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                     <SelectItem value="image">image</SelectItem>
                     <SelectItem value="video">video</SelectItem>
                   </SelectContent>
@@ -240,7 +240,7 @@ export default function CreativesPage() {
                 value={mediaUrl}
                 onChange={(e) => setMediaUrl(e.target.value)}
                 placeholder="https://…"
-                className="bg-zinc-900/50 border-white/10"
+                className="console-field"
               />
             </div>
 
@@ -250,7 +250,7 @@ export default function CreativesPage() {
                 value={clickUrl}
                 onChange={(e) => setClickUrl(e.target.value)}
                 placeholder="https://…"
-                className="bg-zinc-900/50 border-white/10"
+                className="console-field"
               />
             </div>
           </div>

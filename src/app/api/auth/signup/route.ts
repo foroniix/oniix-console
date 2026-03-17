@@ -20,16 +20,23 @@ export async function POST(req: Request) {
       req,
       z.object({
         email: z.string().email(),
-        password: z.string().min(8),
-        tenantName: z.string().max(120).optional(),
+        password: z
+          .string()
+          .min(12)
+          .regex(/[a-z]/, "missing_lowercase")
+          .regex(/[A-Z]/, "missing_uppercase")
+          .regex(/\d/, "missing_number")
+          .regex(/[^A-Za-z0-9]/, "missing_symbol"),
+        tenantName: z.string().trim().min(2).max(120),
+        fullName: z.string().trim().min(2).max(120).optional(),
       })
     );
     if (!parsed.ok) return parsed.res;
-    const { email, password, tenantName } = parsed.data;
+    const { email, password, tenantName, fullName } = parsed.data;
 
-    if (!email || !password) return jsonError("Email et mot de passe requis.", 400);
-    if (typeof password !== "string" || password.length < 8) {
-      return jsonError("Mot de passe trop court (min 8 caracteres).", 400);
+    if (!email || !password || !tenantName) return jsonError("Email, mot de passe et organisation requis.", 400);
+    if (typeof password !== "string" || password.length < 12) {
+      return jsonError("Mot de passe trop faible (12 caractères minimum).", 400);
     }
 
     const rateLimit = getRateLimitConfig("AUTH", { limit: 10, windowMs: 60_000 });
@@ -42,16 +49,27 @@ export async function POST(req: Request) {
     const { data: signUpData, error: signUpErr } = await sbAnon.auth.signUp({
       email,
       password,
+      options: fullName
+        ? {
+            data: {
+              display_name: fullName.trim(),
+            },
+          }
+        : undefined,
     });
     if (signUpErr) {
       console.error("Signup error", { error: signUpErr.message });
-      return jsonError("Impossible de creer le compte.", 401);
+      return jsonError("Impossible de créer le compte.", 401);
     }
 
     const user = signUpData.user;
     if (!user) {
       return NextResponse.json(
-        { ok: true, message: "Compte cree. Verifiez votre email pour confirmer." },
+        {
+          ok: true,
+          requires_email_confirmation: true,
+          message: "Compte créé. Vérifiez votre email pour confirmer votre adresse.",
+        },
         { status: 200 }
       );
     }
@@ -65,10 +83,7 @@ export async function POST(req: Request) {
       const { data: tenantRow, error: tenantErr } = await sbAdmin
         .from("tenants")
         .insert({
-          name:
-            typeof tenantName === "string" && tenantName.trim().length > 0
-              ? tenantName.trim()
-              : "Mon espace",
+          name: tenantName.trim(),
           created_by: user.id,
         })
         .select("id")
@@ -100,7 +115,14 @@ export async function POST(req: Request) {
     });
     if (signInErr) {
       console.error("Signin after signup error", { error: signInErr.message });
-      return jsonError("Impossible d'ouvrir la session.", 401);
+      return NextResponse.json(
+        {
+          ok: true,
+          requires_email_confirmation: true,
+          message: "Compte créé. Vérifiez votre email pour confirmer votre adresse, puis connectez-vous.",
+        },
+        { status: 200 }
+      );
     }
 
     const access = signInData.session?.access_token;
@@ -110,8 +132,10 @@ export async function POST(req: Request) {
     const res = NextResponse.json({ ok: true, tenant_id: createdTenantId }, { status: 200 });
     setAuthCookies(res, access, refresh);
     return res;
-  } catch (e: any) {
-    console.error("Signup error", { error: e?.message });
+  } catch (error: unknown) {
+    console.error("Signup error", {
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
     return jsonError("Une erreur est survenue.", 500);
   }
 }

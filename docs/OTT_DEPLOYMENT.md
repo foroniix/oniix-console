@@ -1,5 +1,7 @@
 # Oniix OTT Deployment Guide
 
+Legacy note: ce document decrit le deploiement du prototype Worker Cloudflare. La cible officielle actuelle est documentee dans `docs/ADR_001_MEDIA_GATEWAY_NO_CLOUDFLARE.md`.
+
 ## Environment Variables
 
 ### Supabase Edge Functions

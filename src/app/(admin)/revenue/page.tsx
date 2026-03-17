@@ -98,7 +98,7 @@ export default function RevenuePage() {
 
   if (loading && !data) {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-950 text-zinc-500 font-mono text-xs tracking-widest">
+      <div className="flex items-center justify-center py-24 text-slate-500 dark:text-slate-300">
         <Loader2 className="h-4 w-4 animate-spin mr-3 text-indigo-500" />
         Chargement des revenus...
       </div>
@@ -106,20 +106,20 @@ export default function RevenuePage() {
   }
 
   return (
-    <div className="min-h-screen space-y-6 p-6 bg-zinc-950 text-zinc-100">
+    <div className="console-page">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10">
             <Banknote className="h-5 w-5 text-emerald-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Revenus</h1>
-            <p className="text-xs text-zinc-500">Revenus visibles uniquement au sein de votre organisation.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Revenus</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Revenus visibles uniquement au sein de votre organisation.</p>
           </div>
         </div>
 
         <Tabs value={period} onValueChange={(v) => setPeriod(v as any)}>
-          <TabsList className="bg-zinc-900 border border-white/5">
+          <TabsList>
             <TabsTrigger value="24h">24H</TabsTrigger>
             <TabsTrigger value="7d">7J</TabsTrigger>
             <TabsTrigger value="30d">30J</TabsTrigger>
@@ -128,11 +128,11 @@ export default function RevenuePage() {
       </div>
 
       {errorMsg ? (
-        <Card className="bg-zinc-900/40 border-rose-500/20">
+        <Card className="border-rose-500/20 bg-rose-500/10">
           <CardHeader>
-            <CardTitle className="text-rose-300 text-sm">Erreur</CardTitle>
+            <CardTitle className="text-sm text-rose-700 dark:text-rose-300">Erreur</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-zinc-400">
+          <CardContent className="text-xs text-slate-600 dark:text-slate-300">
             {errorMsg}
           </CardContent>
         </Card>
@@ -144,9 +144,9 @@ export default function RevenuePage() {
         <Kpi title="ARPU" value={`${normalized.totals.arpu.toLocaleString()} ${normalized.currency}`} />
       </div>
 
-      <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-md">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white text-sm uppercase tracking-widest font-bold">
+          <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-950 dark:text-white">
             Évolution du revenu
           </CardTitle>
         </CardHeader>
@@ -166,8 +166,9 @@ export default function RevenuePage() {
                   <YAxis stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#09090b",
-                      border: "1px solid #ffffff10",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      color: "#0f172a",
                       fontSize: "12px",
                     }}
                   />
@@ -175,7 +176,7 @@ export default function RevenuePage() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-zinc-600 text-xs font-mono tracking-widest">
+              <div className="flex h-full items-center justify-center text-xs font-mono tracking-widest text-slate-500 dark:text-slate-400">
                 Aucun revenu à afficher pour la période sélectionnée.
               </div>
             )}
@@ -188,14 +189,14 @@ export default function RevenuePage() {
 
 function Kpi({ title, value }: { title: string; value: string }) {
   return (
-    <Card className="bg-zinc-900/40 border-white/5">
+    <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-[10px] font-bold uppercase text-zinc-500 tracking-wider">
+        <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-black text-white tracking-tighter">{value}</div>
+        <div className="text-2xl font-black tracking-tighter text-slate-950 dark:text-white">{value}</div>
       </CardContent>
     </Card>
   );

@@ -1,15 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../_utils/auth";
-import { supabaseUser } from "../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../tenant/_utils";
 import { parseJson, parseQuery } from "../_utils/validate";
 
 export async function GET(req: NextRequest) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
 
   const query = parseQuery(
     req,
@@ -22,12 +18,10 @@ export async function GET(req: NextRequest) {
   const status = query.data.status ?? null;
   const channelId = query.data.channelId ?? null;
 
-  const supa = supabaseUser(ctx.accessToken);
-
-  let q = supa
+  let q = ctx.sb
     .from("streams")
     .select("*, channel:channels(id,name,logo,category)")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .order("created_at", { ascending: false });
 
   if (status) q = q.eq("status", status);
@@ -35,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await q;
   if (error) {
-    console.error("Streams load error", { error: error.message, tenantId: ctx.tenantId });
+    console.error("Streams load error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
@@ -43,11 +37,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "operate_live");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const parsed = await parseJson(
     req,
@@ -70,12 +64,11 @@ export async function POST(req: NextRequest) {
   );
   if (!parsed.ok) return parsed.res;
   const body = parsed.data;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("streams")
     .insert({
-      tenant_id: ctx.tenantId,
+      tenant_id: ctx.tenant_id,
       channel_id: body.channelId,
       title: body.title,
       hls_url: body.hlsUrl,
@@ -95,7 +88,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    console.error("Stream create error", { error: error.message, tenantId: ctx.tenantId });
+    console.error("Stream create error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   return NextResponse.json(data, { status: 201 });

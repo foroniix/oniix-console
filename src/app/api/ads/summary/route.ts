@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
-import { supabaseUser } from "../../_utils/supabase";
+import { requireTenantAccess } from "../../tenant/_utils";
 import { parseQuery } from "../../_utils/validate";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type Bucket = "minute" | "hour";
+type AdEventRow = {
+  event: string | null;
+  campaign_id: string | null;
+  created_at: string | null;
+};
+type AdCampaignRow = {
+  id: string;
+  name: string | null;
+  type: string | null;
+  priority: number | null;
+};
 
 function clamp(n: number, min: number, max: number) {
   return Math.min(Math.max(n, min), max);
@@ -39,12 +49,8 @@ function keyForBucket(d: Date, bucket: Bucket) {
 }
 
 export async function GET(req: Request) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-
-  const ctx = auth.ctx;
-  const tenantRes = await requireTenant(ctx);
-  if (tenantRes) return tenantRes;
+  const ctx = await requireTenantAccess("view_analytics");
+  if (!ctx.ok) return ctx.res;
 
   const query = parseQuery(
     req,
@@ -63,9 +69,8 @@ export async function GET(req: Request) {
   const streamId = query.data.streamId?.trim() || null;
 
   const since = new Date(Date.now() - hours * 3600 * 1000).toISOString();
-  const sb = supabaseUser(ctx.accessToken);
-
-  const tenant_id = ctx.tenantId as string;
+  const sb = ctx.sb;
+  const tenant_id = ctx.tenant_id;
 
   let q = sb
     .from("ad_events")
@@ -83,7 +88,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 400 });
   }
 
-  const list = events ?? [];
+  const list = (events ?? []) as AdEventRow[];
 
   let impressions = 0;
   let clicks = 0;
@@ -92,9 +97,9 @@ export async function GET(req: Request) {
   const campMap = new Map<string, { campaign_id: string; impressions: number; clicks: number }>();
 
   for (const e of list) {
-    const ev = String((e as any).event);
-    const campId = (e as any).campaign_id ? String((e as any).campaign_id) : null;
-    const t = (e as any).created_at ? new Date((e as any).created_at) : null;
+    const ev = String(e.event ?? "");
+    const campId = e.campaign_id ? String(e.campaign_id) : null;
+    const t = e.created_at ? new Date(e.created_at) : null;
 
     if (ev === "IMPRESSION") impressions += 1;
     if (ev === "CLICK") clicks += 1;
@@ -127,11 +132,11 @@ export async function GET(req: Request) {
       .in("id", campaignIds)
       .limit(500);
 
-    for (const c of camps ?? []) {
-      namesById.set(String((c as any).id), {
-        name: String((c as any).name ?? "Campaign"),
-        type: String((c as any).type ?? "unknown"),
-        priority: Number((c as any).priority ?? 0),
+    for (const c of (camps ?? []) as AdCampaignRow[]) {
+      namesById.set(String(c.id), {
+        name: String(c.name ?? "Campaign"),
+        type: String(c.type ?? "unknown"),
+        priority: Number(c.priority ?? 0),
       });
     }
   }

@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
-import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { auditLog } from "../../../_utils/audit";
-import { supabaseUser } from "../../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../../tenant/_utils";
 import { parseJson } from "../../../_utils/validate";
 
 const ReplayStatus = z.enum(["draft", "processing", "ready", "published", "archived"]);
@@ -24,11 +23,11 @@ function isMissingSchemaError(code?: string | null) {
 }
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "operate_live");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await context.params;
   const parsed = await parseJson(
@@ -52,19 +51,18 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   );
   if (!parsed.ok) return parsed.res;
   const body = parsed.data;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data: stream, error: streamError } = await supa
+  const { data: stream, error: streamError } = await ctx.sb
     .from("streams")
     .select("id, title, description, hls_url, poster, channel_id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (streamError) {
     console.error("Replay create stream lookup error", {
       error: streamError.message,
-      tenantId: ctx.tenantId,
+      tenantId: ctx.tenant_id,
       id,
     });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
@@ -108,15 +106,15 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   const shouldEndStream = body.endStream ?? !wantsClipWindow;
   if (shouldEndStream) {
-    const { error: streamUpdateError } = await supa
+    const { error: streamUpdateError } = await ctx.sb
       .from("streams")
       .update({ status: "ENDED", updated_at: new Date().toISOString() })
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", id);
     if (streamUpdateError) {
       console.error("Replay create stream update error", {
         error: streamUpdateError.message,
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenant_id,
         id,
       });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
@@ -135,7 +133,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   if (wantsClipWindow && !sourceHlsUrl) return invalidResponse();
 
   const replayInsert: Record<string, unknown> = {
-    tenant_id: ctx.tenantId,
+    tenant_id: ctx.tenant_id,
     stream_id: id,
     channel_id: body.channelId ?? stream.channel_id ?? null,
     title: body.title?.trim() || stream.title || "Replay",
@@ -148,8 +146,8 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       replayStatus === "published" ? (availableFromIso ?? now) : (availableFromIso ?? null),
     available_to: availableToIso ?? null,
     geo: { allow: [], block: [] },
-    created_by: ctx.userId,
-    updated_by: ctx.userId,
+    created_by: ctx.user_id,
+    updated_by: ctx.user_id,
     created_at: now,
     updated_at: now,
   };
@@ -165,14 +163,14 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
     replayInsert.last_processed_at = null;
   }
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("replays")
     .insert(replayInsert)
     .select("*, stream:streams(id,title,status), channel:channels(id,name,logo,category)")
     .single();
 
   if (error) {
-    console.error("Replay create error", { error: error.message, code: error.code, tenantId: ctx.tenantId, id });
+    console.error("Replay create error", { error: error.message, code: error.code, tenantId: ctx.tenant_id, id });
     if (wantsClipWindow && isMissingSchemaError(error.code)) {
       return NextResponse.json({ error: "Migration manquante pour le mode replay clip." }, { status: 503 });
     }
@@ -189,16 +187,16 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   if (wantsClipWindow) {
     const baseUrl = (body.baseUrl ?? req.nextUrl.origin).replace(/\/$/, "");
-    const { data: job, error: jobError } = await supa
+    const { data: job, error: jobError } = await ctx.sb
       .from("replay_generation_jobs")
       .insert({
-        tenant_id: ctx.tenantId,
+        tenant_id: ctx.tenant_id,
         replay_id: data.id,
         stream_id: id,
         source_hls_url: sourceHlsUrl,
         clip_start_at: clipStartIso,
         clip_end_at: clipEndIso,
-        requested_by: ctx.userId,
+        requested_by: ctx.user_id,
         base_url: baseUrl,
         status: "queued",
         attempts: 0,
@@ -214,19 +212,19 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       console.error("Replay clip job create error", {
         error: jobError.message,
         code: jobError.code,
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenant_id,
         replayId: data.id,
       });
 
-      await supa
+      await ctx.sb
         .from("replays")
         .update({
           replay_status: "draft",
           processing_error: jobError.message,
           updated_at: new Date().toISOString(),
-          updated_by: ctx.userId,
+          updated_by: ctx.user_id,
         })
-        .eq("tenant_id", ctx.tenantId)
+        .eq("tenant_id", ctx.tenant_id)
         .eq("id", data.id);
 
       if (isMissingSchemaError(jobError.code)) {
@@ -240,9 +238,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   if (shouldEndStream) {
     await auditLog({
-      sb: supa,
-      tenantId: ctx.tenantId,
-      actorUserId: ctx.userId,
+      sb: ctx.sb,
+      tenantId: ctx.tenant_id,
+      actorUserId: ctx.user_id,
       action: "STREAM_ENDED_FOR_REPLAY",
       targetType: "stream",
       targetId: id,
@@ -255,9 +253,9 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: wantsClipWindow ? "replay.clip_requested" : "replay.create",
     targetType: "replay",
     targetId: data.id,

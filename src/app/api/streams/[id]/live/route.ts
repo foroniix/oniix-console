@@ -1,16 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { auditLog } from "../../../_utils/audit";
-import { supabaseUser } from "../../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../../tenant/_utils";
 import { parseJson } from "../../../_utils/validate";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "operate_live");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await context.params;
 
@@ -22,42 +21,41 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   );
   if (!parsed.ok) return parsed.res;
   const { status } = parsed.data;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data: beforeStream, error: beforeError } = await supa
+  const { data: beforeStream, error: beforeError } = await ctx.sb
     .from("streams")
     .select("id,status")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .single();
 
   if (beforeError || !beforeStream) {
     if (beforeError) {
-      console.error("Stream status lookup error", { error: beforeError.message, tenantId: ctx.tenantId, id });
+      console.error("Stream status lookup error", { error: beforeError.message, tenantId: ctx.tenant_id, id });
     }
     return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
   }
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("streams")
     .update({
       status,
       updated_at: new Date().toISOString(),
     })
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select()
     .single();
 
   if (error) {
-    console.error("Stream status update error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Stream status update error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "STREAM_STATUS_UPDATED",
     targetType: "stream",
     targetId: id,

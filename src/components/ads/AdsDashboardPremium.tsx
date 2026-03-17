@@ -1,12 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Eye, MousePointerClick, TrendingUp, Radio, Tv2, RefreshCw } from "lucide-react";
-import { useAdsRealtime } from "@/lib/ads/useAdsRealtime";
-import { usePresenceCount } from "@/lib/realtime/usePresenceCount";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -16,6 +10,21 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  Eye,
+  Loader2,
+  MousePointerClick,
+  Radio,
+  RefreshCw,
+  TrendingUp,
+  Tv2,
+} from "lucide-react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { useAdsRealtime } from "@/lib/ads/useAdsRealtime";
+import { usePresenceCount } from "@/lib/realtime/usePresenceCount";
 
 type SummaryResponse =
   | {
@@ -39,203 +48,235 @@ type SummaryResponse =
   | { ok: false; error: string };
 
 type ChannelRow = { id: string; name: string; logo?: string | null };
-type StreamRow = { id: string; title: string; channelId?: string | null; channel_id?: string | null };
+type StreamRow = { id: string; title: string; channelId: string | null };
 
-function fmt(n: number) {
-  return (n ?? 0).toLocaleString();
+type IconComponent = React.ComponentType<{ className?: string }>;
+
+function fmt(value: number) {
+  return (value ?? 0).toLocaleString("fr-FR");
 }
 
-function timeLabel(t: string) {
-  const parts = t.split(" ");
-  if (parts.length === 2) return parts[1];
-  return t;
+function timeLabel(value: string) {
+  const parts = value.split(" ");
+  return parts.length === 2 ? parts[1] : value;
 }
 
 function eventLabel(event: string) {
-  const key = (event || "").toUpperCase();
+  const key = event.toUpperCase();
   if (key === "IMPRESSION") return "Impression";
   if (key === "CLICK") return "Clic";
-  if (key === "START") return "Debut";
+  if (key === "START") return "Début";
   if (key === "COMPLETE") return "Fin";
-  if (key === "SKIP") return "Ignore";
-  return "Activite";
+  if (key === "SKIP") return "Ignoré";
+  return "Activité";
 }
 
-export default function AdsDashboardPremium(props: { accessToken: string | null; tenantId: string | null }) {
-  const { accessToken, tenantId } = props;
+function mapChannelRow(row: unknown): ChannelRow | null {
+  const value = row as Record<string, unknown>;
+  const id = String(value.id ?? "").trim();
+  const name = String(value.name ?? "").trim();
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    logo: typeof value.logo === "string" ? value.logo : null,
+  };
+}
 
+function mapStreamRow(row: unknown): StreamRow | null {
+  const value = row as Record<string, unknown>;
+  const id = String(value.id ?? "").trim();
+  if (!id) return null;
+  return {
+    id,
+    title: String(value.title ?? "Diffusion"),
+    channelId:
+      typeof value.channel_id === "string"
+        ? value.channel_id
+        : typeof value.channelId === "string"
+          ? value.channelId
+          : null,
+  };
+}
+
+export default function AdsDashboardPremium() {
   const [period, setPeriod] = useState<"24h" | "7d" | "30d">("24h");
-  const hours = period === "24h" ? 24 : period === "7d" ? 168 : 720;
-
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingFilters, setLoadingFilters] = useState(true);
+  const [error, setError] = useState("");
 
   const [channels, setChannels] = useState<ChannelRow[]>([]);
   const [streams, setStreams] = useState<StreamRow[]>([]);
-  const [loadingFilters, setLoadingFilters] = useState(true);
+  const [selectedChannelId, setSelectedChannelId] = useState("");
+  const [selectedStreamId, setSelectedStreamId] = useState("");
 
-  const [selectedChannelId, setSelectedChannelId] = useState<string>(""); // "" => all tenant
-  const [selectedStreamId, setSelectedStreamId] = useState<string>(""); // "" => all streams
+  const hours = period === "24h" ? 24 : period === "7d" ? 168 : 720;
 
-  // ✅ realtime counters + feed
   const { counters, events } = useAdsRealtime({
-    accessToken,
-    tenantId,
     channelId: selectedChannelId || null,
     streamId: selectedStreamId || null,
-    enabled: !!accessToken && !!tenantId,
+    enabled: true,
+    windowSec: 300,
   });
 
-  // ✅ Presence monitor (only if stream selected)
   const { count: liveViewers, status: liveStatus } = usePresenceCount({
-    accessToken,
-    channelName: selectedStreamId ? `live_views_${selectedStreamId}` : null,
-    enabled: !!accessToken && !!tenantId && !!selectedStreamId,
+    streamId: selectedStreamId || null,
+    enabled: Boolean(selectedStreamId),
+    windowSec: 35,
   });
 
-  const refreshSummary = async () => {
-    if (!accessToken || !tenantId) return;
+  const refreshSummary = useCallback(async () => {
     setLoading(true);
+    setError("");
 
     try {
-      const qs = new URLSearchParams();
-      qs.set("hours", String(hours));
-      qs.set("bucket", "hour");
+      const params = new URLSearchParams({
+        hours: String(hours),
+        bucket: "hour",
+      });
 
-      if (selectedStreamId) qs.set("streamId", selectedStreamId);
-      else if (selectedChannelId) qs.set("channelId", selectedChannelId);
+      if (selectedStreamId) params.set("streamId", selectedStreamId);
+      else if (selectedChannelId) params.set("channelId", selectedChannelId);
 
-      const res = await fetch(`/api/ads/summary?${qs.toString()}`, { cache: "no-store" });
+      const res = await fetch(`/api/ads/summary?${params.toString()}`, {
+        cache: "no-store",
+      });
       const json = (await res.json().catch(() => null)) as SummaryResponse | null;
-      if (json) setSummary(json);
+
+      if (!res.ok || !json) {
+        setError("Impossible de charger le tableau de bord publicitaire.");
+        return;
+      }
+
+      setSummary(json);
+      if (!("ok" in json) || !json.ok) {
+        setError(json.error || "Impossible de charger le tableau de bord publicitaire.");
+      }
+    } catch {
+      setError("Impossible de charger le tableau de bord publicitaire.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [hours, selectedChannelId, selectedStreamId]);
 
-  // Load channels + streams (tenant scope)
   useEffect(() => {
-    if (!accessToken || !tenantId) return;
+    let cancelled = false;
 
-    let mounted = true;
-    (async () => {
+    const loadFilters = async () => {
       setLoadingFilters(true);
       try {
-        const [cRes, sRes] = await Promise.all([
+        const [channelsRes, streamsRes] = await Promise.all([
           fetch("/api/channels", { cache: "no-store" }).catch(() => null),
           fetch("/api/streams", { cache: "no-store" }).catch(() => null),
         ]);
 
-        const cJson = cRes ? await cRes.json().catch(() => []) : [];
-        const sJson = sRes ? await sRes.json().catch(() => []) : [];
+        const channelsJson = channelsRes ? await channelsRes.json().catch(() => []) : [];
+        const streamsJson = streamsRes ? await streamsRes.json().catch(() => []) : [];
 
-        if (!mounted) return;
+        if (cancelled) return;
 
-        const cList: ChannelRow[] = Array.isArray(cJson) ? cJson : [];
-        const sList: StreamRow[] = Array.isArray(sJson) ? sJson : [];
+        const nextChannels = Array.isArray(channelsJson)
+          ? channelsJson.map(mapChannelRow).filter((row): row is ChannelRow => row !== null)
+          : [];
 
-        setChannels(cList.map((c) => ({ id: String(c.id), name: String(c.name ?? "Channel"), logo: (c as any).logo ?? null })));
-        setStreams(
-          sList.map((s) => ({
-            id: String((s as any).id),
-            title: String((s as any).title ?? "Stream"),
-            channelId: String((s as any).channelId ?? (s as any).channel_id ?? ""),
-            channel_id: String((s as any).channel_id ?? (s as any).channelId ?? ""),
-          }))
-        );
+        const nextStreams = Array.isArray(streamsJson)
+          ? streamsJson.map(mapStreamRow).filter((row): row is StreamRow => row !== null)
+          : [];
+
+        setChannels(nextChannels);
+        setStreams(nextStreams);
       } finally {
-        if (mounted) setLoadingFilters(false);
+        if (!cancelled) setLoadingFilters(false);
       }
-    })();
+    };
+
+    void loadFilters();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
-  }, [accessToken, tenantId]);
+  }, []);
 
-  // When channel changes -> reset stream selection
   useEffect(() => {
     setSelectedStreamId("");
   }, [selectedChannelId]);
 
-  // Refresh summary when filters or period change
   useEffect(() => {
-    refreshSummary();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, tenantId, hours, selectedChannelId, selectedStreamId]);
+    void refreshSummary();
+    const timer = window.setInterval(() => {
+      void refreshSummary();
+    }, 30_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [refreshSummary]);
 
   const visibleStreams = useMemo(() => {
     if (!selectedChannelId) return streams;
-    return streams.filter((s) => (s.channelId || s.channel_id || "") === selectedChannelId);
-  }, [streams, selectedChannelId]);
-
-  const baseImp = summary && "ok" in summary && summary.ok ? summary.kpi.impressions : 0;
-  const baseClk = summary && "ok" in summary && summary.ok ? summary.kpi.clicks : 0;
-
-  const liveImp = counters.impressions;
-  const liveClk = counters.clicks;
-
-  const totalImp = baseImp + liveImp;
-  const totalClk = baseClk + liveClk;
-  const ctr = totalImp > 0 ? (totalClk / totalImp) * 100 : 0;
+    return streams.filter((stream) => (stream.channelId ?? "") === selectedChannelId);
+  }, [selectedChannelId, streams]);
 
   const chartData = useMemo(() => {
     if (!summary || !("ok" in summary) || !summary.ok) return [];
-    return summary.timeseries.map((x) => ({ ...x, timeLabel: timeLabel(x.time) }));
+    return summary.timeseries.map((item) => ({
+      ...item,
+      timeLabel: timeLabel(item.time),
+    }));
   }, [summary]);
 
   const scopeLabel = useMemo(() => {
     if (selectedStreamId) {
-      const s = streams.find((x) => x.id === selectedStreamId);
-      return s?.title ? `Diffusion - ${s.title}` : "Diffusion selectionnee";
+      const stream = streams.find((item) => item.id === selectedStreamId);
+      return stream?.title ? `Diffusion · ${stream.title}` : "Diffusion sélectionnée";
     }
-    if (selectedChannelId) {
-      const c = channels.find((x) => x.id === selectedChannelId);
-      return c ? `Chaine - ${c.name}` : "Chaine selectionnee";
-    }
-    return "Organisation - toutes les chaines";
-  }, [selectedChannelId, selectedStreamId, channels, streams]);
 
-  if (!accessToken || !tenantId) {
-    return (
-      <div className="p-6 text-zinc-500 text-sm">
-        Session expiree. Veuillez vous reconnecter pour acceder au tableau de bord.
-      </div>
-    );
-  }
+    if (selectedChannelId) {
+      const channel = channels.find((item) => item.id === selectedChannelId);
+      return channel?.name ? `Chaîne · ${channel.name}` : "Chaîne sélectionnée";
+    }
+
+    return "Organisation · toutes les chaînes";
+  }, [channels, selectedChannelId, selectedStreamId, streams]);
+
+  const baseImpressions = summary && "ok" in summary && summary.ok ? summary.kpi.impressions : 0;
+  const baseClicks = summary && "ok" in summary && summary.ok ? summary.kpi.clicks : 0;
+  const totalImpressions = baseImpressions + counters.impressions;
+  const totalClicks = baseClicks + counters.clicks;
+  const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
   return (
-    <div className="min-h-screen p-6 bg-zinc-950 text-zinc-100 space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div className="console-page">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Publicités</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Publicité</h1>
 
-            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-rose-500/10 border border-rose-500/20">
+            <div className="flex items-center gap-2 rounded-md border border-rose-500/20 bg-rose-500/10 px-2 py-1">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute h-full w-full rounded-full bg-rose-400 opacity-60"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
               </span>
-              <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">En direct</span>
-              <span className="text-[10px] text-zinc-400">
-                +{fmt(liveImp)} impressions - +{fmt(liveClk)} clics
+              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">Fenêtre live</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                {fmt(counters.impressions)} impressions · {fmt(counters.clicks)} clics
               </span>
             </div>
 
-            <div className="text-[10px] px-2 py-1 rounded-md border border-white/10 bg-white/5 text-zinc-300 uppercase tracking-widest">
+            <div className="rounded-xl border border-slate-200/80 bg-white/80 px-2.5 py-1 text-[10px] uppercase tracking-widest text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
               {scopeLabel}
             </div>
           </div>
 
-          <p className="text-sm text-zinc-500">
-            Suivez la performance publicitaire en temps reel, avec filtres par chaine et diffusion.
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Suivez la performance publicitaire avec des données serveur actualisées en continu.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as any)}>
-            <TabsList className="bg-zinc-900 border border-white/5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Tabs value={period} onValueChange={(value) => setPeriod(value as typeof period)}>
+            <TabsList className="border border-slate-200 bg-slate-100/90 dark:border-white/10 dark:bg-white/[0.04]">
               <TabsTrigger value="24h">24H</TabsTrigger>
               <TabsTrigger value="7d">7J</TabsTrigger>
               <TabsTrigger value="30d">30J</TabsTrigger>
@@ -244,9 +285,8 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
 
           <button
             type="button"
-            onClick={refreshSummary}
-            className="inline-flex items-center gap-2 h-10 px-3 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-xs text-zinc-200 transition-colors"
-            title="Rafraîchir"
+            onClick={() => void refreshSummary()}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
           >
             <RefreshCw className="h-4 w-4" />
             Rafraîchir
@@ -254,63 +294,60 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
         </div>
       </div>
 
-      {/* FILTER BAR */}
-      <Card className="bg-zinc-900/30 border-white/5">
+      <Card>
         <CardContent className="py-4">
-          <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2 text-xs text-zinc-400">
-              <Tv2 className="h-4 w-4 text-zinc-500" />
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Tv2 className="h-4 w-4 text-slate-400 dark:text-slate-500" />
               <span className="uppercase tracking-widest">Filtre</span>
-              <span className="text-zinc-600">—</span>
-              <span className="text-zinc-300">{scopeLabel}</span>
+              <span className="text-slate-300 dark:text-slate-600">·</span>
+              <span className="text-slate-700 dark:text-slate-200">{scopeLabel}</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full lg:w-[560px]">
-              {/* Channel select */}
+            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2 lg:w-[560px]">
               <div className="space-y-1">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500">Chaine</div>
+                <div className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Chaîne</div>
                 <select
                   value={selectedChannelId}
-                  onChange={(e) => setSelectedChannelId(e.target.value)}
+                  onChange={(event) => setSelectedChannelId(event.target.value)}
                   disabled={loadingFilters}
-                  className="h-10 w-full rounded-md bg-zinc-950/60 border border-white/10 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
                 >
-                  <option value="">Toutes les chaines</option>
-                  {channels.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
+                  <option value="">Toutes les chaînes</option>
+                  {channels.map((channel) => (
+                    <option key={channel.id} value={channel.id}>
+                      {channel.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Stream select */}
               <div className="space-y-1">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500">Diffusion</div>
+                <div className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">Diffusion</div>
                 <select
                   value={selectedStreamId}
-                  onChange={(e) => setSelectedStreamId(e.target.value)}
+                  onChange={(event) => setSelectedStreamId(event.target.value)}
                   disabled={loadingFilters || visibleStreams.length === 0}
-                  className="h-10 w-full rounded-md bg-zinc-950/60 border border-white/10 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white"
                 >
                   <option value="">Toutes les diffusions</option>
-                  {visibleStreams.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.title || "Diffusion"}
+                  {visibleStreams.map((stream) => (
+                    <option key={stream.id} value={stream.id}>
+                      {stream.title || "Diffusion"}
                     </option>
                   ))}
                 </select>
 
-                <div className="text-[10px] text-zinc-600">
+                <div className="text-[10px] text-slate-500 dark:text-slate-400">
                   {selectedStreamId ? (
                     <span>
                       Audience :{" "}
-                      <span className="text-zinc-300">
-                        {liveStatus === "live" ? `${fmt(liveViewers)} spectateurs` : "connexion..."}
+                      <span className="text-slate-700 dark:text-slate-200">
+                        {liveStatus === "live" ? `${fmt(liveViewers)} spectateurs` : "Synchronisation..."}
                       </span>
                     </span>
                   ) : (
-                    <span>Choisissez une diffusion pour activer le compteur d'audience.</span>
+                    <span>Choisissez une diffusion pour afficher l&apos;audience live.</span>
                   )}
                 </div>
               </div>
@@ -319,34 +356,44 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
         </CardContent>
       </Card>
 
-      {/* KPI ROW */}
+      {error ? (
+        <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-4">
-        <KpiCard title="Impressions" value={fmt(totalImp)} sub={`En direct +${fmt(liveImp)}`} icon={Eye} />
-        <KpiCard title="Clics" value={fmt(totalClk)} sub={`En direct +${fmt(liveClk)}`} icon={MousePointerClick} />
-        <KpiCard title="Taux de clic" value={`${ctr.toFixed(2)}%`} sub="Clics / Impressions" icon={TrendingUp} />
+        <KpiCard title="Impressions" value={fmt(totalImpressions)} sub={`Fenetre live ${fmt(counters.impressions)}`} icon={Eye} />
+        <KpiCard title="Clics" value={fmt(totalClicks)} sub={`Fenetre live ${fmt(counters.clicks)}`} icon={MousePointerClick} />
+        <KpiCard title="CTR" value={`${ctr.toFixed(2)}%`} sub="Clics / Impressions" icon={TrendingUp} />
         <KpiCard
-          title="Audience en direct"
+          title="Audience live"
           value={selectedStreamId ? fmt(liveViewers) : "-"}
-          sub={selectedStreamId ? (liveStatus === "live" ? "audience en direct" : "connexion...") : "selectionnez une diffusion"}
+          sub={
+            selectedStreamId
+              ? liveStatus === "live"
+                ? "Audience sur 35 secondes"
+                : "Synchronisation..."
+              : "Sélectionnez une diffusion"
+          }
           icon={Radio}
           highlight
         />
       </div>
 
-      {/* Chart + Top */}
       <div className="grid gap-4 md:grid-cols-7">
-        <Card className="md:col-span-5 bg-zinc-900/40 border-white/5 backdrop-blur-md">
+        <Card className="md:col-span-5">
           <CardHeader className="flex flex-row items-center justify-between gap-3">
-            <CardTitle className="text-sm uppercase tracking-widest text-white">Performance</CardTitle>
-            <div className="text-[10px] text-zinc-500 uppercase tracking-widest">
-              {summary && "ok" in summary && summary.ok ? `Depuis ${new Date(summary.since).toLocaleString()}` : "—"}
+            <CardTitle className="text-sm uppercase tracking-widest text-slate-950 dark:text-white">Performance</CardTitle>
+            <div className="text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              {summary && "ok" in summary && summary.ok ? `Depuis ${new Date(summary.since).toLocaleString("fr-FR")}` : "-"}
             </div>
           </CardHeader>
 
           <CardContent className="pl-0">
             {loading ? (
-              <div className="h-[320px] flex items-center justify-center text-zinc-500 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Chargement…
+              <div className="flex h-[320px] items-center justify-center text-sm text-slate-500 dark:text-slate-400">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Chargement...
               </div>
             ) : summary && "ok" in summary && summary.ok ? (
               <div className="h-[320px] w-full">
@@ -363,16 +410,17 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
                       </linearGradient>
                     </defs>
 
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff10" />
+                    <CartesianGrid stroke="#ffffff10" strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="timeLabel" stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
                     <YAxis stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "#09090b",
-                        border: "1px solid #ffffff15",
-                        fontSize: "12px",
-                      }}
-                    />
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      color: "#0f172a",
+                      fontSize: "12px",
+                    }}
+                  />
 
                     <Area type="monotone" dataKey="impressions" strokeWidth={2} fill="url(#impGrad)" />
                     <Area type="monotone" dataKey="clicks" strokeWidth={2} fill="url(#clkGrad)" />
@@ -380,78 +428,81 @@ export default function AdsDashboardPremium(props: { accessToken: string | null;
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[320px] flex items-center justify-center text-zinc-500 text-sm">
+              <div className="flex h-[320px] items-center justify-center text-sm text-slate-500 dark:text-slate-400">
                 Données indisponibles.
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 bg-zinc-900/40 border-white/5">
+        <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="text-sm uppercase tracking-widest text-white">Top campagnes</CardTitle>
+            <CardTitle className="text-sm uppercase tracking-widest text-slate-950 dark:text-white">Top campagnes</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-2">
             {loading ? (
-              <div className="flex items-center text-zinc-500 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Sync…
+              <div className="flex items-center text-sm text-slate-500 dark:text-slate-400">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Synchronisation...
               </div>
             ) : summary && "ok" in summary && summary.ok ? (
               summary.topCampaigns.length === 0 ? (
-                <div className="text-zinc-600 text-sm py-6 text-center">Aucune campagne.</div>
+                <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">Aucune campagne.</div>
               ) : (
-                summary.topCampaigns.map((c) => (
-                  <div key={c.campaign_id} className="rounded-lg border border-white/10 bg-zinc-950/40 p-3">
+                summary.topCampaigns.map((campaign) => (
+                  <div key={campaign.campaign_id} className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/[0.04]">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-white truncate">{c.name}</div>
-                        <div className="text-[10px] text-zinc-500 truncate">Type : {c.type} - Priorite : {c.priority}</div>
+                        <div className="truncate text-xs font-semibold text-slate-950 dark:text-white">{campaign.name}</div>
+                        <div className="truncate text-[10px] text-slate-500 dark:text-slate-400">
+                          Type : {campaign.type} · Priorité : {campaign.priority}
+                        </div>
                       </div>
-                      <div className="text-[10px] text-zinc-400 font-mono">{c.ctr.toFixed(2)}%</div>
+                      <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{campaign.ctr.toFixed(2)}%</div>
                     </div>
 
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-zinc-400">
-                      <div className="rounded-md bg-white/5 border border-white/10 px-2 py-1">
-                        Impressions <span className="text-white font-semibold">{fmt(c.impressions)}</span>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                      <div className="rounded-xl border border-slate-200/80 bg-white px-2 py-1 dark:border-white/10 dark:bg-white/[0.05]">
+                        Impressions <span className="font-semibold text-slate-950 dark:text-white">{fmt(campaign.impressions)}</span>
                       </div>
-                      <div className="rounded-md bg-white/5 border border-white/10 px-2 py-1">
-                        Clics <span className="text-white font-semibold">{fmt(c.clicks)}</span>
+                      <div className="rounded-xl border border-slate-200/80 bg-white px-2 py-1 dark:border-white/10 dark:bg-white/[0.05]">
+                        Clics <span className="font-semibold text-slate-950 dark:text-white">{fmt(campaign.clicks)}</span>
                       </div>
                     </div>
                   </div>
                 ))
               )
             ) : (
-              <div className="text-zinc-600 text-sm py-6 text-center">Erreur.</div>
+              <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">Erreur.</div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Live events feed */}
-      <Card className="bg-zinc-900/40 border-white/5">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-sm uppercase tracking-widest text-white">Activite en direct</CardTitle>
-          <div className="text-[10px] text-zinc-500">
-            {events.length > 0 ? `Derniere activite : ${new Date(events[0].created_at).toLocaleTimeString()}` : "—"}
+          <CardTitle className="text-sm uppercase tracking-widest text-slate-950 dark:text-white">Activité récente</CardTitle>
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">
+            {counters.lastEventAt ? `Dernier événement : ${new Date(counters.lastEventAt).toLocaleTimeString("fr-FR")}` : "-"}
           </div>
         </CardHeader>
 
         <CardContent>
           {events.length === 0 ? (
-            <div className="text-zinc-600 text-sm py-6 text-center">Aucune activite recente pour le moment.</div>
+            <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité récente.</div>
           ) : (
             <div className="space-y-2">
-              {events.slice(0, 25).map((e) => (
+              {events.slice(0, 25).map((event) => (
                 <div
-                  key={e.id}
-                  className="flex items-center justify-between rounded-lg bg-white/5 border border-white/10 px-3 py-2"
+                  key={event.id}
+                  className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]"
                 >
-                  <div className="text-xs text-zinc-200">
-                    <span className="font-bold text-white">{eventLabel(e.event)}</span>
+                  <div className="text-xs text-slate-700 dark:text-slate-300">
+                    <span className="font-bold text-slate-950 dark:text-white">{eventLabel(event.event)}</span>
                   </div>
-                  <div className="text-[11px] text-zinc-500">{new Date(e.created_at).toLocaleTimeString()}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {new Date(event.created_at).toLocaleTimeString("fr-FR")}
+                  </div>
                 </div>
               ))}
             </div>
@@ -472,18 +523,23 @@ function KpiCard({
   title: string;
   value: string;
   sub: string;
-  icon: any;
+  icon: IconComponent;
   highlight?: boolean;
 }) {
   return (
-    <Card className={cn("bg-zinc-900/40 border-white/5", highlight ? "border-indigo-500/25 ring-1 ring-indigo-500/10" : "")}>
+    <Card
+      className={cn(
+        "",
+        highlight ? "border-indigo-500/25 ring-1 ring-indigo-500/10" : ""
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-[10px] font-bold uppercase text-zinc-500 tracking-widest">{title}</CardTitle>
-        <Icon className={cn("h-4 w-4", highlight ? "text-indigo-400" : "text-zinc-600")} />
+        <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">{title}</CardTitle>
+        <Icon className={cn("h-4 w-4", highlight ? "text-indigo-500" : "text-slate-400 dark:text-slate-500")} />
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-black tracking-tight text-white">{value}</div>
-        <div className="mt-1 text-[11px] text-zinc-500">{sub}</div>
+        <div className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">{value}</div>
+        <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{sub}</div>
       </CardContent>
     </Card>
   );

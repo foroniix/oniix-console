@@ -1,41 +1,45 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as React from "react";
 import {
   Activity,
-  Clock,
-  Loader2,
+  ArrowUpRight,
+  Clock3,
+  Monitor,
   Radio,
   RefreshCw,
+  Smartphone,
+  Tablet,
   Users,
-  ChevronRight,
-  Sparkles
+  Wifi,
+  Zap,
 } from "lucide-react";
 import {
   Area,
   AreaChart,
-  Cell,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
+  YAxis,
 } from "recharts";
-import { createClient } from "@supabase/supabase-js";
 
-import { Button } from "@/components/ui/button";
+import { useConsoleIdentity } from "@/components/layout/console-identity";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -43,843 +47,898 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { useAnalyticsLiveSnapshot } from "@/lib/realtime/useAnalyticsLiveSnapshot";
+import { cn } from "@/lib/utils";
+
+type Period = "24h" | "7d" | "30d";
+
+type ChannelRecord = {
+  id: string;
+  name: string;
+  category?: string | null;
+};
+
+type StreamRecord = {
+  id: string;
+  title?: string | null;
+  channel_id?: string | null;
+};
 
 type DashboardData = {
-  live: { activeUsers: number; currentStreams: Record<string, number> };
-  traffic: { time: string; viewers: number }[];
-  devices?: { name: string; value: number; color?: string }[];
-  recentEvents?: { message: string; time: string }[];
-  kpi: { totalUsers: number; totalEvents: number; watchTime: number; retention?: number };
+  traffic: Array<{ time: string; viewers: number }>;
+  devices: Array<{ name: string; value: number }>;
+  platforms: Array<{
+    name: string;
+    value: number;
+    sessions: number;
+    watchTime: number;
+    watchTimeSeconds?: number;
+    watchTimeLabel?: string;
+  }>;
+  kpi: {
+    totalUsers: number;
+    totalEvents: number;
+    watchTime: number;
+    watchTimeSeconds?: number;
+    watchTimeLabel?: string;
+    retention: number;
+  };
+  recentEvents: Array<{ message: string; time: string }>;
+  live: {
+    activeUsers: number;
+    currentStreams: Record<string, number>;
+  };
 };
 
-type RealtimeEventRow = {
-  tenant_id: string;
-  stream_id: string | null;
-  session_id: string;
-  user_id: string | null;
-  event_type: string;
-  device: string | null;
-  created_at: string;
+const PERIOD_OPTIONS: Array<{ value: Period; label: string }> = [
+  { value: "24h", label: "24 h" },
+  { value: "7d", label: "7 j" },
+  { value: "30d", label: "30 j" },
+];
+
+const PLATFORM_COLORS: Record<string, string> = {
+  "App mobile": "#2563EB",
+  Web: "#14B8A6",
 };
 
-type DashboardPeriod = "24h" | "7d" | "30d";
-type ChannelOption = { id: string; name: string };
-
-type IconComponent = React.ComponentType<{ className?: string }>;
-
-type RealtimeChannelLike = {
-  unsubscribe: () => unknown;
+const DEVICE_COLORS: Record<string, string> = {
+  Mobile: "#2563EB",
+  Desktop: "#7C3AED",
+  Tablet: "#14B8A6",
 };
 
-type RealtimeClientLike = ReturnType<typeof createClient>;
+const panelClass =
+  "rounded-[28px] border border-slate-200/80 bg-white/85 shadow-[0_20px_55px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-white/[0.04] dark:shadow-none";
 
-type RealtimePayload = {
-  new?: RealtimeEventRow;
-};
-
-const DEVICE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444"];
-
-function safeNumber(v: unknown, fallback = 0) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
+function createEmptyDashboardData(): DashboardData {
+  return {
+    traffic: [],
+    devices: [],
+    platforms: [],
+    kpi: {
+      totalUsers: 0,
+      totalEvents: 0,
+      watchTime: 0,
+      watchTimeSeconds: 0,
+      watchTimeLabel: "0s",
+      retention: 0,
+    },
+    recentEvents: [],
+    live: { activeUsers: 0, currentStreams: {} },
+  };
 }
 
-function formatCompact(n: number) {
-  try {
-    return new Intl.NumberFormat("fr-FR", { notation: "compact" }).format(n);
-  } catch {
-    return String(n);
+function isDashboardData(value: unknown): value is DashboardData {
+  if (!value || typeof value !== "object") return false;
+  return "traffic" in value && "devices" in value && "platforms" in value && "kpi" in value;
+}
+
+function safeNumber(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("fr-FR").format(Math.max(0, safeNumber(value)));
+}
+
+function formatCompact(value: number) {
+  return new Intl.NumberFormat("fr-FR", {
+    notation: "compact",
+    maximumFractionDigits: value >= 1000 ? 1 : 0,
+  }).format(Math.max(0, safeNumber(value)));
+}
+
+function formatPercent(value: number) {
+  return `${Math.round(Math.max(0, safeNumber(value)))}%`;
+}
+
+function formatWatchTime(label?: string | null, minutes?: number, seconds?: number) {
+  const trimmed = label?.trim();
+  if (trimmed) return trimmed;
+
+  const totalSeconds = safeNumber(seconds) > 0 ? safeNumber(seconds) : safeNumber(minutes) * 60;
+  if (totalSeconds <= 0) return "0s";
+  if (totalSeconds < 60) return `${Math.round(totalSeconds)}s`;
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = Math.round(totalSeconds % 60);
+
+  if (hours > 0) {
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   }
+
+  return mins < 10 && secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
-function formatNumber(n: number) {
-  try {
-    return new Intl.NumberFormat("fr-FR").format(n);
-  } catch {
-    return String(n);
-  }
+function formatSyncClock(iso: string | null | undefined) {
+  const parsed = Date.parse(iso ?? "");
+  if (!Number.isFinite(parsed)) return "--:--:--";
+  return new Date(parsed).toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
-function formatWatchTimeMinutes(min: number) {
-  const m = safeNumber(min, 0);
-  if (m <= 0) return "0m";
-  const h = Math.floor(m / 60);
-  const mm = Math.round(m % 60);
-  return h > 0 ? `${h}h ${mm}m` : `${mm}m`;
+function formatRelativeDuration(iso: string | null | undefined) {
+  const parsed = Date.parse(iso ?? "");
+  if (!Number.isFinite(parsed)) return "a l'instant";
+
+  const diffSeconds = Math.max(0, Math.round((Date.now() - parsed) / 1000));
+  if (diffSeconds < 10) return "a l'instant";
+  if (diffSeconds < 60) return `il y a ${diffSeconds}s`;
+
+  const minutes = Math.floor(diffSeconds / 60);
+  if (minutes < 60) return `il y a ${minutes}m`;
+  return `il y a ${Math.floor(minutes / 60)}h`;
 }
 
-/* ----------------------------- UI atoms ----------------------------- */
-
-function Pill({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-zinc-200">
-      {children}
-    </div>
-  );
+function deviceIcon(name: string) {
+  if (name === "Mobile") return Smartphone;
+  if (name === "Tablet") return Tablet;
+  return Monitor;
 }
 
-/**
- * StatCard compact — même gabarit visuel que “Total / Actives / Inactives / Catégories”
- * (p-4, valeur text-2xl, pill en haut à droite, icône réduite).
- */
-function StatCard({
-  title,
-  value,
-  tone,
-  icon: Icon,
-  pillLabel = "Live"
-}: {
-  title: string;
-  value: string;
-  tone: "neutral" | "success" | "muted" | "indigo" | "rose";
-  icon: IconComponent;
-  pillLabel?: string;
-}) {
-  const toneClasses =
-    tone === "success"
-      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-100"
-      : tone === "muted"
-      ? "bg-white/5 border-white/10 text-zinc-100"
-      : tone === "indigo"
-      ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-100"
-      : tone === "rose"
-      ? "bg-rose-500/10 border-rose-500/20 text-rose-100"
-      : "bg-white/5 border-white/10 text-zinc-100";
-
-  const iconTone =
-    tone === "success"
-      ? "text-emerald-300"
-      : tone === "indigo"
-      ? "text-indigo-300"
-      : tone === "rose"
-      ? "text-rose-300"
-      : "text-zinc-200";
-
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-4 shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-zinc-400">{title}</p>
-        <span
-          className={`text-xs px-2 py-1 rounded-full border inline-flex items-center gap-2 ${toneClasses}`}
-        >
-          <Icon className={`h-3.5 w-3.5 ${iconTone}`} />
-          {pillLabel}
-        </span>
-      </div>
-
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-white">
-        {value}
-      </div>
-
-      <p className="mt-1 text-xs text-zinc-500">Mise à jour continue</p>
-    </div>
-  );
-}
-
-function SegTabs({
-  value,
-  onChange
-}: {
-  value: DashboardPeriod;
-  onChange: (v: DashboardPeriod) => void;
-}) {
-  return (
-    <Tabs
-      value={value}
-      onValueChange={(v) => {
-        if (v === "24h" || v === "7d" || v === "30d") onChange(v);
-      }}
-    >
-      <TabsList className="h-9 bg-zinc-900/50 border border-white/10">
-        <TabsTrigger value="24h">24H</TabsTrigger>
-        <TabsTrigger value="7d">7J</TabsTrigger>
-        <TabsTrigger value="30d">30J</TabsTrigger>
-      </TabsList>
-    </Tabs>
-  );
-}
-
-function SkeletonBlock() {
-  return (
-    <div className="h-full w-full rounded-xl border border-white/10 bg-zinc-950/30 p-5">
-      <div className="space-y-3">
-        <div className="h-3 w-48 animate-pulse rounded bg-white/5" />
-        <div className="h-3 w-full animate-pulse rounded bg-white/5" />
-        <div className="h-3 w-4/5 animate-pulse rounded bg-white/5" />
-        <div className="mt-5 h-36 w-full animate-pulse rounded bg-white/5" />
-      </div>
-    </div>
-  );
-}
-
-/* ----------------------------- Page ----------------------------- */
-
-export default function AnalyticsDashboardPage() {
-  const [period, setPeriod] = useState<DashboardPeriod>("24h");
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [softRefreshing, setSoftRefreshing] = useState(false);
-  const [error, setError] = useState<string>("");
-  const [channels, setChannels] = useState<ChannelOption[]>([]);
-  const [channelFilter, setChannelFilter] = useState<string>("all");
-  const channelFilterRef = useRef<string>("all");
-
-  // realtime caches
-  const lastSeenRef = useRef<Map<string, number>>(new Map());
-  const sessionStreamRef = useRef<Map<string, string | null>>(new Map());
-
-  const LIVE_WINDOW_MS = 45_000;
-
-  useEffect(() => {
-    channelFilterRef.current = channelFilter;
-    lastSeenRef.current.clear();
-    sessionStreamRef.current.clear();
-  }, [channelFilter]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadChannels = async () => {
-      try {
-        const res = await fetch("/api/channels", { cache: "no-store" });
-        if (!res.ok) return;
-        const json = await res.json().catch(() => null);
-        if (!Array.isArray(json)) return;
-        const next = json
-          .map((row) => ({
-            id: String((row as { id?: unknown }).id ?? ""),
-            name: String((row as { name?: unknown }).name ?? "").trim(),
-          }))
-          .filter((row) => row.id.length > 0 && row.name.length > 0);
-        if (cancelled) return;
-        setChannels(next);
-      } catch {
-        // ignore channels load errors
-      }
+function liveStatusMeta(
+  status: "idle" | "connecting" | "live" | "fallback" | "error",
+  transport: "sse" | "poll" | "none"
+) {
+  if (status === "live" && transport === "sse") {
+    return {
+      label: "Flux temps réel",
+      className:
+        "border-emerald-300/80 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300",
+      detail: "Signal direct actif.",
     };
-    void loadChannels();
+  }
+
+  if (status === "fallback" || transport === "poll") {
+    return {
+      label: "Mode secours 5s",
+      className:
+        "border-sky-300/80 bg-sky-50 text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-300",
+      detail: "Le live repasse en polling court.",
+    };
+  }
+
+  if (status === "error") {
+    return {
+      label: "Synchronisation dégradée",
+      className:
+        "border-amber-300/80 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300",
+      detail: "Le dashboard continue en mode secours.",
+    };
+  }
+
+  return {
+    label: "Connexion live",
+    className:
+      "border-slate-300/80 bg-white text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300",
+    detail: "Ouverture du flux live.",
+  };
+}
+
+function MetricCard(props: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent: string;
+}) {
+  const Icon = props.icon;
+
+  return (
+    <div className="rounded-2xl border border-white/50 bg-white/70 p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            {props.label}
+          </div>
+          <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">
+            {props.value}
+          </div>
+          <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">{props.detail}</div>
+        </div>
+        <div
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border"
+          style={{ backgroundColor: `${props.accent}15`, color: props.accent, borderColor: `${props.accent}33` }}
+        >
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AnalyticsDashboard() {
+  const { workspaceId, workspaceName, role, loading: workspaceLoading, switchingWorkspaceId } =
+    useConsoleIdentity();
+
+  const [period, setPeriod] = React.useState<Period>("24h");
+  const [selectedChannelId, setSelectedChannelId] = React.useState("all");
+  const [channels, setChannels] = React.useState<ChannelRecord[]>([]);
+  const [streams, setStreams] = React.useState<StreamRecord[]>([]);
+  const [data, setData] = React.useState<DashboardData>(createEmptyDashboardData);
+  const [error, setError] = React.useState<string | null>(null);
+  const [loadingRefs, setLoadingRefs] = React.useState(false);
+  const [loadingStats, setLoadingStats] = React.useState(false);
+  const [refreshTick, setRefreshTick] = React.useState(0);
+  const [lastLoadedAt, setLastLoadedAt] = React.useState<string | null>(null);
+
+  const deferredPeriod = React.useDeferredValue(period);
+  const deferredChannelId = React.useDeferredValue(selectedChannelId);
+  const chartId = React.useId();
+  const activeChannelId = deferredChannelId !== "all" ? deferredChannelId : null;
+
+  const { snapshot, status, transport, refresh } = useAnalyticsLiveSnapshot({
+    channelId: activeChannelId,
+    enabled: Boolean(workspaceId),
+  });
+
+  React.useEffect(() => {
+    if (workspaceLoading) return;
+    if (!workspaceId) {
+      setChannels([]);
+      setStreams([]);
+      setData(createEmptyDashboardData());
+      setError("Aucun espace de travail actif.");
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingRefs(true);
+    setError(null);
+
+    void (async () => {
+      try {
+        const [channelsRes, streamsRes] = await Promise.all([
+          fetch("/api/channels", { cache: "no-store" }),
+          fetch("/api/streams", { cache: "no-store" }),
+        ]);
+        const channelsJson = (await channelsRes.json().catch(() => null)) as ChannelRecord[] | null;
+        const streamsJson = (await streamsRes.json().catch(() => null)) as StreamRecord[] | null;
+
+        if (!channelsRes.ok || !Array.isArray(channelsJson)) throw new Error("Impossible de charger les chaînes.");
+        if (!streamsRes.ok || !Array.isArray(streamsJson)) throw new Error("Impossible de charger les flux.");
+        if (cancelled) return;
+
+        setChannels(channelsJson);
+        setStreams(streamsJson);
+      } catch (nextError) {
+        if (!cancelled) {
+          setError(nextError instanceof Error ? nextError.message : "Impossible de charger l'analytics.");
+        }
+      } finally {
+        if (!cancelled) setLoadingRefs(false);
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [workspaceId, workspaceLoading, refreshTick]);
 
-  const recomputeLive = () => {
-    const now = Date.now();
+  React.useEffect(() => {
+    if (selectedChannelId === "all") return;
+    if (channels.some((channel) => channel.id === selectedChannelId)) return;
+    setSelectedChannelId("all");
+  }, [channels, selectedChannelId]);
 
-    for (const [sid, ts] of lastSeenRef.current.entries()) {
-      if (now - ts > LIVE_WINDOW_MS) {
-        lastSeenRef.current.delete(sid);
-        sessionStreamRef.current.delete(sid);
-      }
-    }
+  React.useEffect(() => {
+    if (workspaceLoading || !workspaceId) return;
 
-    const currentStreams: Record<string, number> = {};
-    for (const sid of lastSeenRef.current.keys()) {
-      const streamId = sessionStreamRef.current.get(sid);
-      if (!streamId) continue;
-      currentStreams[streamId] = (currentStreams[streamId] ?? 0) + 1;
-    }
+    let cancelled = false;
+    setLoadingStats(true);
+    setError(null);
 
-    setData((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        live: { activeUsers: lastSeenRef.current.size, currentStreams }
-      };
-    });
-  };
-
-  const fetchData = async (soft = false) => {
-    if (soft) setSoftRefreshing(true);
-    else setLoading(true);
-
-    setError("");
-    try {
-      const params = new URLSearchParams({ period });
-      if (channelFilter !== "all") params.set("channelId", channelFilter);
-      const res = await fetch(`/api/analytics/stats?${params.toString()}`, {
-        cache: "no-store"
-      });
-      const json = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        setError(
-          (json && (json.error || json.message)) ||
-            "Impossible de charger les analytics."
-        );
-        return;
-      }
-      if (json) setData(json);
-    } catch {
-      setError("Erreur réseau: impossible de charger les analytics.");
-    } finally {
-      setLoading(false);
-      setSoftRefreshing(false);
-    }
-  };
-
-  const fetchLive = useCallback(async () => {
-    try {
-      const params = new URLSearchParams({ windowSec: "35" });
-      if (channelFilter !== "all") params.set("channelId", channelFilter);
-      const res = await fetch(`/api/analytics/live?${params.toString()}`, { cache: "no-store" });
-      if (!res.ok) return;
-      const json = await res.json().catch(() => null);
-      if (!json?.live) return;
-      setData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          live: {
-            activeUsers: Number(json.live.activeUsers ?? 0),
-            currentStreams: (json.live.currentStreams ?? {}) as Record<string, number>,
-          },
-        };
-      });
-    } catch {
-      // ignore live poll errors
-    }
-  }, [channelFilter]);
-
-  useEffect(() => {
-    fetchData(false);
-    const t = setInterval(() => fetchData(true), 30_000);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, channelFilter]);
-
-  useEffect(() => {
-    fetchLive();
-    const t = setInterval(() => {
-      void fetchLive();
-    }, 10_000);
-    return () => clearInterval(t);
-  }, [fetchLive]);
-
-  // realtime subscription
-  useEffect(() => {
-    let alive = true;
-    let channel: RealtimeChannelLike | null = null;
-    let supabase: RealtimeClientLike | null = null;
-    let purgeTimer: ReturnType<typeof setInterval> | null = null;
-
-    const run = async () => {
+    void (async () => {
       try {
-        const me = await fetch("/api/auth/me", { cache: "no-store" }).then((r) =>
-          r.json()
-        );
-        if (!me?.ok) return;
+        const params = new URLSearchParams({ period: deferredPeriod });
+        if (activeChannelId) params.set("channelId", activeChannelId);
 
-        const tenantId: string | null = me.user?.tenant_id ?? null;
-        if (!tenantId) return;
-
-        const tokenRes = await fetch("/api/auth/realtime-token", {
-          cache: "no-store"
+        const res = await fetch(`/api/analytics/stats?${params.toString()}`, {
+          cache: "no-store",
         });
-        const tokenJson = await tokenRes.json().catch(() => null);
-        if (!tokenRes.ok || !tokenJson?.ok) return;
+        const json = (await res.json().catch(() => null)) as unknown;
 
-        const accessToken = tokenJson.access_token as string;
+        if (!res.ok || !isDashboardData(json)) {
+          throw new Error("Impossible de charger le tableau analytics.");
+        }
 
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-        supabase = createClient(url, anon, {
-          realtime: { params: { eventsPerSecond: 30 } }
+        if (cancelled) return;
+
+        setData({
+          traffic: Array.isArray(json.traffic) ? json.traffic : [],
+          devices: Array.isArray(json.devices) ? json.devices : [],
+          platforms: Array.isArray(json.platforms) ? json.platforms : [],
+          kpi: {
+            totalUsers: safeNumber(json.kpi?.totalUsers),
+            totalEvents: safeNumber(json.kpi?.totalEvents),
+            watchTime: safeNumber(json.kpi?.watchTime),
+            watchTimeSeconds: safeNumber(json.kpi?.watchTimeSeconds),
+            watchTimeLabel: json.kpi?.watchTimeLabel ?? "0s",
+            retention: safeNumber(json.kpi?.retention),
+          },
+          recentEvents: Array.isArray(json.recentEvents) ? json.recentEvents : [],
+          live: {
+            activeUsers: safeNumber(json.live?.activeUsers),
+            currentStreams: json.live?.currentStreams ?? {},
+          },
         });
-
-        supabase.realtime.setAuth(accessToken);
-
-        const baseChannel = supabase.channel(`analytics:${tenantId}`);
-        const pgChannel = baseChannel as unknown as {
-          on: (
-            event: "postgres_changes",
-            filter: {
-              event: "INSERT";
-              schema: "public";
-              table: "analytics_events";
-              filter: string;
-            },
-            callback: (payload: RealtimePayload) => void
-          ) => { subscribe: () => RealtimeChannelLike };
-        };
-
-        channel = pgChannel
-          .on(
-            "postgres_changes",
-            {
-              event: "INSERT",
-              schema: "public",
-              table: "analytics_events",
-              filter: `tenant_id=eq.${tenantId}`,
-            },
-            (payload: RealtimePayload) => {
-              if (!alive) return;
-              if (channelFilterRef.current !== "all") return;
-              const row = payload.new;
-              const eventType = (row?.event_type ?? "").toUpperCase();
-              if (!row?.session_id) return;
-
-              if (eventType === "STOP_STREAM" || eventType === "END_STREAM" || eventType === "END_VIEW") {
-                lastSeenRef.current.delete(row.session_id);
-                sessionStreamRef.current.delete(row.session_id);
-                recomputeLive();
-                return;
-              }
-
-              if (eventType === "START_STREAM" || eventType === "HEARTBEAT") {
-                lastSeenRef.current.set(row.session_id, Date.now());
-                sessionStreamRef.current.set(row.session_id, row.stream_id ?? null);
-                recomputeLive();
-              }
-            }
-          )
-          .subscribe();
-
-        purgeTimer = setInterval(() => {
-          if (!alive) return;
-          recomputeLive();
-        }, 5_000);
-      } catch (e) {
-        console.error("realtime_init_error", e);
+        setLastLoadedAt(new Date().toISOString());
+      } catch (nextError) {
+        if (!cancelled) {
+          setError(nextError instanceof Error ? nextError.message : "Impossible de charger l'analytics.");
+        }
+      } finally {
+        if (!cancelled) setLoadingStats(false);
       }
-    };
-
-    run();
+    })();
 
     return () => {
-      alive = false;
-      try {
-        if (purgeTimer) clearInterval(purgeTimer);
-      } catch {}
-      try {
-        if (channel) channel.unsubscribe();
-      } catch {}
-      try {
-        if (supabase) supabase.removeAllChannels();
-      } catch {}
+      cancelled = true;
     };
-  }, []);
+  }, [workspaceId, workspaceLoading, deferredPeriod, activeChannelId, refreshTick]);
 
-  const kpi = data?.kpi;
-  const live = data?.live;
-
-  const activeUsers = safeNumber(live?.activeUsers, 0);
-  const totalUsers = safeNumber(kpi?.totalUsers, 0);
-  const totalEvents = safeNumber(kpi?.totalEvents, 0);
-  const watchTime = safeNumber(kpi?.watchTime, 0);
-
-  const traffic = useMemo(
-    () => (Array.isArray(data?.traffic) ? data!.traffic : []),
-    [data]
+  const selectedChannel = React.useMemo(
+    () => channels.find((channel) => channel.id === selectedChannelId) ?? null,
+    [channels, selectedChannelId]
   );
 
-  const topStreams = useMemo(() => {
-    const entries = Object.entries(live?.currentStreams ?? {});
-    return entries.sort((a, b) => b[1] - a[1]).slice(0, 6);
-  }, [live?.currentStreams]);
-
-  const devices = useMemo(
-    () => (Array.isArray(data?.devices) ? data.devices : []),
-    [data]
+  const channelMap = React.useMemo(
+    () => new Map(channels.map((channel) => [channel.id, channel])),
+    [channels]
   );
 
-  const recentEvents = useMemo(
-    () => (Array.isArray(data?.recentEvents) ? data.recentEvents : []),
-    [data]
+  const streamMap = React.useMemo(
+    () => new Map(streams.map((stream) => [stream.id, stream])),
+    [streams]
   );
 
-  const topDeviceShare = useMemo(() => {
-    const total = devices.reduce((sum, item) => sum + Number(item.value || 0), 0);
-    if (!total || devices.length === 0) return "0%";
-    const top = [...devices].sort((a, b) => b.value - a.value)[0];
-    return `${Math.round((top.value / total) * 100)}%`;
-  }, [devices]);
+  const livePayload = snapshot?.live ?? data.live;
+  const liveMeta = liveStatusMeta(status, transport);
+  const trafficGradientId = `${chartId}-traffic`;
+  const devicePieId = `${chartId}-devices`;
 
-  const periodLabel = period === "24h" ? "24H" : period === "7d" ? "7J" : "30J";
-  const selectedChannelName =
-    channelFilter === "all"
-      ? "Toutes les chaînes"
-      : channels.find((c) => c.id === channelFilter)?.name ?? "Chaîne";
+  const platformData = React.useMemo(() => {
+    const current = new Map(data.platforms.map((entry) => [entry.name, entry]));
+    return ["App mobile", "Web"].map((name) => {
+      const entry = current.get(name);
+      return {
+        name,
+        value: safeNumber(entry?.value),
+        sessions: safeNumber(entry?.sessions),
+        watchTimeLabel: formatWatchTime(entry?.watchTimeLabel, entry?.watchTime, entry?.watchTimeSeconds),
+        color: PLATFORM_COLORS[name] ?? "#64748B",
+      };
+    });
+  }, [data.platforms]);
+
+  const deviceData = React.useMemo(() => {
+    const current = new Map(data.devices.map((entry) => [entry.name, entry.value]));
+    return ["Mobile", "Desktop", "Tablet"].map((name) => ({
+      name,
+      value: safeNumber(current.get(name)),
+      color: DEVICE_COLORS[name] ?? "#64748B",
+    }));
+  }, [data.devices]);
+
+  const liveStreams = React.useMemo(() => {
+    return Object.entries(livePayload.currentStreams ?? {})
+      .map(([streamId, viewers]) => {
+        const stream = streamMap.get(streamId);
+        const channel = channelMap.get(stream?.channel_id ?? "");
+        return {
+          id: streamId,
+          title: stream?.title?.trim() || channel?.name || "Flux live",
+          channelName: channel?.name || selectedChannel?.name || "Canal non resolu",
+          viewers: safeNumber(viewers),
+        };
+      })
+      .sort((left, right) => right.viewers - left.viewers)
+      .slice(0, 6);
+  }, [channelMap, livePayload.currentStreams, selectedChannel?.name, streamMap]);
+
+  const liveSessions = React.useMemo(() => {
+    const sessions = snapshot?.sessions ?? [];
+    return sessions.slice(0, 6).map((session) => {
+      const stream = session.stream_id ? streamMap.get(session.stream_id) : null;
+      const channel = channelMap.get(stream?.channel_id ?? "");
+      return {
+        id: session.session_id,
+        title: stream?.title?.trim() || channel?.name || "Session live",
+        deviceType: session.device_type?.trim() || "desktop",
+        lastSeenAt: session.last_seen_at,
+      };
+    });
+  }, [channelMap, snapshot?.sessions, streamMap]);
+
+  const averageWatchSeconds =
+    data.kpi.totalUsers > 0 ? safeNumber(data.kpi.watchTimeSeconds) / Math.max(1, data.kpi.totalUsers) : 0;
+  const leadingPlatform =
+    platformData.find((entry) => entry.sessions > 0) ?? platformData[0] ?? { name: "Web", value: 0, sessions: 0, watchTimeLabel: "0s", color: "#64748B" };
+  const dominantDevice =
+    deviceData.reduce((best, current) => (current.value > best.value ? current : best), deviceData[0] ?? {
+      name: "Desktop",
+      value: 0,
+      color: "#64748B",
+    });
+  const busy = workspaceLoading || loadingRefs || loadingStats || Boolean(switchingWorkspaceId);
+
+  const handleRefresh = React.useCallback(() => {
+    setRefreshTick((value) => value + 1);
+    void refresh();
+  }, [refresh]);
+
+  if (workspaceLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-72 animate-pulse rounded-[28px] bg-slate-200/70 dark:bg-white/5" />
+        <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
+          <div className="h-[420px] animate-pulse rounded-[28px] bg-slate-200/70 dark:bg-white/5" />
+          <div className="h-[420px] animate-pulse rounded-[28px] bg-slate-200/70 dark:bg-white/5" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 text-zinc-100">
-        {/* Topbar (compact + sticky) */}
-        <div className="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-zinc-950/70 backdrop-blur-xl border-b border-white/5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0 space-y-2">
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
-                <span className="inline-flex items-center gap-2 text-zinc-300">
-                  <Sparkles className="h-4 w-4 text-indigo-400" />
-                  Oniix Console
-                </span>
-                <ChevronRight className="h-4 w-4 text-zinc-700" />
-                <span className="text-white">Analytics</span>
+    <div className="space-y-6 pb-8">
+      <section className="overflow-hidden rounded-[32px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.16),transparent_34%),radial-gradient(circle_at_top_right,rgba(20,184,166,0.14),transparent_30%),linear-gradient(180deg,#ffffff,rgba(248,250,252,0.98))] p-6 shadow-[0_30px_90px_rgba(15,23,42,0.12)] dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_34%),radial-gradient(circle_at_top_right,rgba(45,212,191,0.14),transparent_30%),linear-gradient(180deg,rgba(10,14,24,0.98),rgba(10,14,24,0.94))] dark:shadow-none">
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
+                Analytics
+              </Badge>
+              <Badge className={cn("border", liveMeta.className)}>
+                <Wifi className="mr-1 h-3 w-3" />
+                {liveMeta.label}
+              </Badge>
+              <Badge variant="outline" className="border-slate-200 bg-white/80 text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300">
+                Workspace · {workspaceName}
+              </Badge>
+            </div>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white md:text-4xl">
+              Intelligence audience
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+              Une refonte plus executive et plus produit, inspirée des surfaces Google Analytics,
+              pour piloter acquisition, engagement et live multi-chaînes.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
+              <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
+                {activeChannelId ? `Filtre · ${selectedChannel?.name ?? "Chaîne sélectionnée"}` : "Vue globale multi-chaînes"}
               </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-white">
-                  Analytics temps réel
-                </h1>
-
-                <Pill>
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-50" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
-                  </span>
-                  <span className="font-semibold">Temps réel</span>
-                  <span className="text-zinc-500">•</span>
-                  <span className="text-zinc-400">
-                    {formatNumber(activeUsers)} actifs
-                  </span>
-                </Pill>
-                <Pill>
-                  <span className="text-zinc-400">Filtre:</span>
-                  <span className="text-zinc-200">{selectedChannelName}</span>
-                </Pill>
-
-                {softRefreshing && (
-                  <Pill>
-                    <Loader2 className="h-4 w-4 animate-spin text-indigo-300" />
-                    <span className="text-zinc-400">Mise à jour…</span>
-                  </Pill>
-                )}
+              <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
+                Rôle · {role}
+              </div>
+              <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
+                Dernière synchro · {formatSyncClock(snapshot?.asOf ?? lastLoadedAt)}
               </div>
             </div>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <Select value={channelFilter} onValueChange={setChannelFilter}>
-                <SelectTrigger className="h-9 w-[220px] border-white/10 bg-white/5 text-zinc-100">
-                  <SelectValue placeholder="Toutes les chaînes" />
-                </SelectTrigger>
-                <SelectContent className="border-white/10 bg-zinc-950 text-zinc-100">
-                  <SelectItem value="all">Toutes les chaînes</SelectItem>
-                  {channels.map((channel) => (
-                    <SelectItem key={channel.id} value={channel.id}>
-                      {channel.name}
-                    </SelectItem>
+          <div className="w-full max-w-xl rounded-[28px] border border-white/50 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.05] xl:ml-6">
+            <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+              <div>
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Periode
+                </div>
+                <div className="flex rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1 dark:border-white/10 dark:bg-white/[0.04]">
+                  {PERIOD_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setPeriod(option.value)}
+                      className={cn(
+                        "flex-1 rounded-xl px-3 py-2 text-sm font-medium transition",
+                        period === option.value
+                          ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
+                          : "text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                      )}
+                    >
+                      {option.label}
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
 
-              <SegTabs value={period} onChange={setPeriod} />
+              <div>
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Chaîne
+                </div>
+                <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
+                  <SelectTrigger className="h-11 w-full rounded-2xl border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
+                    <SelectValue placeholder="Toutes les chaînes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les chaînes</SelectItem>
+                    {channels.map((channel) => (
+                      <SelectItem key={channel.id} value={channel.id}>
+                        {channel.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Button
-                variant="outline"
-                className="h-9 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
-                onClick={() => fetchData(true)}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Rafraîchir
-              </Button>
+              <div className="flex items-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl border-slate-200 bg-white text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100"
+                  onClick={handleRefresh}
+                  disabled={busy}
+                >
+                  <RefreshCw className={cn("h-4 w-4", busy && "animate-spin")} />
+                  Actualiser
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        {error && (
-          <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-            {error}
-          </div>
-        )}
-
-        {/* KPI cards — compact like Channels stats cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title={`Live (${periodLabel})`}
-            value={formatCompact(activeUsers)}
-            tone="rose"
-            icon={Radio}
-          />
-          <StatCard
-            title={`Visiteurs (${periodLabel})`}
-            value={formatCompact(totalUsers)}
-            tone="indigo"
+        <div className="mt-6 grid gap-4 xl:grid-cols-4">
+          <MetricCard
+            label="Utilisateurs"
+            value={formatCompact(data.kpi.totalUsers)}
+            detail={`${formatNumber(data.kpi.totalUsers)} sessions observées`}
             icon={Users}
+            accent="#2563EB"
           />
-          <StatCard
-            title={`Watch time (${periodLabel})`}
-            value={formatWatchTimeMinutes(watchTime)}
-            tone="success"
-            icon={Clock}
+          <MetricCard
+            label="Watch time"
+            value={formatWatchTime(data.kpi.watchTimeLabel, data.kpi.watchTime, data.kpi.watchTimeSeconds)}
+            detail={`${formatWatchTime(undefined, 0, averageWatchSeconds)} par utilisateur`}
+            icon={Clock3}
+            accent="#14B8A6"
           />
-          <StatCard
-            title={`Événements (${periodLabel})`}
-            value={formatCompact(totalEvents)}
-            tone="muted"
-            icon={Activity}
+          <MetricCard
+            label="Retention"
+            value={formatPercent(data.kpi.retention)}
+            detail="Sessions qui passent le seuil de retention"
+            icon={Zap}
+            accent="#7C3AED"
+          />
+          <MetricCard
+            label="Live maintenant"
+            value={formatCompact(livePayload.activeUsers)}
+            detail={`${formatNumber(liveStreams.length)} flux actifs visibles`}
+            icon={Radio}
+            accent="#F59E0B"
           />
         </div>
+      </section>
 
-        <Separator className="bg-white/5" />
+      {error ? (
+        <Card className={cn(panelClass, "border-red-200/80 dark:border-red-400/20")}>
+          <CardContent className="flex items-start gap-3 py-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="font-medium text-slate-950 dark:text-white">Chargement incomplet</div>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
-        {/* Main layout — resized cards */}
-        <div className="grid gap-4 lg:grid-cols-12">
-          {/* Audience (compact header + reduced height) */}
-          <Card className="lg:col-span-8 bg-white/5 border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-            <CardHeader className="px-4 sm:px-5 pt-4 pb-3 border-b border-white/10">
+      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+        <Card className={panelClass}>
+          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle className="text-xl text-slate-950 dark:text-white">Acquisition et engagement</CardTitle>
+              <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
+                  Lecture GA-style de la tendance d&apos;audience et de l&apos;intensité analytique.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+              {formatNumber(data.kpi.totalEvents)} événements
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Utilisateurs</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{formatNumber(data.kpi.totalUsers)}</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">base analytique sur la période</div>
+              </div>
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Watch time</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{formatWatchTime(data.kpi.watchTimeLabel, data.kpi.watchTime, data.kpi.watchTimeSeconds)}</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">moyenne session - {formatWatchTime(undefined, 0, averageWatchSeconds)}</div>
+              </div>
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Intensite</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
+                  {data.kpi.totalUsers > 0 ? (data.kpi.totalEvents / data.kpi.totalUsers).toFixed(1) : "0.0"}
+                </div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">événements par utilisateur</div>
+              </div>
+            </div>
+
+            <div className="h-[320px] w-full">
+              {data.traffic.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data.traffic} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id={trafficGradientId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2563EB" stopOpacity={0.36} />
+                        <stop offset="100%" stopColor="#2563EB" stopOpacity={0.04} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.22)" vertical={false} />
+                    <XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} />
+                    <YAxis tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} allowDecimals={false} />
+                    <Tooltip
+                      cursor={{ stroke: "#2563EB", strokeDasharray: "4 4" }}
+                      contentStyle={{ borderRadius: 18, border: "1px solid rgba(148,163,184,0.24)", background: "rgba(255,255,255,0.95)" }}
+                      formatter={(value: number | string | undefined) => [formatNumber(safeNumber(value)), "Utilisateurs"]}
+                    />
+                    <Area type="monotone" dataKey="viewers" stroke="#2563EB" strokeWidth={3} fill={`url(#${trafficGradientId})`} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50/60 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+                  Aucun historique exploitable sur cette fenêtre.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={panelClass}>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl text-slate-950 dark:text-white">Command center live</CardTitle>
+                <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
+                  Vue unifiée web + mobile sur la fenêtre glissante live.
+                </CardDescription>
+              </div>
+              <Badge className={cn("border", liveMeta.className)}>{liveMeta.label}</Badge>
+            </div>
+            <div className="text-sm text-slate-600 dark:text-slate-300">{liveMeta.detail}</div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="rounded-[26px] bg-slate-950 p-5 text-white dark:bg-[#050816]">
               <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <CardTitle className="text-sm font-semibold text-white">
-                    Audience
-                  </CardTitle>
-                  <CardDescription className="text-zinc-500">
-                    Spectateurs actifs sur la période sélectionnée.
-                  </CardDescription>
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Audience live</div>
+                  <div className="mt-2 text-4xl font-semibold tracking-tight">{formatNumber(livePayload.activeUsers)}</div>
                 </div>
-
-                <Badge className="bg-white/5 border border-white/10 text-zinc-200">
-                  {formatNumber(traffic.length)} points
-                </Badge>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <Radio className="h-6 w-6 text-cyan-300" />
+                </div>
               </div>
-            </CardHeader>
-
-            <CardContent className="px-4 sm:px-5 py-4">
-              <div className="h-[240px] sm:h-[270px] w-full">
-                {loading && !data ? (
-                  <SkeletonBlock />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={traffic}>
-                      <defs>
-                        <linearGradient id="audGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.22} />
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
-                        </linearGradient>
-                      </defs>
-
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="#ffffff08"
-                        vertical={false}
-                      />
-
-                      <XAxis
-                        dataKey="time"
-                        stroke="#71717a"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                        minTickGap={24}
-                      />
-                      <YAxis
-                        stroke="#71717a"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                        width={34}
-                      />
-
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#09090b",
-                          border: "1px solid #ffffff12",
-                          borderRadius: 12,
-                          fontSize: 12,
-                          color: "#fff"
-                        }}
-                        labelStyle={{ color: "#a1a1aa" }}
-                      />
-
-                      <Area
-                        type="monotone"
-                        dataKey="viewers"
-                        stroke="#6366f1"
-                        strokeWidth={2}
-                        fill="url(#audGrad)"
-                        dot={false}
-                        activeDot={{ r: 4 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                )}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Flux actifs</div>
+                  <div className="mt-2 text-2xl font-semibold">{formatNumber(liveStreams.length)}</div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Dernier point</div>
+                  <div className="mt-2 text-2xl font-semibold">{formatSyncClock(snapshot?.asOf ?? lastLoadedAt)}</div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Right column (compact, same density) */}
-          <div className="lg:col-span-4 space-y-4">
-            <Card className="bg-white/5 border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-              <CardHeader className="px-4 sm:px-5 pt-4 pb-3 border-b border-white/10">
-                <CardTitle className="text-sm font-semibold text-white">
-                  Top flux live
-                </CardTitle>
-                <CardDescription className="text-zinc-500">
-                  Classement en temps réel.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="px-4 sm:px-5 py-4 space-y-2">
-                {loading && !data ? (
-                  <>
-                    <div className="h-10 rounded-lg bg-white/5 animate-pulse border border-white/10" />
-                    <div className="h-10 rounded-lg bg-white/5 animate-pulse border border-white/10" />
-                    <div className="h-10 rounded-lg bg-white/5 animate-pulse border border-white/10" />
-                  </>
-                ) : topStreams.length > 0 ? (
-                  topStreams.map(([sid, count]) => (
-                    <div
-                      key={sid}
-                      className="flex items-center justify-between rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-2"
-                    >
+            <div className="space-y-3">
+              {liveStreams.length > 0 ? (
+                liveStreams.map((stream) => (
+                  <div key={stream.id} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm text-white truncate">{sid}</div>
-                        <div className="text-[11px] text-zinc-500">Spectateurs actifs</div>
+                        <div className="truncate font-medium text-slate-900 dark:text-white">{stream.title}</div>
+                        <div className="truncate text-xs text-slate-500 dark:text-slate-400">{stream.channelName}</div>
                       </div>
-                      <div className="text-sm font-semibold text-indigo-300">
-                        {formatNumber(count)}
+                      <div className="text-right">
+                        <div className="font-semibold text-slate-950 dark:text-white">{formatNumber(stream.viewers)}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">live</div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-4 text-sm text-zinc-500 text-center">
-                    Aucun viewer détecté.
+                    <Progress
+                      value={Math.round((stream.viewers / Math.max(1, livePayload.activeUsers)) * 100)}
+                      className="h-2 bg-slate-100 dark:bg-white/10"
+                    />
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+                  Aucun flux live actif pour le filtre courant.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card className="bg-white/5 border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-              <CardHeader className="px-4 sm:px-5 pt-4 pb-3 border-b border-white/10">
-                <CardTitle className="text-sm font-semibold text-white">
-                  Appareils
-                </CardTitle>
-                <CardDescription className="text-zinc-500">
-                  Répartition des sessions par appareil. Top : {topDeviceShare}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="px-4 sm:px-5 py-4">
-                {loading && !data ? (
-                  <div className="h-28 rounded-lg bg-white/5 animate-pulse border border-white/10" />
-                ) : devices.length > 0 ? (
-                  <>
-                    <div className="h-[170px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={devices}
-                            dataKey="value"
-                            innerRadius={40}
-                            outerRadius={64}
-                            paddingAngle={4}
-                            stroke="none"
-                          >
-                            {devices.map((entry, index) => (
-                              <Cell
-                                key={`${entry.name}-${index}`}
-                                fill={entry.color ?? DEVICE_COLORS[index % DEVICE_COLORS.length]}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "#09090b",
-                              border: "1px solid #ffffff12",
-                              borderRadius: 12,
-                              fontSize: 12,
-                              color: "#fff"
-                            }}
-                            formatter={(value) => `${value}%`}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr_1fr]">
+        <Card className={panelClass}>
+          <CardHeader>
+            <CardTitle className="text-xl text-slate-950 dark:text-white">Sources de lecture</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-300">
+              Répartition sessions et watch time par plateforme.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="h-[220px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={platformData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" vertical={false} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 18, border: "1px solid rgba(148,163,184,0.24)", background: "rgba(255,255,255,0.95)" }}
+                    formatter={(value: number | string | undefined) => [formatNumber(safeNumber(value)), "Sessions"]}
+                  />
+                  <Bar dataKey="sessions" radius={[10, 10, 0, 0]}>
+                    {platformData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-3">
+              {platformData.map((entry) => (
+                <div key={entry.name} className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium text-slate-950 dark:text-white">{entry.name}</div>
+                      <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                        {formatPercent(entry.value)} des sessions - {formatNumber(entry.sessions)} utilisateurs
+                      </div>
                     </div>
-
-                    <div className="space-y-2">
-                      {devices.map((entry, index) => (
-                        <div
-                          key={`${entry.name}-${index}`}
-                          className="flex items-center justify-between text-xs text-zinc-300"
-                        >
-                          <span className="flex items-center gap-2">
-                            <span
-                              className="h-2 w-2 rounded-full"
-                              style={{ backgroundColor: entry.color ?? DEVICE_COLORS[index % DEVICE_COLORS.length] }}
-                            />
-                            {entry.name}
-                          </span>
-                          <span className="font-semibold text-zinc-200">{entry.value}%</span>
-                        </div>
-                      ))}
+                    <div className="text-right">
+                      <div className="font-semibold text-slate-950 dark:text-white">{entry.watchTimeLabel}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">watch time</div>
                     </div>
-                  </>
-                ) : (
-                  <div className="rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-4 text-sm text-zinc-500 text-center">
-                    Pas assez de signaux device.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/5 border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-              <CardHeader className="px-4 sm:px-5 pt-4 pb-3 border-b border-white/10">
-                <CardTitle className="text-sm font-semibold text-white">
-                  Flux récent
-                </CardTitle>
-                <CardDescription className="text-zinc-500">
-                  Derniers événements captés.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="px-4 sm:px-5 py-4 space-y-2">
-                {loading && !data ? (
-                  <>
-                    <div className="h-12 rounded-lg bg-white/5 animate-pulse border border-white/10" />
-                    <div className="h-12 rounded-lg bg-white/5 animate-pulse border border-white/10" />
-                  </>
-                ) : recentEvents.length > 0 ? (
-                  recentEvents.slice(0, 6).map((event, index) => (
-                    <div
-                      key={`${event.time}-${index}`}
-                      className="rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-2"
-                    >
-                      <p className="text-sm text-zinc-200">{event.message}</p>
-                      <p className="mt-1 text-[11px] text-zinc-500">{event.time}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-lg border border-white/10 bg-zinc-950/30 px-3 py-4 text-sm text-zinc-500 text-center">
-                    Aucun événement récent.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/5 border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_1px_0_0_rgba(255,255,255,0.06)]">
-              <CardHeader className="px-4 sm:px-5 pt-4 pb-3 border-b border-white/10">
-                <CardTitle className="text-sm font-semibold text-white">
-                  Sessions actives
-                </CardTitle>
-                <CardDescription className="text-zinc-500">
-                  Fenêtre glissante (~45s).
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="px-4 sm:px-5 py-4 space-y-3">
-                <div className="rounded-xl border border-white/10 bg-zinc-950/30 p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-zinc-500 uppercase tracking-widest">
-                      Temps réel
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                      </span>
-                      <span className="text-xs text-zinc-400">Actif</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 text-3xl font-semibold tracking-tight text-white">
-                    {loading && !data ? "—" : formatNumber(activeUsers)}
-                  </div>
-
-                  <div className="mt-1 text-xs text-zinc-500">
-                    Période: {periodLabel}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={panelClass}>
+          <CardHeader>
+            <CardTitle className="text-xl text-slate-950 dark:text-white">Appareils</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-300">
+              Distribution des sessions par type d&apos;équipement.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="h-[220px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    <linearGradient id={devicePieId} x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#2563EB" />
+                      <stop offset="100%" stopColor="#14B8A6" />
+                    </linearGradient>
+                  </defs>
+                  <Pie data={deviceData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={88} paddingAngle={3} strokeWidth={0}>
+                    {deviceData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ borderRadius: 18, border: "1px solid rgba(148,163,184,0.24)", background: "rgba(255,255,255,0.95)" }}
+                    formatter={(value: number | string | undefined) => [`${formatPercent(safeNumber(value))}`, "Part"]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-3">
+              {deviceData.map((entry) => {
+                const Icon = deviceIcon(entry.name);
+                return (
+                  <div key={entry.name} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl" style={{ backgroundColor: `${entry.color}18`, color: entry.color }}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-slate-950 dark:text-white">{entry.name}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">part de sessions</div>
+                        </div>
+                      </div>
+                      <div className="font-semibold text-slate-950 dark:text-white">{formatPercent(entry.value)}</div>
+                    </div>
+                    <Progress value={entry.value} className="h-2 bg-slate-100 dark:bg-white/10" />
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={panelClass}>
+          <CardHeader>
+            <CardTitle className="text-xl text-slate-950 dark:text-white">Signal recent</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-300">
+              Activité récente, sessions live et synthèse executive.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3">
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Source dominante</div>
+                <div className="mt-2 flex items-end gap-2">
+                  <div className="text-2xl font-semibold text-slate-950 dark:text-white">{leadingPlatform.name}</div>
+                  <ArrowUpRight className="mb-1 h-4 w-4 text-emerald-500" />
+                </div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  {formatPercent(leadingPlatform.value)} des sessions - {leadingPlatform.watchTimeLabel} cumulés
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Appareil dominant</div>
+                <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{dominantDevice.name}</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">{formatPercent(dominantDevice.value)} du trafic observe</div>
+              </div>
+            </div>
+
+            <Separator className="bg-slate-200 dark:bg-white/10" />
+
+            <div className="space-y-3">
+              {liveSessions.length > 0 ? (
+                liveSessions.map((session) => (
+                  <div key={session.id} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-slate-900 dark:text-white">{session.title}</div>
+                      <div className="truncate text-xs text-slate-500 dark:text-slate-400">{session.deviceType}</div>
+                    </div>
+                    <div className="text-right text-xs text-slate-500 dark:text-slate-400">
+                      {formatRelativeDuration(session.lastSeenAt)}
+                    </div>
+                  </div>
+                ))
+              ) : data.recentEvents.length > 0 ? (
+                data.recentEvents.slice(0, 6).map((event, index) => (
+                  <div key={`${event.message}-${event.time}-${index}`} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-slate-900 dark:text-white">{event.message}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{event.time}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+                  Aucune activité récente pour le filtre courant.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

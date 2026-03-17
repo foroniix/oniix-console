@@ -35,8 +35,8 @@ type GridChannel = {
   };
   live_stream?: {
     id: string;
+    channel_id: string;
     title: string;
-    hls_url: string | null;
     poster: string | null;
     status: "OFFLINE" | "LIVE" | "ENDED";
     updated_at: string | null;
@@ -65,6 +65,12 @@ type ProgramGridResponse = {
   replays?: ReplayItem[];
 };
 
+type PlaybackUrlResponse = {
+  ok?: boolean;
+  channel_id?: string;
+  playback_url?: string;
+};
+
 function formatClock(value: string | null) {
   if (!value) return "--:--";
   const date = new Date(value);
@@ -85,6 +91,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [grid, setGrid] = useState<GridChannel[]>([]);
   const [replays, setReplays] = useState<ReplayItem[]>([]);
+  const [livePlaybackUrl, setLivePlaybackUrl] = useState<string | null>(null);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeReplayId, setActiveReplayId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +123,31 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
           throw new Error("Invalid ingest token response.");
         }
 
-        const params = new URLSearchParams({ hours: "24", includeReplays: "1" });
+        const playbackRes = await fetch("/api/mobile/playback-url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-oniix-token": token,
+            "x-oniix-tenant": tenant,
+          },
+          body: JSON.stringify({ stream_id: streamId }),
+        });
+        const playbackJson = (await playbackRes.json().catch(() => null)) as PlaybackUrlResponse | null;
+        if (!playbackRes.ok || !playbackJson?.ok) {
+          throw new Error((playbackJson as { error?: string } | null)?.error || "Unable to resolve live playback.");
+        }
+
+        const channelId = String(playbackJson.channel_id ?? "").trim();
+        const playbackUrl = String(playbackJson.playback_url ?? "").trim();
+        if (!channelId || !playbackUrl) {
+          throw new Error("Invalid playback response.");
+        }
+
+        const params = new URLSearchParams({
+          hours: "24",
+          includeReplays: "1",
+          channelId,
+        });
         const gridRes = await fetch(`/api/mobile/program-grid?${params.toString()}`, {
           headers: {
             "x-oniix-token": token,
@@ -136,17 +167,16 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         setTenantId(tenant);
         setGrid(lanes);
         setReplays(replayRows);
+        setLivePlaybackUrl(playbackUrl);
 
         setActiveChannelId((prev) => {
           if (prev && lanes.some((lane) => lane.channel.id === prev)) return prev;
           const exact = lanes.find((lane) => lane.live_stream?.id === streamId)?.channel.id ?? null;
-          if (exact) return exact;
-          const firstLive = lanes.find((lane) => Boolean(lane.live_stream?.hls_url))?.channel.id ?? null;
-          if (firstLive) return firstLive;
-          return lanes[0]?.channel.id ?? null;
+          return exact || lanes[0]?.channel.id || channelId;
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unable to load viewer.";
+        setLivePlaybackUrl(null);
         setError(message);
       } finally {
         setLoading(false);
@@ -178,11 +208,11 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
     return replays.filter((row) => row.channel.id === channelId);
   }, [activeLane?.channel.id, replays]);
 
-  const liveSrc = activeLane?.live_stream?.hls_url ?? null;
+  const liveSrc = livePlaybackUrl;
   const replaySrc = activeReplay?.hls_url ?? null;
   const playbackSrc = replaySrc || liveSrc;
   const playbackPoster = activeReplay?.poster || activeLane?.live_stream?.poster || activeLane?.now?.poster || undefined;
-  const heartbeatStreamId = replaySrc ? null : activeLane?.live_stream?.id ?? streamId;
+  const heartbeatStreamId = replaySrc ? null : streamId;
 
   useStreamHeartbeat(heartbeatStreamId, { ingestToken, tenantId, intervalSec: 15 });
 
@@ -337,13 +367,13 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                           </div>
                           <span
                             className={`inline-flex h-6 items-center rounded-full px-2 text-[11px] font-medium ${
-                              lane.live_stream?.hls_url
+                              lane.live_stream?.id
                                 ? "bg-[#00d39b]/20 text-[#8ef2d2]"
                                 : "bg-white/10 text-[#adc2de]"
                             }`}
                           >
                             <Radio className="mr-1 h-3 w-3" />
-                            {lane.live_stream?.hls_url ? "Live" : "No feed"}
+                            {lane.live_stream?.id ? "Live" : "No feed"}
                           </span>
                         </div>
                         {lane.next?.title ? (

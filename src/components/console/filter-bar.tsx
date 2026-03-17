@@ -16,7 +16,7 @@ export function FilterBar({ children, onReset, resetDisabled = false, className 
   return (
     <section
       className={cn(
-        "flex flex-col gap-3 rounded-xl border border-[#262b38] bg-[#151821] p-4 lg:flex-row lg:items-center lg:justify-between",
+        "console-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between",
         className
       )}
     >
@@ -27,10 +27,10 @@ export function FilterBar({ children, onReset, resetDisabled = false, className 
           variant="outline"
           onClick={onReset}
           disabled={resetDisabled}
-          className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2] hover:bg-[#1c2a4a]"
+          className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:bg-white/[0.08]"
         >
           <RotateCcw className="mr-2 size-4" />
-          Reset
+          Réinitialiser
         </Button>
       ) : null}
     </section>

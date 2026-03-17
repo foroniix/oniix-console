@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../../_utils/auth";
 import { auditLog } from "../../_utils/audit";
 import { canTransitionReplayStatus } from "../../_utils/programming";
-import { supabaseUser } from "../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
 const ReplayStatus = z.enum(["draft", "processing", "ready", "published", "archived"]);
@@ -35,11 +34,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
   const parsed = await parseJson(
@@ -65,17 +64,16 @@ export async function PATCH(
   );
   if (!parsed.ok) return parsed.res;
   const body = parsed.data;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("replays")
     .select("id, stream_id, hls_url, available_from, available_to, replay_status")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Replay lookup error", { error: currentError.message, tenantId: ctx.tenantId, id });
+    console.error("Replay lookup error", { error: currentError.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
@@ -91,16 +89,16 @@ export async function PATCH(
   }
 
   if (body.streamId !== undefined && body.streamId !== null) {
-    const { data: stream, error: streamError } = await supa
+    const { data: stream, error: streamError } = await ctx.sb
       .from("streams")
       .select("id")
-      .eq("tenant_id", ctx.tenantId)
+      .eq("tenant_id", ctx.tenant_id)
       .eq("id", body.streamId)
       .maybeSingle();
     if (streamError) {
       console.error("Replay update stream lookup error", {
         error: streamError.message,
-        tenantId: ctx.tenantId,
+        tenantId: ctx.tenant_id,
         id,
         streamId: body.streamId,
       });
@@ -138,7 +136,7 @@ export async function PATCH(
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
-    updated_by: ctx.userId,
+    updated_by: ctx.user_id,
   };
 
   if (body.streamId !== undefined) updateData.stream_id = body.streamId;
@@ -158,24 +156,24 @@ export async function PATCH(
     };
   }
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("replays")
     .update(updateData)
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("*, stream:streams(id,title,status), channel:channels(id,name,logo,category)")
     .single();
 
   if (error) {
     if (isNotFound(error)) return notFoundResponse();
-    console.error("Replay update error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Replay update error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action:
       current.replay_status !== "published" && data.replay_status === "published"
         ? "replay.publish"
@@ -196,49 +194,48 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("replays")
     .select("id, replay_status, title, stream_id, channel_id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Replay lookup before delete error", {
-      error: currentError.message,
-      tenantId: ctx.tenantId,
-      id,
-    });
+      console.error("Replay lookup before delete error", {
+        error: currentError.message,
+        tenantId: ctx.tenant_id,
+        id,
+      });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("replays")
     .delete()
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("id")
     .maybeSingle();
 
   if (error) {
-    console.error("Replay delete error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Replay delete error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!data) return notFoundResponse();
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "replay.delete",
     targetType: "replay",
     targetId: current.id,

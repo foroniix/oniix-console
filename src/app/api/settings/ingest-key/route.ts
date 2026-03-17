@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateIngestKey, hashIngestKey, resolveExpectedIngestKey } from "../../_utils/analytics-ingest";
 import { parseJson } from "../../_utils/validate";
-import { getTenantContext, jsonError, requireTenantAdmin } from "../../tenant/_utils";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,7 +17,7 @@ export async function GET() {
   const tenantId = ctx.tenant_id;
   if (!tenantId) return jsonError("Tenant manquant.", 400);
 
-  const adminCheck = await requireTenantAdmin(ctx.sb, tenantId, ctx.user.id);
+  const adminCheck = await requireTenantCapability(ctx.sb, tenantId, ctx.user.id, "manage_security");
   if (!adminCheck.ok) return jsonError(adminCheck.error, 403);
 
   const { data, error } = await ctx.sb
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
   const tenantId = ctx.tenant_id;
   if (!tenantId) return jsonError("Tenant manquant.", 400);
 
-  const adminCheck = await requireTenantAdmin(ctx.sb, tenantId, ctx.user.id);
+  const adminCheck = await requireTenantCapability(ctx.sb, tenantId, ctx.user.id, "manage_security");
   if (!adminCheck.ok) return jsonError(adminCheck.error, 403);
 
   const parsed = await parseJson(

@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../_utils/auth";
 import { auditLog } from "../_utils/audit";
-import { supabaseUser } from "../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../tenant/_utils";
 import { parseJson, parseQuery } from "../_utils/validate";
 
 const ProgramStatus = z.enum(["draft", "scheduled", "published", "cancelled"]);
@@ -19,11 +18,8 @@ function invalidDateResponse() {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
 
   const query = parseQuery(
     req,
@@ -44,12 +40,10 @@ export async function GET(req: NextRequest) {
   if (query.data.from && !fromIso) return invalidDateResponse();
   if (query.data.to && !toIso) return invalidDateResponse();
 
-  const supa = supabaseUser(ctx.accessToken);
-
-  let q = supa
+  let q = ctx.sb
     .from("programs")
     .select("*, channel:channels(id,name,logo,category)")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .order("created_at", { ascending: false });
 
   if (query.data.status) q = q.eq("status", query.data.status);
@@ -61,7 +55,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await q;
   if (error) {
-    console.error("Programs load error", { error: error.message, tenantId: ctx.tenantId });
+    console.error("Programs load error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
@@ -69,11 +63,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const parsed = await parseJson(
     req,
@@ -105,12 +99,11 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   const status = body.status ?? "draft";
   const effectivePublishedAt = status === "published" ? (publishedAtIso ?? now) : publishedAtIso;
-  const supa = supabaseUser(ctx.accessToken);
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("programs")
     .insert({
-      tenant_id: ctx.tenantId,
+      tenant_id: ctx.tenant_id,
       channel_id: body.channelId ?? null,
       title: body.title.trim(),
       synopsis: body.synopsis ?? null,
@@ -119,22 +112,22 @@ export async function POST(req: NextRequest) {
       tags: body.tags ?? [],
       status,
       published_at: effectivePublishedAt,
-      created_by: ctx.userId,
-      updated_by: ctx.userId,
+      created_by: ctx.user_id,
+      updated_by: ctx.user_id,
       updated_at: now,
     })
     .select("*, channel:channels(id,name,logo,category)")
     .single();
 
   if (error) {
-    console.error("Program create error", { error: error.message, tenantId: ctx.tenantId });
+    console.error("Program create error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "program.create",
     targetType: "program",
     targetId: data.id,

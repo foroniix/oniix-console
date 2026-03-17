@@ -1,9 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "crypto";
-import { getTenantContext, jsonError, requireTenantAdmin } from "../../../_utils";
+import { canAssignTenantRole, normalizeTenantRole } from "@/lib/tenant-roles";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../../_utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+type InviteLookupRow = {
+  id: string;
+  tenant_id: string;
+  status: string;
+  role: string | null;
+};
 
 // Renvoyer une invitation:
 // - regen code
@@ -14,25 +22,29 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   const ctx = await getTenantContext();
   if (!ctx.ok) return ctx.res;
 
-  const check = await requireTenantAdmin(ctx.sb, ctx.tenant_id, ctx.user.id);
+  const check = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user.id, "manage_invites");
   if (!check.ok) return jsonError(check.error, check.error === "Acces refuse." ? 403 : 400);
 
-  const id = (params as any)?.id ?? Object.values(params ?? {})[0];
+  const resolved = await params;
+  const id = resolved.id;
   if (!id) return jsonError("Identifiant manquant.", 400);
 
   const { data: inv, error: invErr } = await ctx.sb
     .from("tenant_invites")
     .select("*")
     .eq("id", id)
-    .maybeSingle();
+    .maybeSingle<InviteLookupRow>();
 
   if (invErr) {
     console.error("Tenant invite lookup error", { error: invErr.message, tenantId: ctx.tenant_id, id });
     return jsonError("Une erreur est survenue.", 400);
   }
   if (!inv) return jsonError("Invitation introuvable.", 404);
-  if ((inv as any).tenant_id !== ctx.tenant_id) return jsonError("Acces refuse.", 403);
-  if ((inv as any).status === "accepted") return jsonError("Cette invitation a deja ete acceptee.", 400);
+  if (inv.tenant_id !== ctx.tenant_id) return jsonError("Acces refuse.", 403);
+  if (!canAssignTenantRole(check.role, normalizeTenantRole(inv.role))) {
+    return jsonError("Acces refuse.", 403);
+  }
+  if (inv.status === "accepted") return jsonError("Cette invitation a deja ete acceptee.", 400);
 
   const code = randomUUID().replaceAll("-", "");
 
@@ -51,7 +63,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   return NextResponse.json(
     {
       ok: true,
-      invite: data,
+      invite: { ...data, role: normalizeTenantRole(data.role) },
       invite_url: `/accept-invite?code=${data.code}`,
     },
     { status: 200 }

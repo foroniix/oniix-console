@@ -1,13 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { requireAuth, requireTenant } from "../../../_utils/auth";
 import { auditLog } from "../../../_utils/audit";
 import {
   canTransitionProgramStatus,
   canTransitionSlotStatus,
   windowsOverlap,
 } from "../../../_utils/programming";
-import { supabaseUser } from "../../../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../../../tenant/_utils";
 
 function notFoundResponse() {
   return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
@@ -59,28 +58,27 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   const { id } = await params;
-  const supa = supabaseUser(ctx.accessToken);
   const now = new Date().toISOString();
-  const { data: current, error: currentError } = await supa
+  const { data: current, error: currentError } = await ctx.sb
     .from("program_slots")
     .select("id, program_id, slot_status, starts_at, ends_at, channel_id")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
 
   if (currentError) {
-    console.error("Program slot publish lookup error", {
-      error: currentError.message,
-      tenantId: ctx.tenantId,
-      id,
-    });
+      console.error("Program slot publish lookup error", {
+        error: currentError.message,
+        tenantId: ctx.tenant_id,
+        id,
+      });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!current) return notFoundResponse();
@@ -88,19 +86,19 @@ export async function POST(
     return invalidTransitionResponse();
   }
 
-  const { data: currentProgram, error: programLookupError } = await supa
+  const { data: currentProgram, error: programLookupError } = await ctx.sb
     .from("programs")
     .select("id, status")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", current.program_id)
     .maybeSingle();
 
   if (programLookupError) {
-    console.error("Program lookup before slot publish error", {
-      error: programLookupError.message,
-      tenantId: ctx.tenantId,
-      id,
-      programId: current.program_id,
+      console.error("Program lookup before slot publish error", {
+        error: programLookupError.message,
+        tenantId: ctx.tenant_id,
+        id,
+        programId: current.program_id,
     });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
@@ -116,8 +114,8 @@ export async function POST(
 
   if (current.channel_id) {
     const { error: conflictLookupError, conflictId } = await findSlotConflict({
-      sb: supa,
-      tenantId: ctx.tenantId as string,
+      sb: ctx.sb,
+      tenantId: ctx.tenant_id,
       channelId: current.channel_id,
       startsAt: current.starts_at as string,
       endsAt: (current.ends_at as string | null) ?? null,
@@ -125,71 +123,71 @@ export async function POST(
     });
 
     if (conflictLookupError) {
-      console.error("Program slot publish conflict lookup error", {
-        error: conflictLookupError.message,
-        tenantId: ctx.tenantId,
-        id,
-      });
+        console.error("Program slot publish conflict lookup error", {
+          error: conflictLookupError.message,
+          tenantId: ctx.tenant_id,
+          id,
+        });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
     if (conflictId) return conflictResponse();
   }
 
-  const { data: slot, error: slotError } = await supa
+  const { data: slot, error: slotError } = await ctx.sb
     .from("program_slots")
     .update({
       slot_status: "published",
       updated_at: now,
-      updated_by: ctx.userId,
+      updated_by: ctx.user_id,
     })
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .select("id, program_id")
     .maybeSingle();
 
   if (slotError) {
-    console.error("Program slot publish error", { error: slotError.message, tenantId: ctx.tenantId, id });
+    console.error("Program slot publish error", { error: slotError.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   if (!slot) return notFoundResponse();
 
-  const { error: programError } = await supa
+  const { error: programError } = await ctx.sb
     .from("programs")
     .update({
       status: "published",
       published_at: now,
       updated_at: now,
-      updated_by: ctx.userId,
+      updated_by: ctx.user_id,
     })
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", slot.program_id);
 
   if (programError) {
-    console.error("Program status sync on slot publish error", {
-      error: programError.message,
-      tenantId: ctx.tenantId,
-      id,
-      programId: slot.program_id,
+      console.error("Program status sync on slot publish error", {
+        error: programError.message,
+        tenantId: ctx.tenant_id,
+        id,
+        programId: slot.program_id,
     });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("program_slots")
     .select("*, program:programs(id,title,poster,status), channel:channels(id,name,logo,category)")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .single();
 
   if (error) {
-    console.error("Program slot reload after publish error", { error: error.message, tenantId: ctx.tenantId, id });
+    console.error("Program slot reload after publish error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "program_slot.publish",
     targetType: "program_slot",
     targetId: data.id,
@@ -201,9 +199,9 @@ export async function POST(
   });
 
   await auditLog({
-    sb: supa,
-    tenantId: ctx.tenantId,
-    actorUserId: ctx.userId,
+    sb: ctx.sb,
+    tenantId: ctx.tenant_id,
+    actorUserId: ctx.user_id,
     action: "program.publish",
     targetType: "program",
     targetId: slot.program_id,

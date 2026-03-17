@@ -1,147 +1,135 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Activity, Eye, Loader2, MousePointerClick } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, MousePointerClick, Eye, Activity } from "lucide-react";
 import { useAdsRealtime } from "@/lib/ads/useAdsRealtime";
 
 type Kpi = { impressions: number; clicks: number; ctr: number; since: string; window_hours: number };
 
-function fmt(n: number) {
-  return (n ?? 0).toLocaleString();
+function fmt(value: number) {
+  return (value ?? 0).toLocaleString("fr-FR");
 }
 
 function eventLabel(event: string) {
-  const key = (event || "").toLowerCase();
+  const key = event.toLowerCase();
   if (key.includes("click")) return "Clic";
   if (key.includes("impression")) return "Impression";
   if (key.includes("view")) return "Vue";
   return "Activite";
 }
 
-export default function AdsLivePanel(props: {
-  accessToken: string | null;
-  tenantId: string | null;
-  streamId?: string | null;
-}) {
-  const { accessToken, tenantId, streamId } = props;
+export default function AdsLivePanel(props: { streamId?: string | null }) {
+  const { streamId } = props;
   const [kpi, setKpi] = useState<Kpi | null>(null);
   const [loading, setLoading] = useState(true);
 
   const { counters, events } = useAdsRealtime({
-    accessToken,
-    tenantId,
-    streamId,
-    enabled: !!accessToken && !!tenantId,
+    streamId: streamId ?? null,
+    enabled: true,
+    windowSec: 300,
   });
 
   useEffect(() => {
-    if (!accessToken || !tenantId) return;
+    let cancelled = false;
 
-    (async () => {
+    const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/ads/kpi?hours=24`, { cache: "no-store" });
-        const json = await res.json();
-        if (res.ok) setKpi(json);
+        const res = await fetch("/api/ads/kpi?hours=24", { cache: "no-store" });
+        const json = (await res.json().catch(() => null)) as Kpi | null;
+        if (!cancelled && res.ok && json) setKpi(json);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    })();
-  }, [accessToken, tenantId]);
+    };
 
-  if (!accessToken || !tenantId) {
-    return (
-      <div className="p-6 text-zinc-500 text-sm">
-        Impossible d'afficher les indicateurs. Session ou organisation manquante.
-      </div>
-    );
-  }
+    void load();
 
-  const baseImp = kpi?.impressions ?? 0;
-  const baseClk = kpi?.clicks ?? 0;
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const liveImp = counters.impressions;
-  const liveClk = counters.clicks;
-
-  const totalImp = baseImp + liveImp;
-  const totalClk = baseClk + liveClk;
-  const ctr = totalImp > 0 ? (totalClk / totalImp) * 100 : 0;
+  const totalImpressions = (kpi?.impressions ?? 0) + counters.impressions;
+  const totalClicks = (kpi?.clicks ?? 0) + counters.clicks;
+  const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-zinc-900/40 border-white/5">
+        <Card className="border-white/5 bg-zinc-900/40">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-zinc-500">
               <Eye className="h-4 w-4 text-zinc-600" />
-              Impressions (24h + en direct)
+              Impressions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tight text-white">{fmt(totalImp)}</div>
-            <div className="text-[11px] text-zinc-500 mt-1">
-              En direct : +{fmt(liveImp)}
-              {counters.lastEventAt ? ` - ${new Date(counters.lastEventAt).toLocaleTimeString()}` : ""}
+            <div className="text-3xl font-black tracking-tight text-white">{fmt(totalImpressions)}</div>
+            <div className="mt-1 text-[11px] text-zinc-500">
+              Fenetre live : {fmt(counters.impressions)}
+              {counters.lastEventAt ? ` - ${new Date(counters.lastEventAt).toLocaleTimeString("fr-FR")}` : ""}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 border-white/5">
+        <Card className="border-white/5 bg-zinc-900/40">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-zinc-500">
               <MousePointerClick className="h-4 w-4 text-zinc-600" />
-              Clics (24h + en direct)
+              Clics
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tight text-white">{fmt(totalClk)}</div>
-            <div className="text-[11px] text-zinc-500 mt-1">En direct : +{fmt(liveClk)}</div>
+            <div className="text-3xl font-black tracking-tight text-white">{fmt(totalClicks)}</div>
+            <div className="mt-1 text-[11px] text-zinc-500">Fenetre live : {fmt(counters.clicks)}</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900/40 border-white/5">
+        <Card className="border-white/5 bg-zinc-900/40">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-[11px] uppercase tracking-widest text-zinc-500">
               <Activity className="h-4 w-4 text-zinc-600" />
-              Taux de clic
+              CTR
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-white">{ctr.toFixed(2)}%</div>
-            <div className="text-[11px] text-zinc-500 mt-1">
-              Base : {(kpi?.ctr ?? 0).toFixed(2)}% {loading ? "- actualisation..." : ""}
+            <div className="mt-1 text-[11px] text-zinc-500">
+              Base 24h : {(kpi?.ctr ?? 0).toFixed(2)}% {loading ? "- actualisation..." : ""}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="bg-zinc-900/40 border-white/5">
+      <Card className="border-white/5 bg-zinc-900/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500">
-            Activite recente
-          </CardTitle>
+          <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500">Activite recente</CardTitle>
         </CardHeader>
         <CardContent>
           {loading && !kpi ? (
-            <div className="flex items-center gap-2 text-zinc-500 text-sm">
+            <div className="flex items-center gap-2 text-sm text-zinc-500">
               <Loader2 className="h-4 w-4 animate-spin" /> Chargement des indicateurs...
             </div>
           ) : null}
 
           <div className="space-y-2">
             {events.length === 0 ? (
-              <div className="text-zinc-600 text-sm py-6 text-center">Aucune activite recente pour le moment.</div>
+              <div className="py-6 text-center text-sm text-zinc-600">Aucune activite recente pour le moment.</div>
             ) : (
-              events.map((e) => (
+              events.map((event) => (
                 <div
-                  key={e.id}
-                  className="flex items-center justify-between rounded-lg bg-white/5 border border-white/5 px-3 py-2"
+                  key={event.id}
+                  className="flex items-center justify-between rounded-lg border border-white/5 bg-white/5 px-3 py-2"
                 >
                   <div className="text-xs text-zinc-300">
-                    <span className="font-bold text-white">{eventLabel(e.event)}</span>
+                    <span className="font-bold text-white">{eventLabel(event.event)}</span>
                   </div>
-                  <div className="text-[11px] text-zinc-500">{new Date(e.created_at).toLocaleTimeString()}</div>
+                  <div className="text-[11px] text-zinc-500">
+                    {new Date(event.created_at).toLocaleTimeString("fr-FR")}
+                  </div>
                 </div>
               ))
             )}

@@ -76,7 +76,7 @@ export function ReplaySection(props: ReplaySectionProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-white/10 p-3 sm:p-4">
+      <div className="console-panel-muted p-3 sm:p-4">
         <div className="grid gap-3 sm:grid-cols-6">
           <div className="sm:col-span-2 grid gap-2">
             <Label>Titre replay</Label>
@@ -84,7 +84,7 @@ export function ReplaySection(props: ReplaySectionProps) {
               value={form.title}
               onChange={(e) => onPatch({ title: e.target.value })}
               placeholder="Ex: Replay JT 20h"
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
@@ -94,17 +94,17 @@ export function ReplaySection(props: ReplaySectionProps) {
               value={form.hlsUrl}
               onChange={(e) => onPatch({ hlsUrl: e.target.value })}
               placeholder="https://...m3u8"
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
           <div className="grid gap-2">
             <Label>Statut</Label>
             <Select value={form.status} onValueChange={(status) => onPatch({ status: status as ReplayFormState["status"] })}>
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 {statusOptions.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
@@ -115,12 +115,12 @@ export function ReplaySection(props: ReplaySectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Source stream</Label>
+            <Label>Flux source</Label>
             <Select value={form.streamId} onValueChange={(streamId) => onPatch({ streamId })}>
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 <SelectItem value={NONE_VALUE}>Aucune</SelectItem>
                 {streams.map((stream) => (
                   <SelectItem key={stream.id} value={stream.id}>
@@ -132,12 +132,12 @@ export function ReplaySection(props: ReplaySectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaine</Label>
+            <Label>Chaîne</Label>
             <Select value={form.channelId} onValueChange={(channelId) => onPatch({ channelId })}>
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 <SelectItem value={NONE_VALUE}>Aucune</SelectItem>
                 {channels.map((channel) => (
                   <SelectItem key={channel.id} value={channel.id}>
@@ -154,38 +154,38 @@ export function ReplaySection(props: ReplaySectionProps) {
               value={form.poster}
               onChange={(e) => onPatch({ poster: e.target.value })}
               placeholder="https://..."
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label>Duree (sec)</Label>
+            <Label>Durée (sec)</Label>
             <Input
               type="number"
               min={0}
               value={form.durationSec}
               onChange={(e) => onPatch({ durationSec: e.target.value })}
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
           <div className="sm:col-span-2 grid gap-2">
-            <Label>Disponible a partir de</Label>
+            <Label>Disponible à partir de</Label>
             <Input
               type="datetime-local"
               value={form.availableFrom}
               onChange={(e) => onPatch({ availableFrom: e.target.value })}
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
           <div className="sm:col-span-2 grid gap-2">
-            <Label>Disponible jusqua</Label>
+            <Label>Disponible jusqu’à</Label>
             <Input
               type="datetime-local"
               value={form.availableTo}
               onChange={(e) => onPatch({ availableTo: e.target.value })}
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
@@ -194,8 +194,8 @@ export function ReplaySection(props: ReplaySectionProps) {
             <Input
               value={form.synopsis}
               onChange={(e) => onPatch({ synopsis: e.target.value })}
-              placeholder="Resume du replay"
-              className="bg-zinc-950/40 border-white/10"
+              placeholder="Résumé du replay"
+              className="console-field"
             />
           </div>
         </div>
@@ -207,13 +207,13 @@ export function ReplaySection(props: ReplaySectionProps) {
             className="bg-indigo-600 hover:bg-indigo-500 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            {saving ? "Enregistrement..." : form.id ? "Mettre a jour replay" : "Ajouter replay"}
+            {saving ? "Enregistrement..." : form.id ? "Mettre à jour le replay" : "Ajouter le replay"}
           </Button>
           <Button
             variant="outline"
             onClick={onProcessQueue}
             disabled={processingQueue}
-            className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+            className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
           >
             {processingQueue ? "Traitement..." : "Traiter clips en attente"}
           </Button>
@@ -221,23 +221,23 @@ export function ReplaySection(props: ReplaySectionProps) {
             <Button
               variant="outline"
               onClick={onReset}
-              className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
             >
-              Annuler edition
+              Annuler l’édition
             </Button>
           ) : null}
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      <div className="overflow-x-auto rounded-[22px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-950/40 text-zinc-400">
+          <thead className="bg-slate-50/90 text-slate-500 dark:bg-white/[0.03] dark:text-slate-400">
             <tr>
               <th className="text-left px-3 py-2">Replay</th>
               <th className="text-left px-3 py-2">Source</th>
-              <th className="text-left px-3 py-2">Chaine</th>
-              <th className="text-left px-3 py-2">HLS / Fenetre</th>
-              <th className="text-left px-3 py-2">Disponibilite</th>
+              <th className="text-left px-3 py-2">Chaîne</th>
+              <th className="text-left px-3 py-2">HLS / Fenêtre</th>
+              <th className="text-left px-3 py-2">Disponibilité</th>
               <th className="text-left px-3 py-2">Statut / Diagnostic</th>
               <th className="text-right px-3 py-2">Actions</th>
             </tr>
@@ -245,19 +245,19 @@ export function ReplaySection(props: ReplaySectionProps) {
           <tbody>
             {loading ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-500" colSpan={7}>
+                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={7}>
                   Chargement...
                 </td>
               </tr>
             ) : replays.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-500" colSpan={7}>
+                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={7}>
                   Aucun replay
                 </td>
               </tr>
             ) : (
               replays.map((replay) => (
-                <tr key={replay.id} className="border-t border-white/10">
+                <tr key={replay.id} className="border-t border-slate-200/80 dark:border-white/10">
                   <td className="px-3 py-2">{replay.title}</td>
                   <td className="px-3 py-2">
                     {replay.stream?.title || (replay.streamId ? streamMap.get(replay.streamId) : null) || "-"}
@@ -265,9 +265,9 @@ export function ReplaySection(props: ReplaySectionProps) {
                   <td className="px-3 py-2">{replay.channel?.name || "-"}</td>
                   <td className="px-3 py-2">
                     <div className="space-y-1">
-                      <div className="text-xs text-zinc-200">{replay.hlsUrl ? shorten(replay.hlsUrl, 72) : "-"}</div>
+                      <div className="text-xs text-slate-700 dark:text-slate-200">{replay.hlsUrl ? shorten(replay.hlsUrl, 72) : "-"}</div>
                       {replay.clipStartAt || replay.clipEndAt ? (
-                        <div className="text-[11px] text-zinc-500">
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
                           {formatDateTime(replay.clipStartAt)} {"->"} {formatDateTime(replay.clipEndAt)}
                         </div>
                       ) : null}
@@ -283,7 +283,7 @@ export function ReplaySection(props: ReplaySectionProps) {
                       {replay.processingError ? (
                         <div className="text-[11px] text-rose-300">{shorten(replay.processingError, 110)}</div>
                       ) : replay.replayStatus === "processing" ? (
-                        <div className="text-[11px] text-amber-300">Generation en cours...</div>
+                        <div className="text-[11px] text-amber-600 dark:text-amber-300">Génération en cours...</div>
                       ) : null}
                     </div>
                   </td>
@@ -292,9 +292,9 @@ export function ReplaySection(props: ReplaySectionProps) {
                       size="sm"
                       variant="outline"
                       onClick={() => onEdit(replay)}
-                      className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                      className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                     >
-                      Editer
+                      Éditer
                     </Button>
                     {canTransitionReplayStatus(replay.replayStatus, "published") &&
                     replay.replayStatus !== "published" ? (

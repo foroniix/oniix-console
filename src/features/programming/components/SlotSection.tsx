@@ -59,15 +59,15 @@ export function SlotSection(props: SlotSectionProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-white/10 p-3 sm:p-4">
+      <div className="console-panel-muted p-3 sm:p-4">
         <div className="grid gap-3 sm:grid-cols-6">
           <div className="grid gap-2">
             <Label>Programme</Label>
             <Select value={form.programId} onValueChange={(programId) => onPatch({ programId })}>
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+            <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 {programs.map((program) => (
                   <SelectItem key={program.id} value={program.id}>
                     {program.title}
@@ -78,12 +78,12 @@ export function SlotSection(props: SlotSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Debut</Label>
+            <Label>Début</Label>
             <Input
               type="datetime-local"
               value={form.startsAt}
               onChange={(e) => onPatch({ startsAt: e.target.value })}
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
@@ -93,17 +93,17 @@ export function SlotSection(props: SlotSectionProps) {
               type="datetime-local"
               value={form.endsAt}
               onChange={(e) => onPatch({ endsAt: e.target.value })}
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaine</Label>
+            <Label>Chaîne</Label>
             <Select value={form.channelId} onValueChange={(channelId) => onPatch({ channelId })}>
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 <SelectItem value={NONE_VALUE}>Aucune</SelectItem>
                 {channels.map((channel) => (
                   <SelectItem key={channel.id} value={channel.id}>
@@ -117,10 +117,10 @@ export function SlotSection(props: SlotSectionProps) {
           <div className="grid gap-2">
             <Label>Statut</Label>
             <Select value={form.status} onValueChange={(status) => onPatch({ status: status as SlotFormState["status"] })}>
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 {statusOptions.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
@@ -131,17 +131,17 @@ export function SlotSection(props: SlotSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Visibilite</Label>
+            <Label>Visibilité</Label>
             <Select
               value={form.visibility}
               onValueChange={(visibility) =>
                 onPatch({ visibility: visibility as SlotFormState["visibility"] })
               }
             >
-              <SelectTrigger className="bg-zinc-950/40 border-white/10">
+              <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-white/10 text-zinc-100">
+              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 {SLOT_VISIBILITY_VALUES.map((visibility) => (
                   <SelectItem key={visibility} value={visibility}>
                     {visibility}
@@ -157,7 +157,7 @@ export function SlotSection(props: SlotSectionProps) {
               value={form.notes}
               onChange={(e) => onPatch({ notes: e.target.value })}
               placeholder="Notes de diffusion"
-              className="bg-zinc-950/40 border-white/10"
+              className="console-field"
             />
           </div>
         </div>
@@ -169,27 +169,27 @@ export function SlotSection(props: SlotSectionProps) {
             className="bg-indigo-600 hover:bg-indigo-500 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            {saving ? "Enregistrement..." : form.id ? "Mettre a jour slot" : "Ajouter slot"}
+            {saving ? "Enregistrement..." : form.id ? "Mettre à jour le slot" : "Ajouter le slot"}
           </Button>
           {form.id ? (
             <Button
               variant="outline"
               onClick={onReset}
-              className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
             >
-              Annuler edition
+              Annuler l’édition
             </Button>
           ) : null}
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      <div className="overflow-x-auto rounded-[22px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-950/40 text-zinc-400">
+          <thead className="bg-slate-50/90 text-slate-500 dark:bg-white/[0.03] dark:text-slate-400">
             <tr>
               <th className="text-left px-3 py-2">Programme</th>
-              <th className="text-left px-3 py-2">Chaine</th>
-              <th className="text-left px-3 py-2">Debut</th>
+              <th className="text-left px-3 py-2">Chaîne</th>
+              <th className="text-left px-3 py-2">Début</th>
               <th className="text-left px-3 py-2">Fin</th>
               <th className="text-left px-3 py-2">Statut</th>
               <th className="text-right px-3 py-2">Actions</th>
@@ -198,19 +198,19 @@ export function SlotSection(props: SlotSectionProps) {
           <tbody>
             {loading ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-500" colSpan={6}>
+                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={6}>
                   Chargement...
                 </td>
               </tr>
             ) : slots.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-zinc-500" colSpan={6}>
+                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={6}>
                   Aucun slot
                 </td>
               </tr>
             ) : (
               slots.map((slot) => (
-                <tr key={slot.id} className="border-t border-white/10">
+                <tr key={slot.id} className="border-t border-slate-200/80 dark:border-white/10">
                   <td className="px-3 py-2">{programMap.get(slot.programId) || "-"}</td>
                   <td className="px-3 py-2">{slot.channel?.name || "-"}</td>
                   <td className="px-3 py-2">{formatDateTime(slot.startsAt)}</td>
@@ -223,9 +223,9 @@ export function SlotSection(props: SlotSectionProps) {
                       size="sm"
                       variant="outline"
                       onClick={() => onEdit(slot)}
-                      className="border-white/10 bg-white/5 hover:bg-white/10 text-zinc-200"
+                      className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                     >
-                      Editer
+                      Éditer
                     </Button>
                     {canTransitionSlotStatus(slot.slotStatus, "published") &&
                     slot.slotStatus !== "published" ? (

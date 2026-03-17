@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/browser";
+import { useEffect, useState } from "react";
 
 type LiveCounters = {
   impressions: number;
   clicks: number;
-  lastEventAt?: string;
+  lastEventAt?: string | null;
 };
 
 type LiveEvent = {
@@ -19,84 +18,62 @@ type LiveEvent = {
   created_at: string;
 };
 
+type LiveResponse =
+  | {
+      ok: true;
+      counters: LiveCounters;
+      events: LiveEvent[];
+    }
+  | { ok?: false; error?: string };
+
 export function useAdsRealtime(opts: {
-  accessToken: string | null;
-  tenantId: string | null;
-  channelId?: string | null; // ✅ NEW
+  channelId?: string | null;
   streamId?: string | null;
   enabled?: boolean;
+  windowSec?: number;
 }) {
-  const { accessToken, tenantId, channelId, streamId, enabled = true } = opts;
+  const { channelId, streamId, enabled = true, windowSec = 300 } = opts;
 
   const [counters, setCounters] = useState<LiveCounters>({ impressions: 0, clicks: 0 });
   const [events, setEvents] = useState<LiveEvent[]>([]);
-  const channelRef = useRef<any>(null);
-
-  const sb = useMemo(() => {
-    if (!accessToken) return null;
-    return supabaseBrowser(accessToken);
-  }, [accessToken]);
 
   useEffect(() => {
     if (!enabled) return;
-    if (!sb || !tenantId) return;
 
-    // cleanup previous channel
-    if (channelRef.current) {
+    let cancelled = false;
+
+    const load = async () => {
       try {
-        sb.removeChannel(channelRef.current);
-      } catch {}
-      channelRef.current = null;
-    }
+        const params = new URLSearchParams({
+          limit: "25",
+          windowSec: String(windowSec),
+        });
+        if (channelId) params.set("channelId", channelId);
+        if (streamId) params.set("streamId", streamId);
 
-    /**
-     * ✅ Filter priority:
-     * 1) streamId -> tenant + stream
-     * 2) channelId -> tenant + channel
-     * 3) tenant only
-     *
-     * Important: Postgres Changes filter must match real DB column names.
-     */
-    const parts = [`tenant_id=eq.${tenantId}`];
+        const res = await fetch(`/api/ads/live?${params.toString()}`, {
+          cache: "no-store",
+        });
+        const json = (await res.json().catch(() => null)) as LiveResponse | null;
 
-    if (streamId) {
-      parts.push(`stream_id=eq.${streamId}`);
-    } else if (channelId) {
-      parts.push(`channel_id=eq.${channelId}`);
-    }
+        if (cancelled || !res.ok || !json || !("ok" in json) || !json.ok) return;
+        setCounters(json.counters);
+        setEvents(json.events);
+      } catch {
+        if (cancelled) return;
+      }
+    };
 
-    const filter = parts.join(",");
-
-    const chName = `ads_live_${tenantId}${streamId ? `_${streamId}` : channelId ? `_${channelId}` : ""}`;
-
-    const ch = sb
-      .channel(chName)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "ad_events", filter },
-        (payload: any) => {
-          const row = payload.new as LiveEvent;
-
-          setEvents((prev) => [row, ...prev].slice(0, 50));
-          setCounters((prev) => {
-            const next: LiveCounters = { ...prev, lastEventAt: row.created_at };
-            if (row.event === "IMPRESSION") next.impressions += 1;
-            if (row.event === "CLICK") next.clicks += 1;
-            return next;
-          });
-        }
-      )
-      .subscribe();
-
-    channelRef.current = ch;
+    void load();
+    const timer = window.setInterval(() => {
+      void load();
+    }, 10_000);
 
     return () => {
-      try {
-        if (channelRef.current) sb.removeChannel(channelRef.current);
-      } catch {}
-      channelRef.current = null;
+      cancelled = true;
+      window.clearInterval(timer);
     };
-  }, [sb, tenantId, channelId, streamId, enabled]);
+  }, [channelId, enabled, streamId, windowSec]);
 
   return { counters, events };
 }

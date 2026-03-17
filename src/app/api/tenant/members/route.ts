@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTenantContext, jsonError } from "../_utils";
+import { normalizeTenantRole } from "@/lib/tenant-roles";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,12 +28,12 @@ export async function GET() {
         const { data } = await ctx.admin.auth.admin.getUserById(m.user_id);
         return {
           user_id: m.user_id,
-          role: m.role,
+          role: normalizeTenantRole(m.role),
           created_at: m.created_at,
           email: data.user?.email ?? null,
         };
       } catch {
-        return { ...m, email: null };
+        return { ...m, role: normalizeTenantRole(m.role), email: null };
       }
     })
   );

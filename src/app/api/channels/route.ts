@@ -1,37 +1,31 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth, requireTenant } from "../_utils/auth";
-import { supabaseUser } from "../_utils/supabase";
+import { getTenantContext, jsonError, requireTenantCapability } from "../tenant/_utils";
 import { parseJson } from "../_utils/validate";
 
 export async function GET() {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
 
-  const supa = supabaseUser(ctx.accessToken);
-
-  const { data, error } = await supa
+  const { data, error } = await ctx.sb
     .from("channels")
     .select("*")
-    .eq("tenant_id", ctx.tenantId)
+    .eq("tenant_id", ctx.tenant_id)
     .order("name", { ascending: true });
 
   if (error) {
-    console.error("Channels load error", { error: error.message, tenantId: ctx.tenantId });
+    console.error("Channels load error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
   }
   return NextResponse.json(data);
 }
 
 export async function POST(req: Request) {
-  const auth = await requireAuth();
-  if ("res" in auth) return auth.res;
-  const { ctx } = auth;
-  const tenantErr = await requireTenant(ctx);
-  if (tenantErr) return tenantErr;
+  const ctx = await getTenantContext();
+  if (!ctx.ok) return ctx.res;
+
+  const permission = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "edit_catalog");
+  if (!permission.ok) return jsonError(permission.error, 403);
 
   try {
     const parsed = await parseJson(
@@ -51,7 +45,6 @@ export async function POST(req: Request) {
       body.originHlsUrl === undefined || body.originHlsUrl === null || body.originHlsUrl === ""
         ? null
         : body.originHlsUrl;
-    const supa = supabaseUser(ctx.accessToken);
 
     const slug =
       body.slug && body.slug.trim() !== ""
@@ -62,10 +55,10 @@ export async function POST(req: Request) {
             .replace(/[^\w\s-]/g, "")
             .replace(/[\s_-]+/g, "-");
 
-    const { data, error } = await supa
+    const { data, error } = await ctx.sb
       .from("channels")
       .insert({
-        tenant_id: ctx.tenantId,
+        tenant_id: ctx.tenant_id,
         name: body.name,
         slug,
         category: body.category ?? "Other",
@@ -78,7 +71,7 @@ export async function POST(req: Request) {
       .single();
 
     if (error) {
-      console.error("Channel create error", { error: error.message, tenantId: ctx.tenantId });
+      console.error("Channel create error", { error: error.message, tenantId: ctx.tenant_id });
       return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
     }
     return NextResponse.json(data, { status: 201 });

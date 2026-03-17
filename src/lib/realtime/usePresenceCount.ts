@@ -1,72 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/browser";
+import { useMemo } from "react";
+import { useAnalyticsLiveSnapshot } from "./useAnalyticsLiveSnapshot";
 
 type Status = "idle" | "connecting" | "live" | "error";
 
 export function usePresenceCount(opts: {
-  accessToken: string | null;
-  channelName: string | null;
+  streamId: string | null;
   enabled?: boolean;
+  windowSec?: number;
 }) {
-  const { accessToken, channelName, enabled = true } = opts;
+  const { streamId, enabled = true, windowSec = 35 } = opts;
+  const isEnabled = Boolean(enabled && streamId);
 
-  const [count, setCount] = useState(0);
-  const [status, setStatus] = useState<Status>("idle");
-  const chRef = useRef<any>(null);
+  const { snapshot, status } = useAnalyticsLiveSnapshot({
+    streamId,
+    enabled: isEnabled,
+    windowSec,
+  });
 
-  const sb = useMemo(() => {
-    if (!accessToken) return null;
-    return supabaseBrowser(accessToken);
-  }, [accessToken]);
+  const count = useMemo(() => {
+    if (!streamId || !snapshot?.live?.currentStreams) return 0;
+    const nextCount = Number(snapshot.live.currentStreams[streamId] ?? 0);
+    return Number.isFinite(nextCount) ? nextCount : 0;
+  }, [snapshot, streamId]);
 
-  useEffect(() => {
-    if (!enabled || !sb || !channelName) return;
+  if (!isEnabled || !streamId) {
+    return { count: 0, status: "idle" as const };
+  }
 
-    // cleanup
-    if (chRef.current) {
-      try {
-        sb.removeChannel(chRef.current);
-      } catch {}
-      chRef.current = null;
-    }
+  const normalizedStatus: Status =
+    status === "fallback" ? "connecting" : status === "live" ? "live" : status === "error" ? "error" : "connecting";
 
-    setStatus("connecting");
-    setCount(0);
-
-    // Presence only (pas de postgres_changes)
-    const ch = sb.channel(channelName, {
-      config: { presence: { key: "console" } },
-    });
-
-    ch.on("presence", { event: "sync" }, () => {
-      try {
-        const state = ch.presenceState();
-        setCount(Object.keys(state).length);
-        setStatus("live");
-      } catch {
-        setStatus("error");
-      }
-    });
-
-    ch.subscribe(async (s) => {
-      if (s === "SUBSCRIBED") {
-        try {
-          await ch.track({ online_at: new Date().toISOString() });
-        } catch {}
-      }
-    });
-
-    chRef.current = ch;
-
-    return () => {
-      try {
-        if (chRef.current) sb.removeChannel(chRef.current);
-      } catch {}
-      chRef.current = null;
-    };
-  }, [sb, channelName, enabled]);
-
-  return { count, status };
+  return { count, status: normalizedStatus };
 }
