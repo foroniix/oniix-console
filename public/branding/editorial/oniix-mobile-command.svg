@@ -1,0 +1,71 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="118" y1="104" x2="1038" y2="1102" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EDE3D6"/>
+      <stop offset="0.52" stop-color="#E7DCCD"/>
+      <stop offset="1" stop-color="#D9CFBF"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#1A2333"/>
+      <stop offset="1" stop-color="#101722"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="456" y1="260" x2="798" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5C77FF"/>
+      <stop offset="1" stop-color="#3549BE"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="1200" rx="64" fill="url(#bg)"/>
+  <circle cx="948" cy="228" r="146" fill="#5875FF" fill-opacity="0.12"/>
+  <circle cx="244" cy="1006" r="172" fill="#74D8C4" fill-opacity="0.16"/>
+
+  <rect x="118" y="124" width="964" height="952" rx="44" fill="#F8F2EA" stroke="#D6CAB8"/>
+  <rect x="176" y="186" width="440" height="816" rx="38" fill="url(#ink)"/>
+  <rect x="210" y="238" width="372" height="700" rx="28" fill="#151E2C"/>
+  <rect x="338" y="214" width="114" height="14" rx="7" fill="#A2AFC6"/>
+  <circle cx="396" cy="968" r="34" fill="#243247"/>
+  <circle cx="396" cy="968" r="12" fill="#73D6C3"/>
+
+  <rect x="240" y="270" width="312" height="166" rx="22" fill="#1E2A40"/>
+  <text x="266" y="312" fill="#94A8CE" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">PLAYER SESSION</text>
+  <text x="266" y="370" fill="white" font-family="Arial, sans-serif" font-size="46" font-weight="700">01:48:12</text>
+  <text x="266" y="404" fill="#CAD5E8" font-family="Arial, sans-serif" font-size="15">active watch time</text>
+
+  <rect x="240" y="462" width="312" height="206" rx="22" fill="#1A2436"/>
+  <text x="266" y="504" fill="#94A8CE" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">QOE SIGNAL</text>
+  <path d="M270 618C302 588 334 562 364 572C394 582 422 630 454 624C486 618 514 568 522 542" stroke="url(#violet)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M270 648C300 646 324 626 356 630C388 634 408 662 444 664C480 666 510 648 522 628" stroke="#73D6C3" stroke-width="10" stroke-linecap="round"/>
+
+  <rect x="240" y="694" width="312" height="208" rx="22" fill="#1A2436"/>
+  <text x="266" y="736" fill="#94A8CE" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">DEVICE SPLIT</text>
+  <rect x="266" y="770" width="260" height="18" rx="9" fill="#263149"/>
+  <rect x="266" y="770" width="180" height="18" rx="9" fill="#5875FF"/>
+  <rect x="266" y="810" width="260" height="18" rx="9" fill="#263149"/>
+  <rect x="266" y="810" width="120" height="18" rx="9" fill="#73D6C3"/>
+  <text x="266" y="860" fill="#D8E2F2" font-family="Arial, sans-serif" font-size="15">67% app mobile</text>
+  <text x="266" y="888" fill="#D8E2F2" font-family="Arial, sans-serif" font-size="15">33% web player</text>
+
+  <rect x="658" y="186" width="366" height="276" rx="30" fill="#EEE5D9" stroke="#D8CCBB"/>
+  <text x="698" y="236" fill="#7B7166" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">MOBILE COMMAND</text>
+  <text x="698" y="298" fill="#111827" font-family="Arial, sans-serif" font-size="42" font-weight="700">Playback, heartbeat,</text>
+  <text x="698" y="344" fill="#111827" font-family="Arial, sans-serif" font-size="42" font-weight="700">analytics in one flow</text>
+  <text x="698" y="398" fill="#5F584F" font-family="Arial, sans-serif" font-size="18">One contract for app, console and live telemetry.</text>
+
+  <rect x="658" y="500" width="366" height="228" rx="30" fill="#F8F2EA" stroke="#D8CCBB"/>
+  <text x="698" y="548" fill="#7B7166" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">APP DISTRIBUTION</text>
+  <rect x="698" y="586" width="286" height="16" rx="8" fill="#D7CCBF"/>
+  <rect x="698" y="586" width="196" height="16" rx="8" fill="#5875FF"/>
+  <rect x="698" y="626" width="286" height="16" rx="8" fill="#D7CCBF"/>
+  <rect x="698" y="626" width="224" height="16" rx="8" fill="#73D6C3"/>
+  <rect x="698" y="666" width="286" height="16" rx="8" fill="#D7CCBF"/>
+  <rect x="698" y="666" width="132" height="16" rx="8" fill="#1A2333"/>
+  <text x="698" y="712" fill="#5F584F" font-family="Arial, sans-serif" font-size="16">Secure URL issuance and tenant-scoped playback.</text>
+
+  <rect x="658" y="766" width="366" height="236" rx="30" fill="#111825"/>
+  <text x="698" y="814" fill="#92A5CB" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">LIVE SNAPSHOT</text>
+  <text x="698" y="880" fill="white" font-family="Arial, sans-serif" font-size="58" font-weight="700">428</text>
+  <text x="844" y="880" fill="#C9D4E6" font-family="Arial, sans-serif" font-size="20">concurrent viewers</text>
+  <text x="698" y="928" fill="#A7B5CB" font-family="Arial, sans-serif" font-size="17">Mobile sessions merged with web presence in one realtime view.</text>
+  <rect x="698" y="956" width="180" height="14" rx="7" fill="#263149"/>
+  <rect x="698" y="956" width="134" height="14" rx="7" fill="#73D6C3"/>
+</svg>

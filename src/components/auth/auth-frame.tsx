@@ -64,10 +64,10 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
             <div className="mt-8 grid gap-4 xl:grid-cols-[1.04fr_0.96fr]">
               <div className="relative overflow-hidden rounded-[30px] border border-[#1f232b] bg-[#0d121b]">
                 <Image
-                  src="/branding/stills/broadcast-control-room.jpg"
-                  alt="Régie broadcast avec mur d'écrans et instrumentation de diffusion"
-                  width={1000}
-                  height={750}
+                  src="/branding/editorial/oniix-signal-wall.svg"
+                  alt="Visuel Oniix de régie live et de pilotage des audiences"
+                  width={1600}
+                  height={1200}
                   className="aspect-[4/5] w-full object-cover"
                   priority
                 />
@@ -91,10 +91,10 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               <div className="space-y-4">
                 <div className="overflow-hidden rounded-[28px] border border-[#d8cdbe] bg-[#101522]">
                   <Image
-                    src="/branding/stills/post-production-suite.jpg"
-                    alt="Suite de post-production avec moniteurs d'étalonnage et station de travail"
-                    width={1000}
-                    height={1500}
+                    src="/branding/editorial/oniix-control-room.svg"
+                    alt="Visuel Oniix montrant la programmation, l'analyse et l'orchestration produit"
+                    width={1200}
+                    height={1200}
                     className="aspect-[5/4] w-full object-cover"
                   />
                 </div>

@@ -132,7 +132,7 @@ export default async function HomePage() {
                     >
                       <Link href="/signup">
                         <Building2 className="size-4" />
-                        Créer un workspace
+                        Créer un espace
                       </Link>
                     </Button>
                     <SupportMailLink className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#d7cdbf] bg-transparent px-5 text-sm font-semibold text-slate-700 transition hover:bg-[rgba(250,245,238,0.76)] hover:text-[#3549be]">
@@ -216,10 +216,10 @@ export default async function HomePage() {
 
                 <div className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#040816]">
                   <Image
-                    src="/branding/stills/live-operations-room.jpg"
-                    alt="Régie de diffusion avec mur de contrôle et monitoring multi-caméras"
-                    width={1000}
-                    height={750}
+                    src="/branding/editorial/oniix-signal-wall.svg"
+                    alt="Visuel Oniix montrant une régie live, la distribution mobile et les signaux d'audience"
+                    width={1600}
+                    height={1200}
                     className="aspect-[16/13] w-full object-cover"
                     priority
                   />
@@ -260,10 +260,10 @@ export default async function HomePage() {
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d655c]">Post-production</div>
                 <div className="mt-3 overflow-hidden rounded-[24px] border border-[#d8cdbe] bg-[#0b1020]">
                   <Image
-                    src="/branding/stills/post-production-suite.jpg"
-                    alt="Suite de post-production avec caméra, écran de contrôle et station de travail"
-                    width={1000}
-                    height={1500}
+                    src="/branding/editorial/oniix-mobile-command.svg"
+                    alt="Visuel Oniix montrant le lien entre l'application mobile, le playback et l'analytics"
+                    width={1200}
+                    height={1200}
                     className="aspect-[5/4] w-full object-cover"
                   />
                 </div>
@@ -300,10 +300,10 @@ export default async function HomePage() {
 
                   <div className="overflow-hidden rounded-[24px] border border-[#d8cdbe] bg-[#151922]">
                     <Image
-                      src="/branding/stills/broadcast-control-room.jpg"
-                      alt="Poste de contrôle broadcast avec moniteurs et instrumentation de diffusion"
-                      width={1000}
-                      height={1500}
+                      src="/branding/editorial/oniix-control-room.svg"
+                      alt="Visuel Oniix montrant la programmation, l'analyse et le pilotage des chaînes"
+                      width={1200}
+                      height={1200}
                       className="h-full w-full object-cover"
                     />
                   </div>

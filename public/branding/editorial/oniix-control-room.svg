@@ -1,0 +1,66 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="148" y1="112" x2="1056" y2="1094" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6EFE5"/>
+      <stop offset="0.5" stop-color="#ECE2D5"/>
+      <stop offset="1" stop-color="#DDD2C3"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="242" y1="194" x2="950" y2="1000" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#202A3D"/>
+      <stop offset="1" stop-color="#141B28"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#5875FF"/>
+      <stop offset="1" stop-color="#3549BE"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="1200" rx="64" fill="url(#bg)"/>
+  <circle cx="202" cy="242" r="146" fill="#5875FF" fill-opacity="0.12"/>
+  <circle cx="986" cy="958" r="188" fill="#72D6C3" fill-opacity="0.14"/>
+
+  <rect x="136" y="140" width="928" height="920" rx="42" fill="#FBF7F1" stroke="#D8CDBE"/>
+  <rect x="196" y="198" width="808" height="804" rx="34" fill="url(#panel)"/>
+  <rect x="196" y="198" width="808" height="76" rx="34" fill="#182131"/>
+  <circle cx="252" cy="236" r="8" fill="#F57D75"/>
+  <circle cx="282" cy="236" r="8" fill="#F6C562"/>
+  <circle cx="312" cy="236" r="8" fill="#72D6C3"/>
+  <text x="362" y="241" fill="#C9D4E6" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="2">PRODUCTION SUITE</text>
+
+  <rect x="238" y="314" width="264" height="216" rx="24" fill="#1A2333" stroke="#2C3A54"/>
+  <text x="270" y="356" fill="#95A8CC" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">CHANNEL STACK</text>
+  <rect x="270" y="390" width="196" height="18" rx="9" fill="#253049"/>
+  <rect x="270" y="428" width="196" height="18" rx="9" fill="#253049"/>
+  <rect x="270" y="466" width="196" height="18" rx="9" fill="#253049"/>
+  <circle cx="442" cy="399" r="8" fill="#73D6C3"/>
+  <circle cx="442" cy="437" r="8" fill="#5875FF"/>
+  <circle cx="442" cy="475" r="8" fill="#F6C562"/>
+
+  <rect x="530" y="314" width="432" height="372" rx="24" fill="#161E2D" stroke="#2C3A54"/>
+  <text x="564" y="356" fill="#95A8CC" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">ANALYTICS OVERVIEW</text>
+  <text x="564" y="420" fill="white" font-family="Arial, sans-serif" font-size="58" font-weight="700">08h 24m</text>
+  <text x="790" y="420" fill="#CAD5E8" font-family="Arial, sans-serif" font-size="20">watch time</text>
+  <rect x="564" y="454" width="356" height="178" rx="22" fill="#0E1522" stroke="#243249"/>
+  <path d="M596 600C632 566 670 530 716 538C762 546 798 608 846 602C894 596 924 536 952 498" stroke="url(#accent)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M596 628C628 626 656 610 688 612C720 614 748 638 784 642C820 646 852 638 900 604" stroke="#73D6C3" stroke-width="10" stroke-linecap="round"/>
+
+  <rect x="238" y="566" width="264" height="180" rx="24" fill="#1A2333" stroke="#2C3A54"/>
+  <text x="270" y="606" fill="#95A8CC" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">INCIDENT DESK</text>
+  <rect x="270" y="636" width="196" height="14" rx="7" fill="#253049"/>
+  <rect x="270" y="668" width="172" height="14" rx="7" fill="#253049"/>
+  <rect x="270" y="700" width="144" height="14" rx="7" fill="#253049"/>
+  <rect x="270" y="636" width="96" height="14" rx="7" fill="#F6C562"/>
+  <rect x="270" y="668" width="126" height="14" rx="7" fill="#5875FF"/>
+  <rect x="270" y="700" width="72" height="14" rx="7" fill="#73D6C3"/>
+
+  <rect x="238" y="782" width="724" height="176" rx="24" fill="#1A2333" stroke="#2C3A54"/>
+  <text x="270" y="822" fill="#95A8CC" font-family="Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">EDITORIAL TIMELINE</text>
+  <rect x="270" y="854" width="178" height="70" rx="18" fill="#101722"/>
+  <rect x="470" y="854" width="178" height="70" rx="18" fill="#101722"/>
+  <rect x="670" y="854" width="126" height="70" rx="18" fill="#101722"/>
+  <rect x="818" y="854" width="112" height="70" rx="18" fill="#101722"/>
+  <text x="294" y="892" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="700">LIVE BLOCK</text>
+  <text x="494" y="892" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="700">REPLAY CUT</text>
+  <text x="694" y="892" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="700">PROMO</text>
+  <text x="842" y="892" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="700">ADS</text>
+</svg>

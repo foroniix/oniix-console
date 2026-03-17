@@ -1,0 +1,107 @@
+<svg width="1600" height="1200" viewBox="0 0 1600 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="180" y1="80" x2="1420" y2="1120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111823"/>
+      <stop offset="0.48" stop-color="#182131"/>
+      <stop offset="1" stop-color="#10141D"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="292" y1="228" x2="1302" y2="1038" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1D2636"/>
+      <stop offset="1" stop-color="#121926"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="530" y2="340" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#263149"/>
+      <stop offset="1" stop-color="#182032"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="558" y1="402" x2="1098" y2="786" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5875FF"/>
+      <stop offset="1" stop-color="#3549BE"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#71D7C7"/>
+      <stop offset="1" stop-color="#3CAEA0"/>
+    </linearGradient>
+    <filter id="shadow" x="184" y="122" width="1232" height="956" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="20"/>
+      <feGaussianBlur stdDeviation="34"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.02 0 0 0 0 0.03 0 0 0 0 0.06 0 0 0 0.45 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1200" rx="72" fill="url(#bg)"/>
+  <circle cx="277" cy="179" r="228" fill="#4054C7" fill-opacity="0.18"/>
+  <circle cx="1338" cy="1030" r="292" fill="#73D6C3" fill-opacity="0.12"/>
+  <circle cx="1272" cy="194" r="176" fill="#EEE4D6" fill-opacity="0.06"/>
+
+  <g filter="url(#shadow)">
+    <rect x="252" y="182" width="1096" height="820" rx="42" fill="url(#panel)" stroke="#313E58"/>
+    <rect x="252" y="182" width="1096" height="84" rx="42" fill="#171F2E"/>
+    <circle cx="318" cy="224" r="9" fill="#F57D75"/>
+    <circle cx="350" cy="224" r="9" fill="#F6C562"/>
+    <circle cx="382" cy="224" r="9" fill="#72D6C3"/>
+    <rect x="448" y="208" width="176" height="32" rx="16" fill="#263149"/>
+    <text x="476" y="229" fill="#C8D3E7" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="2">ONIIX CONTROL</text>
+    <rect x="1138" y="206" width="140" height="36" rx="18" fill="#253049"/>
+    <text x="1171" y="229" fill="#E8EDF8" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.6">LIVE</text>
+
+    <rect x="292" y="306" width="258" height="198" rx="28" fill="url(#card)" stroke="#31425E"/>
+    <text x="326" y="350" fill="#8FA3C9" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="2.6">CHANNEL HEALTH</text>
+    <text x="326" y="412" fill="white" font-family="Arial, sans-serif" font-size="54" font-weight="700">12</text>
+    <text x="418" y="412" fill="#8FA3C9" font-family="Arial, sans-serif" font-size="18" font-weight="700">ACTIVE FEEDS</text>
+    <rect x="326" y="438" width="190" height="16" rx="8" fill="#232E45"/>
+    <rect x="326" y="438" width="142" height="16" rx="8" fill="url(#teal)"/>
+    <text x="326" y="480" fill="#D7E2F4" font-family="Arial, sans-serif" font-size="16">99.2% availability</text>
+
+    <rect x="292" y="534" width="258" height="198" rx="28" fill="url(#card)" stroke="#31425E"/>
+    <text x="326" y="578" fill="#8FA3C9" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="2.6">AUDIENCE MIX</text>
+    <path d="M336 666C378 606 410 606 448 650C486 694 514 692 530 644" stroke="#5875FF" stroke-width="14" stroke-linecap="round"/>
+    <path d="M336 696C370 668 404 674 436 696C468 718 504 714 530 682" stroke="#73D6C3" stroke-width="10" stroke-linecap="round" opacity="0.95"/>
+    <text x="326" y="624" fill="white" font-family="Arial, sans-serif" font-size="30" font-weight="700">67%</text>
+    <text x="406" y="624" fill="#D7E2F4" font-family="Arial, sans-serif" font-size="18">mobile viewers</text>
+
+    <rect x="292" y="762" width="258" height="200" rx="28" fill="url(#card)" stroke="#31425E"/>
+    <text x="326" y="806" fill="#8FA3C9" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="2.6">INCIDENT FLOW</text>
+    <rect x="326" y="842" width="192" height="22" rx="11" fill="#202A3F"/>
+    <rect x="326" y="842" width="82" height="22" rx="11" fill="#5875FF"/>
+    <rect x="326" y="878" width="168" height="22" rx="11" fill="#202A3F"/>
+    <rect x="326" y="878" width="124" height="22" rx="11" fill="#73D6C3"/>
+    <text x="326" y="930" fill="#D7E2F4" font-family="Arial, sans-serif" font-size="16">Recovery lanes tracked in one cockpit</text>
+
+    <rect x="582" y="306" width="476" height="426" rx="34" fill="#151E2C" stroke="#2F3E58"/>
+    <text x="622" y="350" fill="#8FA3C9" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="2.6">LIVE OPERATIONS</text>
+    <text x="622" y="408" fill="white" font-family="Arial, sans-serif" font-size="64" font-weight="700">2,184</text>
+    <text x="816" y="408" fill="#D7E2F4" font-family="Arial, sans-serif" font-size="20">watchers right now</text>
+    <rect x="622" y="446" width="356" height="252" rx="24" fill="#0E1522" stroke="#243249"/>
+    <path d="M654 642C696 594 738 566 782 576C824 586 858 642 898 630C938 618 962 546 1010 520" stroke="url(#accent)" stroke-width="16" stroke-linecap="round"/>
+    <path d="M654 676C692 666 726 636 768 646C810 656 840 696 886 684C932 672 972 618 1010 612" stroke="#73D6C3" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="1010" cy="520" r="10" fill="#5875FF"/>
+    <circle cx="1010" cy="612" r="8" fill="#73D6C3"/>
+    <rect x="1084" y="306" width="224" height="426" rx="34" fill="#151E2C" stroke="#2F3E58"/>
+    <text x="1118" y="350" fill="#8FA3C9" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="2.6">MOBILE APP</text>
+    <rect x="1146" y="390" width="104" height="204" rx="26" fill="#0E1522" stroke="#435370"/>
+    <rect x="1171" y="414" width="56" height="8" rx="4" fill="#425472"/>
+    <rect x="1162" y="448" width="72" height="104" rx="18" fill="#1A2334"/>
+    <rect x="1176" y="468" width="44" height="8" rx="4" fill="#5875FF"/>
+    <rect x="1176" y="486" width="44" height="8" rx="4" fill="#73D6C3"/>
+    <rect x="1176" y="514" width="32" height="32" rx="10" fill="#202C43"/>
+    <circle cx="1192" cy="530" r="8" fill="#73D6C3"/>
+    <text x="1118" y="644" fill="white" font-family="Arial, sans-serif" font-size="30" font-weight="700">1.8s</text>
+    <text x="1192" y="644" fill="#D7E2F4" font-family="Arial, sans-serif" font-size="16">start time</text>
+
+    <rect x="582" y="762" width="726" height="200" rx="34" fill="#151E2C" stroke="#2F3E58"/>
+    <text x="622" y="806" fill="#8FA3C9" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="2.6">PROGRAMMING + REPLAY</text>
+    <rect x="622" y="842" width="208" height="86" rx="22" fill="#0E1522" stroke="#25354D"/>
+    <rect x="854" y="842" width="208" height="86" rx="22" fill="#0E1522" stroke="#25354D"/>
+    <rect x="1086" y="842" width="182" height="86" rx="22" fill="#0E1522" stroke="#25354D"/>
+    <text x="652" y="880" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="700">NOW / NEXT</text>
+    <text x="652" y="906" fill="#AEBBD3" font-family="Arial, sans-serif" font-size="14">editorial cadence</text>
+    <text x="884" y="880" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="700">REPLAYS</text>
+    <text x="884" y="906" fill="#AEBBD3" font-family="Arial, sans-serif" font-size="14">post-live packaging</text>
+    <text x="1116" y="880" fill="white" font-family="Arial, sans-serif" font-size="18" font-weight="700">MONETIZATION</text>
+    <text x="1116" y="906" fill="#AEBBD3" font-family="Arial, sans-serif" font-size="14">campaign aware</text>
+  </g>
+</svg>
