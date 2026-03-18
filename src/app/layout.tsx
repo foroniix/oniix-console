@@ -30,11 +30,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className="h-full">
+    <html lang="fr" className="h-full dark">
       <body className={`${manrope.variable} ${baloo.variable} h-full`}>
         {children}
         <CookieBanner />
-        <Toaster richColors theme="system" />
+        <Toaster richColors theme="dark" />
       </body>
     </html>
   );

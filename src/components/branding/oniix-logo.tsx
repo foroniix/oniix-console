@@ -41,7 +41,7 @@ export function OniixLogo({
       {showMark ? (
         <span
           className={cn(
-            "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-[#cbc5ba] bg-[linear-gradient(180deg,#f8f2ea,#efe6da)] shadow-[0_18px_40px_-28px_rgba(39,37,33,0.35)]",
+            "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-[#2a3d5a] bg-[linear-gradient(180deg,#101a2a,#0b1320)] shadow-[0_18px_40px_-28px_rgba(0,0,0,0.5)]",
             styles.mark
           )}
           aria-hidden="true"
@@ -66,14 +66,14 @@ export function OniixLogo({
       <span className="min-w-0">
         <span
           className={cn(
-            "block whitespace-nowrap font-[var(--font-oniix-brand)] text-[#3549be] italic font-black leading-none tracking-[-0.08em]",
+            "block whitespace-nowrap font-[var(--font-oniix-brand)] text-[#7b8fff] italic font-black leading-none tracking-[-0.08em]",
             styles.word
           )}
         >
           Oniix
         </span>
         {subtitle ? (
-          <span className={cn("mt-1 block whitespace-nowrap font-medium text-[#6d655c]", styles.subtitle)}>
+          <span className={cn("mt-1 block whitespace-nowrap font-medium text-[#8ea1bc]", styles.subtitle)}>
             {subtitle}
           </span>
         ) : null}
