@@ -228,10 +228,10 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                  Paramètres
+                  Sécurité et paramètres
                 </h1>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Compte, organisation et sécurité.
+                  Compte opérateur, espace actif et clés d’intégration.
                 </p>
               </div>
             </div>
@@ -274,10 +274,10 @@ export default function SettingsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <User2 className="h-4 w-4 text-indigo-300" />
-                Compte
+                Compte opérateur
               </CardTitle>
               <CardDescription className="text-slate-600 dark:text-slate-300">
-                Informations du compte.
+                Identité de connexion utilisée pour opérer la console.
               </CardDescription>
             </CardHeader>
 
@@ -285,7 +285,7 @@ export default function SettingsPage() {
               <div className="console-panel-muted overflow-hidden">
                 <Row label="Email" value={user?.email ?? "-"} />
                 <Divider />
-                <Row label="Role" value={user?.role ? roleLabel(user.role) : "-"} />
+                <Row label="Rôle" value={user?.role ? roleLabel(user.role) : "-"} />
               </div>
             </CardContent>
           </Card>
@@ -295,26 +295,26 @@ export default function SettingsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-indigo-300" />
-                Organisation
+                Espace actif
               </CardTitle>
               <CardDescription className="text-slate-500 dark:text-slate-400">
-                Paramètres de l&apos;organisation.
+                Identité opérationnelle de l’espace actuellement sélectionné.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
               <div className="grid gap-2">
                 <label className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  Nom de l’organisation
+                  Nom de l’espace
                 </label>
                 <Input
                   value={tenantName}
                   onChange={(e) => setTenantName(e.target.value)}
                   className="console-field"
-                  placeholder="Mon organisation"
+                  placeholder="Nom de l’espace"
                 />
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Ce nom peut apparaître dans la navigation et les exports.
+                  Ce nom apparaît dans la navigation, les exports et les écrans partagés.
                 </p>
               </div>
 
@@ -344,10 +344,10 @@ export default function SettingsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <Smartphone className="h-4 w-4 text-indigo-300" />
-                Ingest mobile
+                Clé d’ingest applicative
               </CardTitle>
               <CardDescription className="text-slate-600 dark:text-slate-300">
-                Clé API utilisée par les apps pour envoyer les heartbeats analytics.
+                Clé sécurisée utilisée par les applications pour remonter les signaux runtime.
               </CardDescription>
             </CardHeader>
 
@@ -362,14 +362,14 @@ export default function SettingsPage() {
 
               {ingest?.requiresMigration && (
                   <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-200">
-                  Migration requise : appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis l&apos;interface.
+                  Migration requise : appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis la console.
                 </div>
               )}
 
               {newIngestKey && (
                 <div className="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
                   <div className="text-xs font-medium text-emerald-700 dark:text-emerald-200">
-                    Nouvelle clé (affichée une seule fois)
+                    Nouvelle clé sécurisée (affichée une seule fois)
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Input
@@ -402,7 +402,7 @@ export default function SettingsPage() {
                   ) : (
                     <RefreshCw className="h-4 w-4 mr-2" />
                   )}
-                  Régénérer la clé ingest
+                  Faire tourner la clé
                 </Button>
               </div>
             </CardContent>
@@ -413,10 +413,10 @@ export default function SettingsPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="h-4 w-4 text-indigo-300" />
-                Sécurité
+                Sécurité d’accès
               </CardTitle>
               <CardDescription className="text-slate-500 dark:text-slate-400">
-                Mettre à jour votre mot de passe.
+                Renforcez l’accès au poste opérateur.
               </CardDescription>
             </CardHeader>
 
@@ -443,7 +443,7 @@ export default function SettingsPage() {
               <div className="console-panel-muted flex flex-col justify-between gap-3 p-4">
                 <div className="space-y-1">
                   <div className="text-sm font-medium text-slate-950 dark:text-white">
-                    Recommandations
+                    Hygiène d’accès
                   </div>
                   <ul className="list-inside list-disc space-y-1 text-xs text-slate-500 dark:text-slate-400">
                     <li>Évitez les mots de passe réutilisés.</li>
@@ -464,7 +464,7 @@ export default function SettingsPage() {
                     ) : (
                       <KeyRound className="h-4 w-4 mr-2" />
                     )}
-                    Changer le mot de passe
+                    Mettre à jour le mot de passe
                   </Button>
                 </div>
               </div>

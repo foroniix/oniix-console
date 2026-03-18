@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { OniixLogo } from "@/components/branding/oniix-logo";
+import { ConsoleFooter } from "@/components/legal/console-footer";
 import { SupportMailLink } from "@/components/support/support-mail-link";
 import { Button } from "@/components/ui/button";
 
@@ -35,7 +36,7 @@ const PRODUCTION_PILLARS = [
   {
     index: "03",
     title: "Lecture des audiences",
-    text: "Présence live, watch time, plateformes et signaux runtime consolidés sans bruit produit.",
+    text: "Présence live, temps de visionnage, plateformes et signaux runtime consolidés sans bruit produit.",
     icon: Waypoints,
   },
 ];
@@ -43,7 +44,7 @@ const PRODUCTION_PILLARS = [
 const STUDIO_LANES = [
   {
     title: "Chaînes et éditeurs",
-    body: "Branding, programmation, replays, rôles, workspaces et exploitation du catalogue dans la même grammaire.",
+    body: "Branding, programmation, replays, rôles, espaces et exploitation du catalogue dans la même grammaire.",
     icon: Tv2,
   },
   {
@@ -104,7 +105,7 @@ export default async function HomePage() {
               <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-[#d8cfc2] bg-[rgba(250,245,238,0.8)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d655c]">
-                    Oniix Production House
+                    Maison de production Oniix
                   </div>
 
                   <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.04] tracking-[-0.045em] sm:text-5xl xl:text-[4.15rem]">
@@ -148,10 +149,10 @@ export default async function HomePage() {
                       <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6d655c]">
                         Feuille de route terrain
                       </div>
-                      <div className="mt-2 text-lg font-semibold text-slate-950">Ce que la plateforme absorbe vraiment</div>
+                      <div className="mt-2 text-lg font-semibold text-slate-950">Ce que la plateforme absorbe réellement</div>
                     </div>
                     <div className="rounded-full border border-[#d7cdbf] bg-white px-3 py-1 text-[11px] font-medium text-[#6d655c]">
-                      Broadcast-first
+                      Pilotage média
                     </div>
                   </div>
 
@@ -204,13 +205,13 @@ export default async function HomePage() {
               <div className="grid gap-4 p-4">
                 <div className="flex items-start justify-between gap-4 px-1 pt-1">
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Signal wall</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Mur de supervision</div>
                     <div className="mt-2 max-w-lg text-2xl font-semibold leading-tight">
                       Une ambiance de plateau, de régie et de distribution, pas un simple portail marketing.
                     </div>
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300">
-                    Soft daylight contrast
+                    Cadre studio
                   </div>
                 </div>
 
@@ -227,10 +228,10 @@ export default async function HomePage() {
 
                   <div className="absolute left-4 right-4 top-4 flex flex-wrap gap-2">
                     <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-100">
-                      Playback signed
+                      Playback signé
                     </div>
                     <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-100">
-                      Mobile + web
+                      Applications + web
                     </div>
                     <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-100">
                       Audience live
@@ -312,6 +313,8 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        <ConsoleFooter className="mt-6" />
       </div>
     </main>
   );

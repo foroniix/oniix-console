@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 
 import { OniixLogo } from "@/components/branding/oniix-logo";
+import { ConsoleFooter } from "@/components/legal/console-footer";
 import { SupportMailLink } from "@/components/support/support-mail-link";
 import { SUPPORT_EMAIL } from "@/lib/console-branding";
 
@@ -17,7 +18,7 @@ type AuthFrameProps = {
 
 const TRUST_POINTS = [
   "Sessions applicatives protégées par cookies httpOnly",
-  "Rôles et isolation workspace appliqués côté backend",
+  "Rôles et isolation des espaces appliqués côté backend",
   "Onboarding éditeur, invitations et accès consolidés",
 ];
 
@@ -31,7 +32,8 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
       </div>
 
       <div className="relative mx-auto flex min-h-dvh w-full max-w-7xl items-center px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid w-full gap-6 lg:grid-cols-[1.03fr_0.97fr]">
+        <div className="w-full space-y-6">
+          <div className="grid w-full gap-6 lg:grid-cols-[1.03fr_0.97fr]">
           <section className="hidden rounded-[36px] border border-[#d8cdbe] bg-[linear-gradient(180deg,rgba(243,236,226,0.92),rgba(234,224,211,0.92))] p-8 shadow-[0_30px_90px_rgba(39,37,33,0.12)] backdrop-blur lg:flex lg:flex-col">
             <div className="flex items-center justify-between gap-4">
               <Link
@@ -77,7 +79,7 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
                     Oniix signal
                   </span>
                   <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] text-emerald-200">
-                    Secure access
+                    Accès sécurisé
                   </span>
                 </div>
                 <div className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 backdrop-blur">
@@ -153,6 +155,8 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               <div className="mt-8 border-t border-[#d8cdbe] pt-5">{footer}</div>
             </div>
           </section>
+        </div>
+          <ConsoleFooter compact />
         </div>
       </div>
     </div>

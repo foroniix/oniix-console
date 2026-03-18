@@ -512,26 +512,26 @@ export default function AnalyticsDashboard() {
           <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="border-slate-200 bg-white/80 text-slate-700 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-200">
-                Analytics
+                Audience
               </Badge>
               <Badge className={cn("border", liveMeta.className)}>
                 <Wifi className="mr-1 h-3 w-3" />
                 {liveMeta.label}
               </Badge>
               <Badge variant="outline" className="border-slate-200 bg-white/80 text-slate-600 dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300">
-                Workspace · {workspaceName}
+                Espace · {workspaceName}
               </Badge>
             </div>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white md:text-4xl">
-              Intelligence audience
+              Pilotage audience
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Une refonte plus executive et plus produit, inspirée des surfaces Google Analytics,
-              pour piloter acquisition, engagement et live multi-chaînes.
+              Lecture unifiée de l’audience, de l’engagement et du direct multi-chaînes pour piloter la plateforme
+              sans angle mort produit ou opérationnel.
             </p>
             <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
-                {activeChannelId ? `Filtre · ${selectedChannel?.name ?? "Chaîne sélectionnée"}` : "Vue globale multi-chaînes"}
+                {activeChannelId ? `Filtre · ${selectedChannel?.name ?? "Chaîne sélectionnée"}` : "Vue d’ensemble multi-chaînes"}
               </div>
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
                 Rôle · {role}
@@ -611,21 +611,21 @@ export default function AnalyticsDashboard() {
             accent="#2563EB"
           />
           <MetricCard
-            label="Watch time"
+            label="Temps de visionnage"
             value={formatWatchTime(data.kpi.watchTimeLabel, data.kpi.watchTime, data.kpi.watchTimeSeconds)}
             detail={`${formatWatchTime(undefined, 0, averageWatchSeconds)} par utilisateur`}
             icon={Clock3}
             accent="#14B8A6"
           />
           <MetricCard
-            label="Retention"
+            label="Rétention"
             value={formatPercent(data.kpi.retention)}
-            detail="Sessions qui passent le seuil de retention"
+            detail="Sessions qui dépassent le seuil de rétention"
             icon={Zap}
             accent="#7C3AED"
           />
           <MetricCard
-            label="Live maintenant"
+            label="Direct maintenant"
             value={formatCompact(livePayload.activeUsers)}
             detail={`${formatNumber(liveStreams.length)} flux actifs visibles`}
             icon={Radio}
@@ -654,7 +654,7 @@ export default function AnalyticsDashboard() {
             <div>
               <CardTitle className="text-xl text-slate-950 dark:text-white">Acquisition et engagement</CardTitle>
               <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
-                  Lecture GA-style de la tendance d&apos;audience et de l&apos;intensité analytique.
+                Lecture consolidée de la tendance d&apos;audience et de l&apos;intensité d&apos;usage.
               </CardDescription>
             </div>
             <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
@@ -669,12 +669,12 @@ export default function AnalyticsDashboard() {
                 <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">base analytique sur la période</div>
               </div>
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Watch time</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Temps de visionnage</div>
                 <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{formatWatchTime(data.kpi.watchTimeLabel, data.kpi.watchTime, data.kpi.watchTimeSeconds)}</div>
                 <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">moyenne session - {formatWatchTime(undefined, 0, averageWatchSeconds)}</div>
               </div>
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Intensite</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Intensité</div>
                 <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
                   {data.kpi.totalUsers > 0 ? (data.kpi.totalEvents / data.kpi.totalUsers).toFixed(1) : "0.0"}
                 </div>
@@ -716,7 +716,7 @@ export default function AnalyticsDashboard() {
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <CardTitle className="text-xl text-slate-950 dark:text-white">Command center live</CardTitle>
+                <CardTitle className="text-xl text-slate-950 dark:text-white">Centre live</CardTitle>
                 <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
                   Vue unifiée web + mobile sur la fenêtre glissante live.
                 </CardDescription>
@@ -783,7 +783,7 @@ export default function AnalyticsDashboard() {
           <CardHeader>
             <CardTitle className="text-xl text-slate-950 dark:text-white">Sources de lecture</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-300">
-              Répartition sessions et watch time par plateforme.
+              Répartition des sessions et du temps de visionnage par plateforme.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -817,7 +817,7 @@ export default function AnalyticsDashboard() {
                     </div>
                     <div className="text-right">
                       <div className="font-semibold text-slate-950 dark:text-white">{entry.watchTimeLabel}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">watch time</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">temps cumulé</div>
                     </div>
                   </div>
                 </div>
@@ -882,15 +882,15 @@ export default function AnalyticsDashboard() {
 
         <Card className={panelClass}>
           <CardHeader>
-            <CardTitle className="text-xl text-slate-950 dark:text-white">Signal recent</CardTitle>
+            <CardTitle className="text-xl text-slate-950 dark:text-white">Signal récent</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-300">
-              Activité récente, sessions live et synthèse executive.
+              Activité récente, sessions live et synthèse opérateur.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-3">
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Source dominante</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Plateforme dominante</div>
                 <div className="mt-2 flex items-end gap-2">
                   <div className="text-2xl font-semibold text-slate-950 dark:text-white">{leadingPlatform.name}</div>
                   <ArrowUpRight className="mb-1 h-4 w-4 text-emerald-500" />
@@ -900,9 +900,9 @@ export default function AnalyticsDashboard() {
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Appareil dominant</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Appareil principal</div>
                 <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{dominantDevice.name}</div>
-                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">{formatPercent(dominantDevice.value)} du trafic observe</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">{formatPercent(dominantDevice.value)} du trafic observé</div>
               </div>
             </div>
 

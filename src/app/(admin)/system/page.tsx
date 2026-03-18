@@ -89,8 +89,8 @@ export default function SystemPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Santé plateforme"
-        subtitle="Observabilité et maturité d’exploitation de la plateforme SaaS multi-tenant."
+        title="Exploitation système"
+        subtitle="Observabilité et maturité d’exploitation de la plateforme Oniix multi-éditeur."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Système" },
@@ -130,14 +130,14 @@ export default function SystemPage() {
                   <ShieldCheck className="size-4 text-primary" />
                   Couverture ingest
                 </CardTitle>
-                <CardDescription>Tenants configurés pour la collecte live.</CardDescription>
+                <CardDescription>Éditeurs configurés pour la collecte live.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-2xl font-semibold text-slate-950 dark:text-white">{ingestCoverage}%</div>
                 <Progress value={ingestCoverage} />
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {numberFormat(data?.kpis.ingest_configured_tenants ?? 0)} /{" "}
-                  {numberFormat(data?.kpis.tenants_total ?? 0)} tenants.
+                  {numberFormat(data?.kpis.tenants_total ?? 0)} éditeurs.
                 </p>
               </CardContent>
             </Card>
@@ -148,14 +148,14 @@ export default function SystemPage() {
                   <Waves className="size-4 text-primary" />
                   Occupation live
                 </CardTitle>
-                <CardDescription>Ratio des streams actuellement en direct.</CardDescription>
+                <CardDescription>Ratio des flux actuellement en direct.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-2xl font-semibold text-slate-950 dark:text-white">{streamLiveRatio}%</div>
                 <Progress value={streamLiveRatio} />
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {numberFormat(data?.kpis.streams_live ?? 0)} /{" "}
-                  {numberFormat(data?.kpis.streams_total ?? 0)} streams.
+                  {numberFormat(data?.kpis.streams_total ?? 0)} flux.
                 </p>
               </CardContent>
             </Card>
@@ -164,16 +164,16 @@ export default function SystemPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <CheckCircle2 className="size-4 text-primary" />
-                  Activité tenants
+                  Activité éditeurs
                 </CardTitle>
-                <CardDescription>Part des tenants actifs sur les dernières 24 heures.</CardDescription>
+                <CardDescription>Part des éditeurs actifs sur les dernières 24 heures.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-2xl font-semibold text-slate-950 dark:text-white">{activityCoverage}%</div>
                 <Progress value={activityCoverage} />
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {numberFormat(data?.kpis.tenants_active_24h ?? 0)} /{" "}
-                  {numberFormat(data?.kpis.tenants_total ?? 0)} tenants.
+                  {numberFormat(data?.kpis.tenants_total ?? 0)} éditeurs.
                 </p>
               </CardContent>
             </Card>
@@ -199,7 +199,7 @@ export default function SystemPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
-                  <span className="text-slate-500 dark:text-slate-400">Streams en direct</span>
+                  <span className="text-slate-500 dark:text-slate-400">Flux en direct</span>
                   <span className="font-semibold text-slate-950 dark:text-white">
                     {numberFormat(data?.kpis.streams_live ?? 0)}
                   </span>
@@ -211,7 +211,7 @@ export default function SystemPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Siren className="size-4 text-amber-500 dark:text-amber-300" />
-                  Checkpoints ops
+                  Checkpoints d’exploitation
                 </CardTitle>
                 <CardDescription>État des prérequis SaaS critiques.</CardDescription>
               </CardHeader>

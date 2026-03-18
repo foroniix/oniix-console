@@ -33,9 +33,9 @@ type StatusFilter = "ALL" | "LIVE" | "OFFLINE" | "ENDED";
 
 const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: "ALL", label: "Tous" },
-  { value: "LIVE", label: "Live" },
-  { value: "OFFLINE", label: "Offline" },
-  { value: "ENDED", label: "Ended" },
+  { value: "LIVE", label: "En direct" },
+  { value: "OFFLINE", label: "Hors ligne" },
+  { value: "ENDED", label: "Terminé" },
 ];
 
 export default function StreamsPage() {
@@ -126,11 +126,11 @@ export default function StreamsPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Direct"
-        subtitle="Surveillez et pilotez vos flux HLS depuis un espace unique."
+        title="Directs"
+        subtitle="Surveillez, lancez et qualifiez vos flux HLS depuis un cockpit unique."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
-          { label: "Direct" },
+          { label: "Directs" },
         ]}
         icon={<RadioTower className="size-5" />}
         actions={
@@ -165,14 +165,14 @@ export default function StreamsPage() {
           value={stats.alerts}
           tone={stats.alerts > 0 ? "warning" : "neutral"}
           icon={<TriangleAlert className="size-4" />}
-          hint={stats.alerts > 0 ? "Au moins un flux est dégradé ou hors ligne." : "Aucune alerte active."}
+          hint={stats.alerts > 0 ? "Au moins un flux demande une action opérateur." : "Aucune alerte active."}
           loading={isLoading}
         />
         <KpiCard
           label="Dernière synchro"
           value={stats.updatedAt}
           tone="info"
-          hint="Mise à jour manuelle pour éviter le polling global."
+          hint="Lecture manuelle pour garder la console réactive."
           loading={isLoading}
         />
       </KpiRow>
@@ -232,11 +232,11 @@ export default function StreamsPage() {
         onRetry={() => void loadData(false)}
         isEmpty={!isLoading && !loadError && filteredStreams.length === 0}
         emptyTitle="Aucun flux trouvé"
-        emptyDescription="Ajustez les filtres ou créez votre premier flux HLS."
+        emptyDescription="Ajustez les filtres ou ouvrez votre premier direct HLS."
         emptyAction={
           <Button onClick={handleCreateNew} className="mt-2 bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">
             <Plus className="mr-2 size-4" />
-            Créer votre premier flux
+            Créer votre premier direct
           </Button>
         }
       >

@@ -68,7 +68,7 @@ export default function LoginPage() {
     <AuthFrame
       eyebrow="Connexion sécurisée"
       title="Accédez au poste de pilotage Oniix."
-      subtitle="Retrouvez vos workspaces, vos chaînes, vos analytics et vos opérations live dans un environnement unifié."
+      subtitle="Retrouvez vos espaces, vos chaînes, vos audiences et vos opérations live dans un environnement unifié."
       footer={
         <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <p>
@@ -89,7 +89,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@company.com"
+            placeholder="nom@organisation.tv"
             autoFocus
             className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
           />

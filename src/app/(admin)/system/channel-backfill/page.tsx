@@ -120,14 +120,14 @@ export default function ChannelBackfillPage() {
         const res = await fetch("/api/superadmin/channel-backfill", { cache: "no-store" });
         const json = (await res.json().catch(() => null)) as BackfillResponse | { ok?: false; error?: string } | null;
         if (!res.ok || !json || !("ok" in json) || !json.ok) {
-          setError((json && "error" in json && json.error) || "Impossible de charger le backfill des chaînes.");
+          setError((json && "error" in json && json.error) || "Impossible de charger la remédiation des chaînes.");
           return;
         }
 
         setData(json);
         syncDrafts(json.channels);
       } catch {
-        setError("Erreur réseau sur le backfill des chaînes.");
+        setError("Erreur réseau sur la remédiation des chaînes.");
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -213,7 +213,7 @@ export default function ChannelBackfillPage() {
       }
 
       setNotice(
-        `${json.updated} chaîne(s) mises à jour automatiquement (${json.updated_origin} origine(s), ${json.updated_tenant} tenant(s)).`
+        `${json.updated} chaîne(s) mises à jour automatiquement (${json.updated_origin} origine(s), ${json.updated_tenant} rattachement(s) éditeur).`
       );
       await load(true);
     } catch {
@@ -228,13 +228,13 @@ export default function ChannelBackfillPage() {
       <header className="console-hero flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Backfill des chaînes</h1>
+          <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Remédiation des chaînes</h1>
             <Badge className="border border-amber-300/70 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300">
               Préparation OTT
             </Badge>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Affectez les chaînes orphelines à un tenant puis renseignez leur `origin_hls_url` pour activer le proxy Oniix.
+            Rattachez les chaînes orphelines à un éditeur puis renseignez leur origine HLS pour activer la gateway Oniix.
           </p>
         </div>
 
@@ -249,11 +249,11 @@ export default function ChannelBackfillPage() {
             ) : (
               <CheckCircle2 className="mr-2 size-4" />
             )}
-            Auto-remplir depuis streams
+            Préremplir depuis les directs
           </Button>
           <Button asChild>
             <Link href="/channels">
-              Vue chaînes
+              Ouvrir les chaînes
               <ArrowUpRight className="ml-2 size-4" />
             </Link>
           </Button>
@@ -287,7 +287,7 @@ export default function ChannelBackfillPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Tenant manquant</CardDescription>
+            <CardDescription>Éditeur manquant</CardDescription>
             <CardTitle>{numberFormat(data?.stats.missingTenant ?? 0)}</CardTitle>
           </CardHeader>
         </Card>
@@ -304,7 +304,7 @@ export default function ChannelBackfillPage() {
           <div>
             <CardTitle>Corrections globales</CardTitle>
             <CardDescription>
-              Cette vue superadmin cible les chaînes invisibles dans les consoles tenant car elles ne sont pas encore correctement rattachées.
+              Cette vue cible les chaînes encore invisibles dans les consoles éditeur car elles ne sont pas correctement rattachées.
             </CardDescription>
           </div>
 
@@ -313,7 +313,7 @@ export default function ChannelBackfillPage() {
               Incomplètes
             </Button>
             <Button variant={filter === "missingTenant" ? "default" : "outline"} onClick={() => setFilter("missingTenant")}>
-              Sans tenant
+              Sans éditeur
             </Button>
             <Button variant={filter === "missingOrigin" ? "default" : "outline"} onClick={() => setFilter("missingOrigin")}>
               Sans origine
@@ -378,10 +378,10 @@ export default function ChannelBackfillPage() {
                             }
                           >
                             <SelectTrigger className="w-[220px]">
-                              <SelectValue placeholder="Choisir un tenant" />
+                              <SelectValue placeholder="Choisir un éditeur" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">Aucun tenant</SelectItem>
+                              <SelectItem value="__none__">Aucun éditeur</SelectItem>
                               {(data?.tenants ?? []).map((tenant) => (
                                 <SelectItem key={tenant.id} value={tenant.id}>
                                   {tenant.name}
@@ -420,12 +420,12 @@ export default function ChannelBackfillPage() {
                           {channel.issues.missingTenant ? (
                             <Badge className="border-amber-500/25 bg-amber-500/10 text-amber-300">
                               <AlertTriangle className="mr-1 size-3.5" />
-                              Sans tenant
+                              Sans éditeur
                             </Badge>
                           ) : (
                             <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300">
                               <CheckCircle2 className="mr-1 size-3.5" />
-                              Tenant OK
+                              Éditeur OK
                             </Badge>
                           )}
 

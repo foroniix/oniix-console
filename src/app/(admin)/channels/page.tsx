@@ -282,7 +282,7 @@ export default function ChannelsPage() {
                     Chaînes TV
                   </h1>
                   <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Catalogue, identité visuelle et disponibilité.
+                    Catalogue éditorial, identité visuelle et santé de diffusion.
                   </p>
                 </div>
               </div>
@@ -492,16 +492,16 @@ export default function ChannelsPage() {
                       <div>
                         <p className="text-sm font-semibold text-slate-950 dark:text-white">Distribution OTT</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          URL HLS d’origine éditeur. Le player mobile passera ensuite par `stream.oniix.space`.
+                          URL HLS d’origine éditeur. La lecture passe ensuite par la gateway Oniix.
                         </p>
                       </div>
 
                       <div className="grid gap-2">
                         <div className="flex items-center justify-between gap-3">
-                          <Label className="text-slate-700 dark:text-slate-300">Origin HLS URL</Label>
+                          <Label className="text-slate-700 dark:text-slate-300">URL HLS d’origine</Label>
                           <span className="inline-flex items-center gap-2 text-[11px] text-zinc-500">
                             <Link2 className="h-3.5 w-3.5" />
-                            Proxy Oniix requis
+                            Gateway Oniix requise
                           </span>
                         </div>
                         <Input
@@ -545,7 +545,7 @@ export default function ChannelsPage() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <MiniMetricCard
-                            title="Viewers actifs"
+                            title="Spectateurs actifs"
                             value={editingStats ? String(editingStats.activeViewers) : "—"}
                             hint="Lecture active maintenant"
                             icon={Radio}
@@ -557,15 +557,15 @@ export default function ChannelsPage() {
                             icon={Activity}
                           />
                           <MiniMetricCard
-                            title="Watch time"
+                            title="Temps de visionnage"
                             value={editingStats ? `${editingStats.watchMinutesToday} min` : "—"}
                             hint="Temps de visionnage"
                             icon={Clock3}
                           />
                           <MiniMetricCard
-                            title="Buffer ratio"
+                            title="Taux de buffer"
                             value={editingStats ? formatPercent(editingStats.bufferRatio) : "—"}
-                            hint="Buffer / watch"
+                            hint="Temps de buffer / visionnage"
                             icon={AlertTriangle}
                           />
                         </div>
@@ -631,7 +631,7 @@ export default function ChannelsPage() {
                                     {formatMinuteBucket(point.bucketMinute)}
                                   </div>
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                                    <span className="text-zinc-200">{point.activeViewers} live</span>
+                                    <span className="text-zinc-200">{point.activeViewers} en direct</span>
                                     <span className="text-slate-700 dark:text-slate-300">{point.sessionsStarted} sessions</span>
                                     <span className="text-slate-700 dark:text-slate-300">{point.watchSeconds}s watch</span>
                                     <span className="text-slate-700 dark:text-slate-300">{point.errorCount} erreurs</span>
@@ -695,15 +695,16 @@ export default function ChannelsPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total" value={stats.total} tone="neutral" />
-          <StatCard title="Actives" value={stats.active} tone="success" />
-          <StatCard title="Inactives" value={stats.inactive} tone="muted" />
-          <StatCard title="Origines OK" value={stats.withOrigin} tone="indigo" />
+          <StatCard title="Chaînes" value={stats.total} tone="neutral" badgeLabel="Catalogue" hint="Volume total de chaînes configurées" />
+          <StatCard title="Actives" value={stats.active} tone="success" badgeLabel="Diffusion" hint="Chaînes actuellement publiées" />
+          <StatCard title="Inactives" value={stats.inactive} tone="muted" badgeLabel="Contrôle" hint="Chaînes en attente de remise en service" />
+          <StatCard title="Origines prêtes" value={stats.withOrigin} tone="indigo" badgeLabel="Distribution" hint="Chaînes prêtes pour le playback signé" />
         </div>
 
         {stats.missingOrigin > 0 ? (
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-            {stats.missingOrigin} chaîne(s) n&apos;ont pas encore d&apos;`origin_hls_url`. Tant que ce champ manque, `/api/mobile/playback-url` retournera une erreur et la gateway Oniix ne pourra pas servir le flux.
+            {stats.missingOrigin} chaîne(s) n&apos;ont pas encore d&apos;URL HLS d&apos;origine. Tant que ce point n&apos;est pas configuré,
+            la résolution de lecture mobile échouera et la gateway Oniix ne pourra pas servir le flux.
           </div>
         ) : null}
 
@@ -953,11 +954,15 @@ export default function ChannelsPage() {
 function StatCard({
   title,
   value,
-  tone
+  tone,
+  badgeLabel,
+  hint,
 }: {
   title: string;
   value: number;
   tone: "neutral" | "success" | "muted" | "indigo";
+  badgeLabel: string;
+  hint: string;
 }) {
   const toneClasses =
     tone === "success"
@@ -973,13 +978,13 @@ function StatCard({
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-600 dark:text-slate-300">{title}</p>
         <span className={cn("text-xs px-2 py-1 rounded-full border", toneClasses)}>
-          Live
+          {badgeLabel}
         </span>
       </div>
       <div className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">
         {value}
       </div>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Mise à jour du catalogue</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>
     </div>
   );
 }
@@ -1030,7 +1035,7 @@ function HealthBadge({ status }: { status: "ok" | "degraded" | "down" | null }) 
     return (
       <span className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs text-rose-200">
         <XCircle className="h-3.5 w-3.5" />
-        Down
+        Indisponible
       </span>
     );
   }

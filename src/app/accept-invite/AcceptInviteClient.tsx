@@ -45,7 +45,7 @@ export default function AcceptInviteClient() {
 
   return (
     <AuthFrame
-      eyebrow="Invitation workspace"
+      eyebrow="Invitation d’accès"
       title="Rejoignez un espace Oniix existant."
       subtitle="Connectez-vous avec l’email invité, puis validez votre code d’invitation pour activer l’accès."
       footer={<p className="text-sm text-slate-600">Après validation, vous serez redirigé vers votre console.</p>}

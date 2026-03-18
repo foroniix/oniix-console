@@ -40,10 +40,10 @@ const CHANNEL_CATEGORIES = [
 ] as const;
 
 const ONBOARDING_STEP_LABELS = {
-  owner: "owner",
+  owner: "administrateur",
   channel: "chaîne",
   source: "source",
-  stream: "stream",
+  stream: "direct",
   ingest: "ingest",
 } as const;
 
@@ -154,7 +154,7 @@ function StatusBadge({ status }: { status: TenantStatus }) {
     );
   }
 
-  return <Badge variant="outline">Setup</Badge>;
+  return <Badge variant="outline">À compléter</Badge>;
 }
 
 export default function TenantsPage() {
@@ -204,12 +204,12 @@ export default function TenantsPage() {
         | { ok?: false; error?: string }
         | null;
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible de charger les tenants.");
+        setError((json && "error" in json && json.error) || "Impossible de charger les éditeurs.");
         return;
       }
       setItems(json.tenants ?? []);
     } catch {
-      setError("Erreur réseau sur la liste des tenants.");
+      setError("Erreur réseau sur la liste des éditeurs.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -255,7 +255,7 @@ export default function TenantsPage() {
         | null;
 
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible de créer le tenant.");
+        setError((json && "error" in json && json.error) || "Impossible de créer l’éditeur.");
         return;
       }
 
@@ -264,7 +264,7 @@ export default function TenantsPage() {
       setOpenCreate(false);
       await load(true, search);
     } catch {
-      setError("Erreur réseau sur la création de tenant.");
+      setError("Erreur réseau sur la création de l’éditeur.");
     } finally {
       setCreating(false);
     }
@@ -301,13 +301,13 @@ export default function TenantsPage() {
       <header className="console-hero flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Tenants</h1>
+            <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Éditeurs</h1>
             <Badge className="border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20">
-              SaaS Portfolio
+              Portefeuille plateforme
             </Badge>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Gestion des éditeurs TV, bootstrap du tenant et suivi du provisioning.
+            Gestion des organisations média, mise en service initiale et suivi du provisioning.
           </p>
         </div>
 
@@ -321,17 +321,17 @@ export default function TenantsPage() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 size-4" />
-                Nouveau tenant
+                Nouvel éditeur
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[720px]">
               <DialogHeader>
-                <DialogTitle>Créer un tenant</DialogTitle>
+                <DialogTitle>Créer un éditeur</DialogTitle>
               </DialogHeader>
               <form onSubmit={onCreateTenant} className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-sm text-slate-700 dark:text-slate-200">Nom du tenant</label>
+                    <label className="text-sm text-slate-700 dark:text-slate-200">Nom de l’éditeur</label>
                     <Input
                       value={createName}
                       onChange={(event) => setCreateName(event.target.value)}
@@ -340,21 +340,21 @@ export default function TenantsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm text-slate-700 dark:text-slate-200">Email owner</label>
+                    <label className="text-sm text-slate-700 dark:text-slate-200">Email administrateur principal</label>
                     <Input
                       type="email"
                       value={createOwnerEmail}
                       onChange={(event) => setCreateOwnerEmail(event.target.value)}
-                      placeholder="owner@tenant.com"
+                      placeholder="admin@editeur.com"
                     />
                   </div>
                 </div>
 
                 <div className="console-panel-muted p-4">
                   <div className="mb-3">
-                    <div className="text-sm font-medium text-slate-950 dark:text-white">Bootstrap initial</div>
+                    <div className="text-sm font-medium text-slate-950 dark:text-white">Préconfiguration initiale</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">
-                      Optionnel. Permet de livrer un tenant déjà prêt pour la console et l&apos;app mobile.
+                      Optionnel. Permet de livrer un espace déjà prêt pour la console et l&apos;application mobile.
                     </div>
                   </div>
 
@@ -367,7 +367,7 @@ export default function TenantsPage() {
                         placeholder="Ex: Vision Africa TV"
                       />
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Si vide, le nom du tenant sera réutilisé si un stream initial est demandé.
+                        Si vide, le nom de l’éditeur sera réutilisé si un direct initial est demandé.
                       </p>
                     </div>
 
@@ -410,10 +410,10 @@ export default function TenantsPage() {
                       />
                       <span className="space-y-1">
                         <span className="block text-sm font-medium text-slate-950 dark:text-white">
-                          Créer un premier stream
+                          Créer un premier direct
                         </span>
                         <span className="block text-xs text-slate-500 dark:text-slate-400">
-                          Génère un stream opérationnel relié à la première chaîne.
+                          Génère un direct opérationnel relié à la première chaîne.
                         </span>
                       </span>
                     </label>
@@ -436,7 +436,7 @@ export default function TenantsPage() {
                     </label>
 
                     <div className="space-y-2 sm:col-span-2">
-                      <label className="text-sm text-slate-700 dark:text-slate-200">Titre du premier stream</label>
+                      <label className="text-sm text-slate-700 dark:text-slate-200">Titre du premier direct</label>
                       <Input
                         value={createStreamTitle}
                         onChange={(event) => setCreateStreamTitle(event.target.value)}
@@ -448,9 +448,9 @@ export default function TenantsPage() {
                 </div>
 
                 <div className="console-panel-muted p-3 text-xs text-slate-500 dark:text-slate-400">
-                  Le backend crée d&apos;abord le tenant, puis ajoute les éléments de bootstrap en best
-                  effort. Les étapes non critiques reviennent en warnings sans annuler la création
-                  du tenant.
+                  Le backend crée d&apos;abord l&apos;éditeur, puis ajoute les éléments de préconfiguration en best
+                  effort. Les étapes non critiques reviennent en avertissements sans annuler la création
+                  de l&apos;espace.
                 </div>
 
                 <div className="flex justify-end gap-2">
@@ -475,10 +475,10 @@ export default function TenantsPage() {
               <CheckCircle2 className="mt-0.5 size-5 text-emerald-300" />
               <div className="space-y-1">
                 <div className="text-sm font-medium text-emerald-100">
-                  Tenant créé : {createdSummary.tenant.name}
+                  Éditeur créé : {createdSummary.tenant.name}
                 </div>
                 <div className="text-xs text-emerald-200/80">
-                  Setup {createdSummary.onboarding.completion}/
+                  Mise en service {createdSummary.onboarding.completion}/
                   {createdSummary.onboarding.total_steps}
                   {" - "}
                   {formatMissingSteps(createdSummary.onboarding.missing_steps)}
@@ -488,7 +488,7 @@ export default function TenantsPage() {
 
             <div className="grid gap-3 text-xs text-emerald-100/90 sm:grid-cols-2 xl:grid-cols-4">
               <div>
-                <div className="text-emerald-200/70">Owner</div>
+                <div className="text-emerald-200/70">Administrateur</div>
                 <div>{createdSummary.invited_owner?.email ?? "--"}</div>
               </div>
               <div>
@@ -496,7 +496,7 @@ export default function TenantsPage() {
                 <div>{createdSummary.bootstrap.channel?.name ?? "--"}</div>
               </div>
               <div>
-                <div className="text-emerald-200/70">Stream</div>
+                <div className="text-emerald-200/70">Direct</div>
                 <div>{createdSummary.bootstrap.stream?.title ?? "--"}</div>
               </div>
               <div>
@@ -534,7 +534,7 @@ export default function TenantsPage() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Tenants actifs</CardDescription>
+            <CardDescription>Éditeurs actifs</CardDescription>
             <CardTitle>{numberFormat(totals.active)}</CardTitle>
           </CardHeader>
         </Card>
@@ -558,7 +558,7 @@ export default function TenantsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Streams</CardDescription>
+            <CardDescription>Directs</CardDescription>
             <CardTitle>
               {numberFormat(totals.liveStreams)} / {numberFormat(totals.streams)}
             </CardTitle>
@@ -575,9 +575,9 @@ export default function TenantsPage() {
       <Card>
         <CardHeader className="space-y-4">
           <div>
-            <CardTitle>Registry multi-tenant</CardTitle>
+            <CardTitle>Portefeuille multi-éditeur</CardTitle>
             <CardDescription>
-              Recherche, supervision business et état d&apos;onboarding par éditeur.
+              Recherche, supervision business et état de mise en service par organisation.
             </CardDescription>
           </div>
           <form onSubmit={onSubmitSearch} className="flex gap-2">
@@ -586,7 +586,7 @@ export default function TenantsPage() {
               <Input
                 value={q}
                 onChange={(event) => setQ(event.target.value)}
-                placeholder="Rechercher un tenant…"
+                placeholder="Rechercher un éditeur…"
                 className="pl-9"
               />
             </div>
@@ -599,25 +599,25 @@ export default function TenantsPage() {
           {loading ? (
             <div className="flex min-h-[240px] items-center justify-center text-zinc-500">
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Chargement des tenants...
+              Chargement des éditeurs...
             </div>
           ) : items.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200/80 bg-slate-50/80 p-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-slate-400">
-              Aucun tenant trouvé.
+              Aucun éditeur trouvé.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Setup</TableHead>
+                  <TableHead>Éditeur</TableHead>
+                  <TableHead>Administrateur</TableHead>
+                  <TableHead>Mise en service</TableHead>
                   <TableHead className="text-right">Membres</TableHead>
                   <TableHead className="text-right">Chaînes</TableHead>
-                  <TableHead className="text-right">Streams</TableHead>
+                  <TableHead className="text-right">Directs</TableHead>
                   <TableHead className="text-right">Événements 24h</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
-                  <TableHead className="text-right">Creation</TableHead>
+                  <TableHead className="text-right">Statut</TableHead>
+                  <TableHead className="text-right">Création</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -676,7 +676,7 @@ export default function TenantsPage() {
         <CardContent className="flex flex-col gap-3 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="inline-flex items-center gap-2 text-slate-700 dark:text-slate-200">
             <Sparkles className="size-4 text-primary" />
-            Standard SaaS : onboarding rapide, observabilité live et gouvernance role-based.
+            Base de plateforme : mise en service rapide, supervision live et gouvernance par rôles.
           </div>
           <Button asChild variant="outline">
             <a href="/system">Voir la santé système</a>

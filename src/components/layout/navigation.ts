@@ -2,10 +2,13 @@ import {
   Activity,
   BadgeDollarSign,
   CalendarClock,
+  Database,
+  Film,
   LayoutDashboard,
   Megaphone,
   RadioTower,
   Settings,
+  Shield,
   Tv2,
   Users,
   type LucideIcon,
@@ -29,26 +32,26 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/dashboard",
-        label: "Dashboard",
-        description: "Vue d'ensemble et analytics",
+        label: "Pilotage",
+        description: "Audience, direct et opérations",
         icon: LayoutDashboard,
       },
       {
         href: "/channels",
-        label: "Chaînes",
-        description: "Catalogue et branding",
+        label: "Chaînes TV",
+        description: "Catalogue, branding et accès",
         icon: Tv2,
       },
       {
         href: "/streams",
-        label: "Direct",
-        description: "Pilotage des flux live",
+        label: "Directs",
+        description: "Flux live et qualité de diffusion",
         icon: RadioTower,
       },
       {
         href: "/programming",
         label: "Programmation",
-        description: "Grille et diffusion",
+        description: "Grille, now/next et replays",
         icon: CalendarClock,
       },
     ],
@@ -58,14 +61,14 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/ads",
-        label: "Publicité",
-        description: "Campagnes et créas",
+        label: "Monétisation",
+        description: "Campagnes, créations et décision",
         icon: Megaphone,
       },
       {
         href: "/revenue",
         label: "Revenus",
-        description: "Monétisation et KPI",
+        description: "Suivi business et performance",
         icon: BadgeDollarSign,
       },
     ],
@@ -75,14 +78,14 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/users",
-        label: "Utilisateurs",
-        description: "Membres et invitations",
+        label: "Équipe",
+        description: "Membres, rôles et invitations",
         icon: Users,
       },
       {
         href: "/activities",
-        label: "Activité",
-        description: "Journal et audit",
+        label: "Journal",
+        description: "Audit et opérations",
         icon: Activity,
       },
     ],
@@ -93,7 +96,7 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/settings",
         label: "Paramètres",
-        description: "Compte et sécurité",
+        description: "Compte, sécurité et organisation",
         icon: Settings,
       },
     ],
@@ -101,6 +104,28 @@ export const NAV_SECTIONS: NavSection[] = [
 ];
 
 const ALL_ROUTES = NAV_SECTIONS.flatMap((section) => section.items);
+const AUX_ROUTES: NavItem[] = [
+  {
+    href: "/tenants",
+    label: "Éditeurs",
+    description: "Portefeuille multi-éditeur",
+    icon: Database,
+  },
+  {
+    href: "/system",
+    label: "Système",
+    description: "Santé plateforme et supervision",
+    icon: Shield,
+  },
+  {
+    href: "/series",
+    label: "Catalogue",
+    description: "Séries et univers éditoriaux",
+    icon: Film,
+  },
+];
+
+const ROUTE_REGISTRY = [...ALL_ROUTES, ...AUX_ROUTES];
 
 export function isRouteActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard" || pathname === "/";
@@ -108,12 +133,12 @@ export function isRouteActive(pathname: string, href: string) {
 }
 
 export function resolveRoute(pathname: string) {
-  const direct = ALL_ROUTES.find((item) => isRouteActive(pathname, item.href));
+  const direct = ROUTE_REGISTRY.find((item) => isRouteActive(pathname, item.href));
   if (direct) return direct;
   return {
     href: pathname,
     label: "Console",
-    description: "Pilotage SaaS OTT",
+    description: "Pilotage OTT multi-éditeur",
     icon: LayoutDashboard,
   };
 }
@@ -122,7 +147,7 @@ export function findRouteByQuery(query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return null;
   return (
-    ALL_ROUTES.find((item) => {
+    ROUTE_REGISTRY.find((item) => {
       const haystack = `${item.label} ${item.description} ${item.href}`.toLowerCase();
       return haystack.includes(normalized);
     }) ?? null

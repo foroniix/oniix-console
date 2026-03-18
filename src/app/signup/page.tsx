@@ -126,7 +126,7 @@ export default function SignupPage() {
   return (
     <AuthFrame
       eyebrow="Création d’espace"
-      title="Ouvrez votre workspace Oniix."
+      title="Ouvrez votre espace Oniix."
       subtitle="Créez votre organisation, sécurisez vos accès et démarrez avec une base prête pour l’exploitation OTT."
       footer={
         <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
@@ -172,7 +172,7 @@ export default function SignupPage() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@company.com"
+            placeholder="nom@organisation.tv"
             required
             className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
           />
@@ -229,7 +229,7 @@ export default function SignupPage() {
             onChange={(event) => setAcceptedTerms(event.target.checked)}
             className="mt-0.5 size-4 rounded border-slate-300 text-[#4056c8] focus:ring-[#4056c8]"
           />
-          <span>J’accepte les conditions d’utilisation et la création sécurisée de mon espace de travail Oniix.</span>
+          <span>J’accepte les conditions d’utilisation et la création sécurisée de mon espace Oniix.</span>
         </label>
 
         {error ? (

@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable react/no-unescaped-entities */
-
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Trash2, UserPlus, Link as LinkIcon, RefreshCw, Search, MoreVertical, Mail, Shield } from "lucide-react";
 
@@ -288,8 +286,10 @@ export default function UsersPage() {
       {/* Header */}
       <div className="console-hero flex flex-col gap-3 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Utilisateurs</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-300">Inviter et gérer les membres de l'organisation.</p>
+          <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Équipe et accès</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Invitez, révisez et sécurisez les accès opérateur de votre espace.
+          </p>
         </div>
 
         <div className="flex gap-2">
@@ -334,8 +334,8 @@ export default function UsersPage() {
 
         <Card className="console-panel">
           <CardHeader className="pb-2">
-            <CardDescription className="text-slate-500 dark:text-slate-400">Actions</CardDescription>
-            <CardTitle className="text-base">Bonnes pratiques</CardTitle>
+            <CardDescription className="text-slate-500 dark:text-slate-400">Gouvernance</CardDescription>
+            <CardTitle className="text-base">Accès sensibles</CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-slate-500 dark:text-slate-400">
             Confirmer suppression • Copier lien • Suivre statut
@@ -353,8 +353,10 @@ export default function UsersPage() {
       {/* Main */}
       <Card className="console-panel">
         <CardHeader>
-          <CardTitle>Gestion</CardTitle>
-          <CardDescription className="text-slate-500 dark:text-slate-400">Membres et invitations, avec recherche et actions.</CardDescription>
+          <CardTitle>Pilotage des accès</CardTitle>
+          <CardDescription className="text-slate-500 dark:text-slate-400">
+            Membres actifs, invitations et révisions d’accès depuis une seule surface.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs
@@ -379,7 +381,7 @@ export default function UsersPage() {
                       setQMembers(e.target.value);
                       setMembersPage(1);
                     }}
-                    placeholder="Rechercher par email ou rôle…"
+                    placeholder="Rechercher un membre par email ou rôle…"
                     className="pl-9 border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
                   />
                 </div>
@@ -465,7 +467,7 @@ export default function UsersPage() {
                       setQInvites(e.target.value);
                       setInvitesPage(1);
                     }}
-                    placeholder="Rechercher par email, rôle ou statut…"
+                    placeholder="Rechercher une invitation par email, rôle ou statut…"
                     className="pl-9 border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
                   />
                 </div>
@@ -567,9 +569,9 @@ export default function UsersPage() {
               <div className="grid gap-6 lg:grid-cols-2">
                 <Card className="console-panel">
                   <CardHeader>
-                    <CardTitle>Créer une invitation</CardTitle>
+                    <CardTitle>Inviter un membre</CardTitle>
                     <CardDescription className="text-slate-500 dark:text-slate-400">
-                      Génère une invitation. Tu peux copier le lien et l’envoyer.
+                      Générez une invitation sécurisée puis partagez le lien d’accès.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -578,7 +580,7 @@ export default function UsersPage() {
                       <Input
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="ex: user@domaine.com"
+                        placeholder="ex: equipe@votre-chaine.tv"
                         className="console-field"
                       />
                     </div>
@@ -587,17 +589,17 @@ export default function UsersPage() {
                       <label className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">Rôle</label>
                       <Select value={role} onValueChange={(v) => setRole(v as "viewer" | "editor" | "admin")}>
                         <SelectTrigger className="console-field">
-                          <SelectValue placeholder="Choisir un rôle" />
+                          <SelectValue placeholder="Choisir un niveau d’accès" />
                         </SelectTrigger>
                         <SelectContent className="border-slate-200 bg-white dark:border-white/10 dark:bg-[#0f1724]">
-                          <SelectItem value="viewer">Lecteur</SelectItem>
-                          <SelectItem value="editor">Editeur</SelectItem>
+                          <SelectItem value="viewer">Lecture</SelectItem>
+                          <SelectItem value="editor">Édition</SelectItem>
                           <SelectItem value="admin">Administrateur</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Astuce : gardez le rôle <span className="text-slate-900 dark:text-slate-200">Membre</span> par défaut,
-                        <span className="text-slate-900 dark:text-slate-200"> Administrateur</span> seulement si nécessaire.
+                        Principe recommandé : privilégiez la lecture ou l’édition, et réservez
+                        <span className="text-slate-900 dark:text-slate-200"> l’administration</span> aux responsables d’exploitation.
                       </p>
                     </div>
 
@@ -607,24 +609,24 @@ export default function UsersPage() {
                       className="bg-indigo-600 hover:bg-indigo-700"
                     >
                       {busyInvite ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
-                      Créer l’invite
+                      Générer l’invitation
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card className="console-panel">
                   <CardHeader>
-                    <CardTitle>Bonnes pratiques d'équipe</CardTitle>
+                    <CardTitle>Règles d’exploitation</CardTitle>
                     <CardDescription className="text-slate-500 dark:text-slate-400">
-                      Des accès clairs et maîtrisés pour votre organisation.
+                      Une équipe maîtrisée vaut mieux qu’un périmètre d’accès trop large.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                    <div>- Invitez les bonnes personnes au bon moment.</div>
-                    <div>- Attribuez un rôle adapté à chaque besoin.</div>
-                    <div>- Suivez les invitations en attente ou expirées.</div>
-                    <div>- Révisez régulièrement les accès de l'équipe.</div>
-                    <div>- Gardez la liste des membres claire et à jour. </div>
+                    <div>- Attribuez un rôle minimal compatible avec la mission.</div>
+                    <div>- Révoquez les invitations obsolètes au fil de l’exploitation.</div>
+                    <div>- Révisez les comptes d’administration à chaque changement d’équipe.</div>
+                    <div>- Gardez un historique clair des accès partagés avec les éditeurs.</div>
+                    <div>- Nettoyez régulièrement les comptes inactifs.</div>
                   </CardContent>
                 </Card>
               </div>

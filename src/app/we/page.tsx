@@ -31,25 +31,25 @@ export default function WebViewerEntryPage() {
               <Tv2 className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-[var(--font-we-display)] text-lg font-semibold tracking-tight">Oniix Web Viewer</p>
-              <p className="text-sm text-[#a8b7cf]">Mobile + Desktop UI</p>
+              <p className="font-[var(--font-we-display)] text-lg font-semibold tracking-tight">Visionneuse web Oniix</p>
+              <p className="text-sm text-[#a8b7cf]">Accès direct de contrôle et de démonstration</p>
             </div>
           </div>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
             <div>
               <h1 className="font-[var(--font-we-display)] text-3xl font-semibold leading-tight text-white sm:text-4xl">
-                Experience live TV with a cleaner mobile UX.
+                Ouvrez un direct Oniix dans une interface web claire, rapide et alignée sur la console.
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#b6c4d9] sm:text-base">
-                Enter one stream id to open a responsive viewer page with live player, channel switching, schedule and
-                replay blocks.
+                Saisissez un identifiant de flux pour charger une page de lecture avec direct, bascule de chaîne,
+                grille éditoriale et replays.
               </p>
             </div>
 
             <form onSubmit={submit} className="rounded-2xl border border-white/15 bg-[#0b172d]/85 p-4 sm:p-5">
               <label htmlFor="stream-id" className="text-xs font-medium uppercase tracking-[0.16em] text-[#8fa4c4]">
-                Stream ID
+                Identifiant du flux
               </label>
               <input
                 id="stream-id"
@@ -64,7 +64,7 @@ export default function WebViewerEntryPage() {
                 disabled={!normalizedStreamId}
                 className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1f8bff] px-4 font-medium text-white transition hover:bg-[#1873d6] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Open viewer
+                Ouvrir la lecture
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>

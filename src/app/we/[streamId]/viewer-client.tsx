@@ -114,7 +114,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         });
         const tokenJson = await tokenRes.json().catch(() => null);
         if (!tokenRes.ok || !tokenJson?.ok) {
-          throw new Error(tokenJson?.error || "Unable to initialize viewer token.");
+          throw new Error(tokenJson?.error || "Impossible d’initialiser l’accès de lecture.");
         }
 
         const token = String(tokenJson.token ?? "");
@@ -134,7 +134,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         });
         const playbackJson = (await playbackRes.json().catch(() => null)) as PlaybackUrlResponse | null;
         if (!playbackRes.ok || !playbackJson?.ok) {
-          throw new Error((playbackJson as { error?: string } | null)?.error || "Unable to resolve live playback.");
+          throw new Error((playbackJson as { error?: string } | null)?.error || "Impossible de résoudre la lecture en direct.");
         }
 
         const channelId = String(playbackJson.channel_id ?? "").trim();
@@ -157,7 +157,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         });
         const gridJson = (await gridRes.json().catch(() => null)) as ProgramGridResponse | null;
         if (!gridRes.ok || !gridJson?.ok) {
-          throw new Error((gridJson as { error?: string } | null)?.error || "Unable to load mobile catalog.");
+          throw new Error((gridJson as { error?: string } | null)?.error || "Impossible de charger le catalogue de lecture.");
         }
 
         const lanes = Array.isArray(gridJson.grid) ? gridJson.grid : [];
@@ -175,7 +175,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
           return exact || lanes[0]?.channel.id || channelId;
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Unable to load viewer.";
+        const message = err instanceof Error ? err.message : "Impossible de charger la visionneuse.";
         setLivePlaybackUrl(null);
         setError(message);
       } finally {
@@ -230,8 +230,8 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               <Tv2 className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-[var(--font-we-display)] text-sm font-semibold tracking-wide">ONIIX LIVE VIEWER</p>
-              <p className="text-xs text-[#9bb0cb]">Stream {streamId}</p>
+              <p className="font-[var(--font-we-display)] text-sm font-semibold tracking-wide">ONIIX WEB LIVE</p>
+              <p className="text-xs text-[#9bb0cb]">Flux {streamId}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               href="/we"
               className="inline-flex h-9 items-center justify-center rounded-xl border border-white/15 px-3 text-xs text-[#bbcae0] transition hover:bg-white/5"
             >
-              Change stream
+              Changer de direct
             </Link>
             <button
               type="button"
@@ -247,7 +247,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#1f8bff] px-3 text-xs font-medium text-white transition hover:bg-[#1873d6]"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh
+              Actualiser
             </button>
           </div>
         </header>
@@ -260,7 +260,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
           <div className="rounded-2xl border border-[#ff6e7a]/35 bg-[#3f1622]/55 p-4 text-sm text-[#ffc8ce]">
             <div className="flex items-center gap-2 font-medium">
               <CircleAlert className="h-4 w-4" />
-              Unable to load viewer
+              Impossible de charger la visionneuse
             </div>
             <p className="mt-2 text-xs text-[#f0b8c0]">{error}</p>
           </div>
@@ -281,7 +281,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-[#8ea5c5]">
-                      No playable live or replay source for this channel.
+                      Aucune source lisible n’est disponible pour cette chaîne.
                     </div>
                   )}
                 </div>
@@ -289,10 +289,10 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-3 py-3 sm:px-4">
                   <div className="min-w-0">
                     <p className="truncate font-[var(--font-we-display)] text-base font-semibold text-white">
-                      {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Live"}
+                      {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Direct"}
                     </p>
                     <p className="text-xs text-[#9ab0cb]">
-                      {activeReplay ? "Replay mode" : "Live mode"} {activeLane?.channel.name ? `- ${activeLane.channel.name}` : ""}
+                      {activeReplay ? "Mode replay" : "Mode direct"} {activeLane?.channel.name ? `- ${activeLane.channel.name}` : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -302,7 +302,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-white/15 px-3 text-xs text-[#c7d6ea] transition hover:bg-white/5"
                     >
                       {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                      {muted ? "Unmute" : "Mute"}
+                      {muted ? "Activer le son" : "Couper le son"}
                     </button>
                   </div>
                 </div>
@@ -316,7 +316,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     tab === "live" ? "bg-[#1f8bff] text-white" : "text-[#9cb3d0] hover:bg-white/5"
                   }`}
                 >
-                  Live
+                  Direct
                 </button>
                 <button
                   type="button"
@@ -325,7 +325,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     tab === "grid" ? "bg-[#1f8bff] text-white" : "text-[#9cb3d0] hover:bg-white/5"
                   }`}
                 >
-                  Program
+                  Grille
                 </button>
                 <button
                   type="button"
@@ -362,7 +362,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                               {lane.channel.name}
                             </p>
                             <p className="mt-1 text-xs text-[#9db1cd]">
-                              {lane.now?.title ? `Now: ${lane.now.title}` : "No active program"}
+                              {lane.now?.title ? `En cours : ${lane.now.title}` : "Aucun programme en cours"}
                             </p>
                           </div>
                           <span
@@ -373,12 +373,12 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                             }`}
                           >
                             <Radio className="mr-1 h-3 w-3" />
-                            {lane.live_stream?.id ? "Live" : "No feed"}
+                            {lane.live_stream?.id ? "Direct" : "Hors antenne"}
                           </span>
                         </div>
                         {lane.next?.title ? (
                           <p className="mt-2 text-xs text-[#7f95b3]">
-                            Next at {formatClock(lane.next.starts_at)} - {lane.next.title}
+                            À suivre à {formatClock(lane.next.starts_at)} - {lane.next.title}
                           </p>
                         ) : null}
                       </button>
@@ -391,7 +391,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
                   <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#dbe8f8]">
                     <CalendarClock className="h-4 w-4 text-[#7db1ff]" />
-                    Program timeline
+                    Grille de diffusion
                   </div>
                   <div className="space-y-2">
                     {(activeLane?.slots ?? []).slice(0, 12).map((slot) => (
@@ -410,7 +410,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     ))}
                     {(!activeLane || activeLane.slots.length === 0) && (
                       <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf]">
-                        No published schedule on this channel yet.
+                        Aucune grille publiée pour cette chaîne pour le moment.
                       </p>
                     )}
                   </div>
@@ -438,7 +438,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                   ))}
                   {activeReplaysForChannel.length === 0 && (
                     <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf] sm:col-span-2">
-                      No replay available for this channel.
+                      Aucun replay disponible pour cette chaîne.
                     </p>
                   )}
                 </div>
@@ -447,22 +447,22 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
 
             <aside className="space-y-4">
               <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
-                <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">Current context</p>
+                <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">Contexte éditorial</p>
                 <div className="mt-3 space-y-2 text-xs text-[#9cb1cd]">
                   <p>
-                    Channel: <span className="text-[#eaf3ff]">{activeLane?.channel.name || "--"}</span>
+                    Chaîne : <span className="text-[#eaf3ff]">{activeLane?.channel.name || "--"}</span>
                   </p>
                   <p>
-                    Now: <span className="text-[#eaf3ff]">{activeLane?.now?.title || "No live program"}</span>
+                    En cours : <span className="text-[#eaf3ff]">{activeLane?.now?.title || "Aucun programme en cours"}</span>
                   </p>
                   <p>
-                    Next: <span className="text-[#eaf3ff]">{activeLane?.next?.title || "--"}</span>
+                    À suivre : <span className="text-[#eaf3ff]">{activeLane?.next?.title || "--"}</span>
                   </p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
-                <p className="mb-3 font-[var(--font-we-display)] text-sm font-semibold text-white">Quick channel list</p>
+                <p className="mb-3 font-[var(--font-we-display)] text-sm font-semibold text-white">Sélection rapide</p>
                 <div className="space-y-2">
                   {grid.map((lane) => (
                     <button

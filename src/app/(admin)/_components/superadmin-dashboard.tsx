@@ -160,13 +160,13 @@ export default function SuperadminDashboard() {
       <header className="console-hero flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Pilotage plateforme</h1>
+            <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Pilotage groupe Oniix</h1>
             <Badge className="border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
-              Multi-tenant
+              Multi-éditeur
             </Badge>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Pilotage global des éditeurs TV, audience live, santé plateforme et adoption SaaS.
+            Vision consolidée des éditeurs, de la diffusion live, de l’adoption et de la qualité d’exploitation.
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Dernière synchro : {data?.generated_at ? dateTimeFormat(data.generated_at) : "--"}
@@ -180,7 +180,7 @@ export default function SuperadminDashboard() {
           </Button>
           <Button asChild>
             <Link href="/tenants">
-              Gérer les tenants
+              Gérer les éditeurs
               <ArrowUpRight className="ml-2 size-4" />
             </Link>
           </Button>
@@ -196,9 +196,9 @@ export default function SuperadminDashboard() {
       {warnings.length > 0 ? (
         <Card className="border-amber-500/25 bg-amber-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-200">Points à corriger</CardTitle>
+            <CardTitle className="text-sm text-amber-200">Points de remédiation</CardTitle>
             <CardDescription className="text-amber-200/80">
-              Certaines briques SaaS ne sont pas encore complètement provisionnées.
+              Certaines briques d’exploitation restent incomplètes à l’échelle groupe.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-1 text-xs text-amber-100">
@@ -212,19 +212,19 @@ export default function SuperadminDashboard() {
       {kpis && (kpis.channels_missing_origin > 0 || kpis.channels_missing_tenant > 0) ? (
         <Card className="border-amber-500/25 bg-amber-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-200">Backfill OTT requis</CardTitle>
+            <CardTitle className="text-sm text-amber-200">Remédiation catalogue requise</CardTitle>
             <CardDescription className="text-amber-200/80">
-              La lecture proxy Oniix ne sera pas exploitable tant que ces champs ne sont pas complétés dans la console.
+              La gateway Oniix restera partiellement indisponible tant que ces champs ne sont pas alignés.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1 text-sm text-amber-100">
-              <p>{numberFormat(kpis.channels_missing_origin)} chaîne(s) sans `origin_hls_url`.</p>
-              <p>{numberFormat(kpis.channels_missing_tenant)} chaîne(s) sans `tenant_id`.</p>
+              <p>{numberFormat(kpis.channels_missing_origin)} chaîne(s) sans URL HLS d’origine.</p>
+              <p>{numberFormat(kpis.channels_missing_tenant)} chaîne(s) sans rattachement éditeur.</p>
             </div>
             <Button asChild variant="outline" className="border-amber-400/20 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20">
               <Link href="/system/channel-backfill">
-                Ouvrir le backfill
+                Ouvrir la remédiation
                 <ArrowUpRight className="ml-2 size-4" />
               </Link>
             </Button>
@@ -234,43 +234,43 @@ export default function SuperadminDashboard() {
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          title="Total tenants"
+          title="Éditeurs"
           value={loading && !data ? "..." : numberFormat(kpis?.tenants_total ?? 0)}
           subtitle={`${numberFormat(kpis?.tenants_new_7d ?? 0)} nouveaux / 7 jours`}
           icon={Building2}
         />
         <MetricCard
-          title="Tenants actifs (24h)"
+          title="Éditeurs actifs (24 h)"
           value={loading && !data ? "..." : numberFormat(kpis?.tenants_active_24h ?? 0)}
-          subtitle="Base active sur la dernière journée"
+          subtitle="Espaces ayant réellement produit du trafic"
           icon={BadgeCheck}
         />
         <MetricCard
           title="Utilisateurs plateforme"
           value={loading && !data ? "..." : numberFormat(kpis?.users_total ?? 0)}
-          subtitle="Comptes consolidés tout tenant"
+          subtitle="Comptes consolidés sur l’ensemble du groupe"
           icon={Users}
         />
         <MetricCard
-          title="Événements analytics 24h"
+          title="Signaux analytics 24 h"
           value={loading && !data ? "..." : numberFormat(kpis?.events_24h ?? 0)}
-          subtitle={`${numberFormat(kpis?.live_sessions ?? 0)} sessions live (~35s)`}
+          subtitle={`${numberFormat(kpis?.live_sessions ?? 0)} sessions live dans la fenêtre glissante`}
           icon={Activity}
         />
         <MetricCard
-          title="Streams live"
+          title="Directs actifs"
           value={
             loading && !data
               ? "..."
               : `${numberFormat(kpis?.streams_live ?? 0)} / ${numberFormat(kpis?.streams_total ?? 0)}`
           }
-          subtitle="Occupation live du parc de streams"
+          subtitle="Occupation live du parc de diffusion"
           icon={RadioTower}
         />
         <MetricCard
           title="Couverture ingest"
           value={loading && !data ? "..." : `${ingestCoverage}%`}
-          subtitle={`${numberFormat(kpis?.ingest_configured_tenants ?? 0)} tenants configurés`}
+          subtitle={`${numberFormat(kpis?.ingest_configured_tenants ?? 0)} éditeurs configurés`}
           icon={ShieldCheck}
         />
         <MetricCard
@@ -280,9 +280,9 @@ export default function SuperadminDashboard() {
           icon={RadioTower}
         />
         <MetricCard
-          title="Sessions live"
+          title="Sessions en direct"
           value={loading && !data ? "..." : numberFormat(kpis?.live_sessions ?? 0)}
-          subtitle="Snapshot fenêtre glissante"
+          subtitle="Photographie opérateur sur fenêtre glissante"
           icon={Waves}
         />
       </section>
@@ -290,8 +290,8 @@ export default function SuperadminDashboard() {
       <section className="grid gap-5 xl:grid-cols-7">
         <Card className="xl:col-span-4">
           <CardHeader>
-            <CardTitle>Top tenants par activité</CardTitle>
-            <CardDescription>Classement plateforme par volume d&apos;événements sur 24h.</CardDescription>
+            <CardTitle>Top éditeurs par activité</CardTitle>
+            <CardDescription>Classement groupe par volume de signaux sur 24 h.</CardDescription>
           </CardHeader>
           <CardContent>
             {loading && !data ? (
@@ -303,7 +303,7 @@ export default function SuperadminDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tenant</TableHead>
+                    <TableHead>Éditeur</TableHead>
                     <TableHead className="text-right">Événements 24h</TableHead>
                     <TableHead className="text-right">Part</TableHead>
                   </TableRow>
@@ -329,8 +329,8 @@ export default function SuperadminDashboard() {
         <div className="space-y-5 xl:col-span-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Onboarding récent</CardTitle>
-              <CardDescription>Derniers tenants provisionnés sur la plateforme.</CardDescription>
+              <CardTitle>Mises en service récentes</CardTitle>
+              <CardDescription>Derniers éditeurs activés sur la plateforme.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {loading && !data ? (
@@ -350,7 +350,7 @@ export default function SuperadminDashboard() {
                 ))
               ) : (
                 <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
-                  Aucun tenant récent.
+                  Aucun éditeur récent.
                 </div>
               )}
             </CardContent>
@@ -358,25 +358,25 @@ export default function SuperadminDashboard() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Actions SaaS</CardTitle>
-              <CardDescription>Raccourcis de gouvernance plateforme.</CardDescription>
+              <CardTitle>Gouvernance plateforme</CardTitle>
+              <CardDescription>Raccourcis d’administration groupe et d’exploitation.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2">
               <Button asChild variant="outline" className="justify-between">
                 <Link href="/tenants">
-                  Portfolio tenants
+                  Portefeuille éditeurs
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" className="justify-between">
                 <Link href="/users">
-                  IAM global
+                  Équipe plateforme
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" className="justify-between">
                 <Link href="/system">
-                  Santé système
+                  Exploitation système
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>

@@ -2,7 +2,7 @@ import { formatTenantRoleLabel, normalizeTenantRole } from "@/lib/tenant-roles";
 
 export const CONSOLE_PRODUCT_NAME = "Oniix Console";
 export const CONSOLE_PRODUCT_DESCRIPTION =
-  "Console SaaS multi-tenant pour le pilotage OTT, l’observabilité et l’exploitation des chaînes.";
+  "Console de pilotage OTT multi-éditeur pour l’exploitation des chaînes, la sécurité des accès et l’observabilité live.";
 export const CONSOLE_DEFAULT_WORKSPACE_NAME = "Espace de travail";
 export const CONSOLE_PLATFORM_WORKSPACE_NAME = "Oniix Platform";
 export const SUPPORT_EMAIL = "support@oniix.space";

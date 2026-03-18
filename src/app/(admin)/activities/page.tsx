@@ -78,7 +78,7 @@ export default function ActivitiesPage() {
           </h1>
           <p className="mt-1 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-            Audit trail & Historique des actions
+            Journal d’audit et historique des actions
           </p>
         </div>
         

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 const BLOCKED_PATH_PREFIXES = ["/api/public", "/api/upload", "/api/utils/validate-hls", "/api/_debug"];
-const PUBLIC_PATH_PREFIXES = ["/", "/login", "/signup", "/accept-invite", "/we", "/web"];
+const PUBLIC_PATH_PREFIXES = ["/", "/login", "/signup", "/accept-invite", "/cookies", "/privacy", "/we", "/web"];
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
   "/api/mobile",

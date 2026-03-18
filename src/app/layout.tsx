@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Baloo_2, Manrope } from "next/font/google";
 
+import { CookieBanner } from "@/components/legal/cookie-banner";
 import { Toaster } from "@/components/ui/sonner";
 import { CONSOLE_PRODUCT_DESCRIPTION, CONSOLE_PRODUCT_NAME } from "@/lib/console-branding";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" className="h-full">
       <body className={`${manrope.variable} ${baloo.variable} h-full`}>
         {children}
+        <CookieBanner />
         <Toaster richColors theme="system" />
       </body>
     </html>
