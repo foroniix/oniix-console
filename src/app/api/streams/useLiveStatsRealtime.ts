@@ -17,7 +17,7 @@ export function useLiveStatsRealtime(streamId: string, active: boolean) {
   useEffect(() => {
     if (!active) return;
 
-    // 1. Charger la dernière stat connue
+    // 1. Charger la derniere stat connue
     supabase
       .from("stream_stats")
       .select("viewers, bitrate_kbps, errors")

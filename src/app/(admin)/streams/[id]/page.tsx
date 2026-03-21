@@ -275,7 +275,7 @@ export default function StreamDetailPage() {
         } else if (incidentLines.length > 0) {
           details = incidentLines.slice(0, 2).join(" | ");
         } else {
-          details = `Action ${row.action.toLowerCase()} exécutée`;
+          details = `Action ${row.action.toLowerCase()} executee`;
         }
 
         return {
@@ -352,10 +352,10 @@ export default function StreamDetailPage() {
       for (const row of validationRows) {
         if ((row.summary === "WARN" || row.summary === "FAIL") && (!previous || previous === "OK")) {
           timeline.push(
-            `${dateLabel(row.at)} - incident détecté${row.incidents[0] ? ` - ${row.incidents[0]}` : ""}`
+            `${dateLabel(row.at)} - incident detecte${row.incidents[0] ? ` - ${row.incidents[0]}` : ""}`
           );
         } else if (row.summary === "OK" && previous && previous !== "OK") {
-          timeline.push(`${dateLabel(row.at)} - incident résolu`);
+          timeline.push(`${dateLabel(row.at)} - incident resolu`);
         }
         previous = row.summary;
       }
@@ -389,12 +389,12 @@ export default function StreamDetailPage() {
       setValidation(json);
       setFeedback(`Validation HLS terminee (${json.summary}).`);
       const issue =
-        json.incidents?.[0] ?? json.checks.find((check) => check.status !== "OK")?.message ?? "Vérification requise";
+        json.incidents?.[0] ?? json.checks.find((check) => check.status !== "OK")?.message ?? "Verification requise";
       if ((json.summary === "WARN" || json.summary === "FAIL") && (!previousSummaryRef.current || previousSummaryRef.current === "OK")) {
-        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident détecté - ${issue}`, ...prev]);
+        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident detecte - ${issue}`, ...prev]);
       }
       if (json.summary === "OK" && previousSummaryRef.current && previousSummaryRef.current !== "OK") {
-        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident résolu`, ...prev]);
+        setIncidents((prev) => [`${dateLabel(json.validatedAt)} - incident resolu`, ...prev]);
       }
       previousSummaryRef.current = json.summary;
       addAudit("VALIDATE_HLS", `Validation ${json.summary}`);
@@ -512,11 +512,11 @@ export default function StreamDetailPage() {
       setConfig(buildConfig(next));
       setConfigDirty(false);
       if (config.drmEnabled && drmConfig.provider !== "none") {
-        setFeedback("Configuration enregistrée. Les endpoints DRM restent stockés localement tant que le backend dédié n’est pas activé.");
+        setFeedback("Configuration enregistree. Les endpoints DRM restent stockes localement tant que le backend dedie n'est pas active.");
       } else {
-        setFeedback("Configuration enregistrée.");
+        setFeedback("Configuration enregistree.");
       }
-      addAudit("UPDATE_CONFIG", "Configuration du flux mise à jour");
+      addAudit("UPDATE_CONFIG", "Configuration du flux mise a jour");
       void loadAudit();
     } catch {
       setFeedback("Impossible d'enregistrer la configuration.");
@@ -535,7 +535,7 @@ export default function StreamDetailPage() {
 
   const onStop = async () => {
     if (!stream) return;
-    if (!confirm("Confirmer l’arrêt du flux ?")) return;
+    if (!confirm("Confirmer l'arret du flux ?")) return;
     const next = await setStreamStatus(stream.id, "OFFLINE");
     setStream(next);
     addAudit("STOP_STREAM", "Flux passe en OFFLINE");
@@ -559,7 +559,7 @@ export default function StreamDetailPage() {
     const clipStartIso = parseDateTimeInput(clipStartAt);
     const clipEndIso = parseDateTimeInput(clipEndAt);
     if (!clipStartIso || !clipEndIso || clipEndIso <= clipStartIso) {
-      setFeedback("Fenêtre replay invalide. Vérifiez le début et la fin.");
+      setFeedback("Fenetre replay invalide. Verifiez le debut et la fin.");
       return;
     }
 
@@ -574,7 +574,7 @@ export default function StreamDetailPage() {
         endStream: clipEndStream,
       });
 
-      addAudit("CREATE_REPLAY_CLIP", `Replay fenêtre ${dateLabel(clipStartIso)} -> ${dateLabel(clipEndIso)}`);
+      addAudit("CREATE_REPLAY_CLIP", `Replay fenetre ${dateLabel(clipStartIso)} -> ${dateLabel(clipEndIso)}`);
 
       const processRes = await fetch("/api/replays/process", {
         method: "POST",
@@ -589,7 +589,7 @@ export default function StreamDetailPage() {
         if (done > 0) {
           setFeedback("Replay clip genere et pret.");
         } else if (failed > 0) {
-          setFeedback(processJson.processed?.[0]?.message || "Échec du clip replay.");
+          setFeedback(processJson.processed?.[0]?.message || "Echec du clip replay.");
         } else {
           setFeedback("Replay clip cree en file d'attente.");
         }
@@ -619,7 +619,7 @@ export default function StreamDetailPage() {
       }
       const done = Number(json.done ?? 0);
       const failed = Number(json.failed ?? 0);
-      setFeedback(`Traitement des clips : ${done} terminé(s), ${failed} en échec.`);
+      setFeedback(`Traitement des clips : ${done} termine(s), ${failed} en echec.`);
       addAudit("PROCESS_REPLAY_CLIPS", `${done} done / ${failed} failed`);
       void loadAudit();
     } finally {
@@ -661,8 +661,8 @@ export default function StreamDetailPage() {
     <PageShell>
       <PageHeader
         title={stream.title}
-        subtitle="Supervision du direct, qualité de diffusion, configuration sécurisée et journal d’exploitation."
-        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Directs", href: "/streams" }, { label: "Régie du flux" }]}
+        subtitle="Supervision du direct, qualite de diffusion, configuration securisee et journal d'exploitation."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Directs", href: "/streams" }, { label: "Regie du flux" }]}
         actions={
           <>
             <StatusBadge status={stream.status} />
@@ -693,13 +693,13 @@ export default function StreamDetailPage() {
       {feedback ? <div className="rounded-[24px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-200">{feedback}</div> : null}
 
       <div className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-slate-400">
-        Actualisation auto : <span className="font-medium text-slate-100">{autoRefreshEnabled ? "ACTIVE" : "PAUSÉE"}</span>
+        Actualisation auto : <span className="font-medium text-slate-100">{autoRefreshEnabled ? "ACTIVE" : "PAUSEE"}</span>
         {" | "}
-        Dernière synchro diagnostics : <span className="font-medium text-slate-100">{dateLabel(lastRefreshAt)}</span>
+        Derniere synchro diagnostics : <span className="font-medium text-slate-100">{dateLabel(lastRefreshAt)}</span>
       </div>
 
       <KpiRow>
-        <KpiCard label="Audience instantanée" value={analytics?.current.viewers ?? 0} tone="info" loading={analyticsLoading} />
+        <KpiCard label="Audience instantanee" value={analytics?.current.viewers ?? 0} tone="info" loading={analyticsLoading} />
         <KpiCard label="Audience moyenne 1 h" value={analytics?.summary.viewersAvg1h ?? 0} loading={analyticsLoading} />
         <KpiCard label="Pic 24 h" value={analytics?.summary.viewersPeak24h ?? 0} loading={analyticsLoading} />
         <KpiCard label="Bitrate moyen 1 h" value={`${analytics?.summary.bitrateAvg1h ?? 0} kbps`} loading={analyticsLoading} />
@@ -709,10 +709,10 @@ export default function StreamDetailPage() {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList >
           <TabsTrigger value="overview">Supervision</TabsTrigger>
-          <TabsTrigger value="health">Qualité</TabsTrigger>
+          <TabsTrigger value="health">Qualite</TabsTrigger>
           <TabsTrigger value="config">Configuration</TabsTrigger>
           <TabsTrigger value="analytics">Audience</TabsTrigger>
-          <TabsTrigger value="activity">Journal d’exploitation</TabsTrigger>
+          <TabsTrigger value="activity">Journal d&apos;exploitation</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 grid gap-4 xl:grid-cols-3">
@@ -733,7 +733,7 @@ export default function StreamDetailPage() {
                 />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3">
-                <span className="text-xs text-slate-400">Dernière activité : {dateLabel(stream.updatedAt)}</span>
+                <span className="text-xs text-slate-400">Derniere activite : {dateLabel(stream.updatedAt)}</span>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => setMuted((v) => !v)} >
                     {muted ? <VolumeX className="mr-2 size-4" /> : <Volume2 className="mr-2 size-4" />}
@@ -755,16 +755,16 @@ export default function StreamDetailPage() {
 
           <div className="space-y-4">
             <div className="console-panel p-4">
-              <h3 className="text-sm font-semibold">Actions opérateur</h3>
+              <h3 className="text-sm font-semibold">Actions operateur</h3>
               <div className="mt-3 space-y-2">
                 <Button onClick={onSetLive} disabled={stream.status === "LIVE"} className="w-full justify-start"><Play className="mr-2 size-4" />Passer en direct</Button>
-                <Button onClick={onStop} disabled={stream.status !== "LIVE"} variant="outline" className="w-full justify-start"><Square className="mr-2 size-4" />Arrêter le flux</Button>
-                <Button onClick={onCreateReplayInstant} variant="outline" className="w-full justify-start"><MonitorPlay className="mr-2 size-4" />Créer un replay instantané</Button>
+                <Button onClick={onStop} disabled={stream.status !== "LIVE"} variant="outline" className="w-full justify-start"><Square className="mr-2 size-4" />Arreter le flux</Button>
+                <Button onClick={onCreateReplayInstant} variant="outline" className="w-full justify-start"><MonitorPlay className="mr-2 size-4" />Creer un replay instantane</Button>
               </div>
               <div className="mt-3 space-y-2 rounded-[20px] border border-white/8 bg-white/[0.03] p-3">
-                <p className="text-xs text-slate-400">Clip replay sur flux continu : sélectionnez un début et une fin.</p>
+                <p className="text-xs text-slate-400">Clip replay sur flux continu : selectionnez un debut et une fin.</p>
                 <div>
-                  <Label className="text-xs text-slate-400">Début</Label>
+                  <Label className="text-xs text-slate-400">Debut</Label>
                   <Input
                     type="datetime-local"
                     value={clipStartAt}
@@ -782,7 +782,7 @@ export default function StreamDetailPage() {
                   />
                 </div>
                 <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-black/10 px-3 py-2">
-                  <Label className="text-xs text-slate-400">Arrêter le flux après création</Label>
+                  <Label className="text-xs text-slate-400">Arreter le flux apres creation</Label>
                   <Switch checked={clipEndStream} onCheckedChange={setClipEndStream} />
                 </div>
                 <Button
@@ -791,7 +791,7 @@ export default function StreamDetailPage() {
                   className="w-full"
                 >
                   {clipSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <MonitorPlay className="mr-2 size-4" />}
-                  Créer replay depuis fenêtre
+                  Creer replay depuis fenetre
                 </Button>
                 <Button
                   variant="outline"
@@ -805,7 +805,7 @@ export default function StreamDetailPage() {
               </div>
             </div>
             <div className="console-panel p-4">
-              <h3 className="text-sm font-semibold">Dernière validation HLS</h3>
+              <h3 className="text-sm font-semibold">Derniere validation HLS</h3>
               {validation ? (
                 <div className="mt-3 space-y-2 text-sm text-slate-400">
                   <StatusBadge status={validation.summary === "OK" ? "HEALTHY" : validation.summary === "WARN" ? "DEGRADED" : "DOWN"} />
@@ -813,11 +813,11 @@ export default function StreamDetailPage() {
                   <p>Variants {validation.metrics.variantsCount} | Audio {validation.metrics.audioTracks} | Sous-titres {validation.metrics.subtitleTracks}</p>
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-slate-400">Aucune validation exécutée.</p>
+                <p className="mt-3 text-sm text-slate-400">Aucune validation executee.</p>
               )}
               <div className="mt-3 rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
                 <p>Erreurs player 1h: <span className="font-medium text-slate-100">{analytics?.summary.errors1h ?? 0}</span></p>
-                <p>Bitrate réel 1 h: <span className="font-medium text-slate-100">{analytics?.summary.bitrateAvg1h ?? 0} kbps</span></p>
+                <p>Bitrate reel 1 h: <span className="font-medium text-slate-100">{analytics?.summary.bitrateAvg1h ?? 0} kbps</span></p>
               </div>
             </div>
           </div>
@@ -826,22 +826,22 @@ export default function StreamDetailPage() {
         <TabsContent value="health" className="mt-4 space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Contrôles OK</p>
+              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Controles OK</p>
               <p className="mt-1 text-xl font-semibold text-emerald-300">{healthCounts.ok}</p>
             </div>
             <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Contrôles WARN</p>
+              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Controles WARN</p>
               <p className="mt-1 text-xl font-semibold text-amber-300">{healthCounts.warn}</p>
             </div>
             <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Contrôles FAIL</p>
+              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Controles FAIL</p>
               <p className="mt-1 text-xl font-semibold text-rose-300">{healthCounts.fail}</p>
             </div>
           </div>
 
-          <DataTableShell title="Contrôles automatiques" description="Manifest, variants, playlist et segments." loading={validating} isEmpty={!validation || validation.checks.length === 0} emptyTitle="Aucun contrôle" emptyDescription="Lancez une validation HLS.">
+          <DataTableShell title="Controles automatiques" description="Manifest, variants, playlist et segments." loading={validating} isEmpty={!validation || validation.checks.length === 0} emptyTitle="Aucun controle" emptyDescription="Lancez une validation HLS.">
             <Table>
-              <TableHeader><TableRow><TableHead>Contrôle</TableHead><TableHead>Statut</TableHead><TableHead>Détails</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Controle</TableHead><TableHead>Statut</TableHead><TableHead>Details</TableHead></TableRow></TableHeader>
               <TableBody>
                 {(validation?.checks ?? []).map((check) => (
                   <TableRow key={check.key} >
@@ -855,7 +855,7 @@ export default function StreamDetailPage() {
           </DataTableShell>
           <div className="console-panel p-4">
             <h3 className="text-sm font-semibold">Chronologie incidents</h3>
-            {incidents.length === 0 ? <p className="mt-2 text-sm text-slate-400">Aucun incident détecté.</p> : <div className="mt-2 space-y-2">{incidents.map((line) => <p key={line} className="text-sm text-slate-400">{line}</p>)}</div>}
+            {incidents.length === 0 ? <p className="mt-2 text-sm text-slate-400">Aucun incident detecte.</p> : <div className="mt-2 space-y-2">{incidents.map((line) => <p key={line} className="text-sm text-slate-400">{line}</p>)}</div>}
           </div>
         </TabsContent>
 
@@ -870,7 +870,7 @@ export default function StreamDetailPage() {
                   size="sm"
                   onClick={() => {
                     patchConfig(preset);
-                    setFeedback(`Préréglage ${PRESET_LABELS[key] ?? key} appliqué.`);
+                    setFeedback(`Prereglage ${PRESET_LABELS[key] ?? key} applique.`);
                   }}
                   
                 >
@@ -881,11 +881,11 @@ export default function StreamDetailPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div><Label>Nom du flux</Label><Input value={config.title} onChange={(e) => patchConfig({ title: e.target.value })} className="mt-1" /></div>
               <div><Label>Manifest HLS</Label><Input value={config.hlsUrl} onChange={(e) => patchConfig({ hlsUrl: e.target.value })} className="mt-1" /></div>
-              <div><Label>Fenêtre DVR (sec)</Label><Input type="number" value={config.dvrWindowSec} onChange={(e) => patchConfig({ dvrWindowSec: Number(e.target.value) || 0 })} className="mt-1" /></div>
+              <div><Label>Fenetre DVR (sec)</Label><Input type="number" value={config.dvrWindowSec} onChange={(e) => patchConfig({ dvrWindowSec: Number(e.target.value) || 0 })} className="mt-1" /></div>
               <div className="space-y-2 pt-6">
                 <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>DVR</Label><Switch checked={config.dvrEnabled} onCheckedChange={(checked) => patchConfig({ dvrEnabled: checked, dvrWindowSec: checked ? Math.max(config.dvrWindowSec, 3600) : 0 })} /></div>
                 <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Faible latence</Label><Switch checked={config.latency !== "normal"} onCheckedChange={(checked) => patchConfig({ latency: checked ? "low" : "normal" })} /></div>
-                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Retour arrière</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => patchConfig({ timeshift: checked })} /></div>
+                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Retour arriere</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => patchConfig({ timeshift: checked })} /></div>
                 <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>DRM</Label><Switch checked={config.drmEnabled} onCheckedChange={(checked) => patchConfig({ drmEnabled: checked })} /></div>
               </div>
             </div>
@@ -915,30 +915,30 @@ export default function StreamDetailPage() {
                 <div><Label>URL licence FairPlay</Label><Input value={drmConfig.fairplayLicenseUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayLicenseUrl: e.target.value }))} className="mt-1" /></div>
               </div>
               <div className="mt-3"><Label>URL certificat FairPlay</Label><Input value={drmConfig.fairplayCertificateUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayCertificateUrl: e.target.value }))} className="mt-1" /></div>
-              <p className="mt-2 text-xs text-slate-400">Les endpoints DRM restent stockés localement tant que le backend DRM dédié n’est pas activé.</p>
+              <p className="mt-2 text-xs text-slate-400">Les endpoints DRM restent stockes localement tant que le backend DRM dedie n&apos;est pas active.</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div><Label>Pays autorisés</Label><Input value={config.geoAllow} onChange={(e) => patchConfig({ geoAllow: e.target.value })} className="mt-1" /></div>
-              <div><Label>Pays bloqués</Label><Input value={config.geoBlock} onChange={(e) => patchConfig({ geoBlock: e.target.value })} className="mt-1" /></div>
+              <div><Label>Pays autorises</Label><Input value={config.geoAllow} onChange={(e) => patchConfig({ geoAllow: e.target.value })} className="mt-1" /></div>
+              <div><Label>Pays bloques</Label><Input value={config.geoBlock} onChange={(e) => patchConfig({ geoBlock: e.target.value })} className="mt-1" /></div>
             </div>
             <div><Label>Mappage sous-titres (lang|url ou lang|label|url)</Label><Textarea value={config.captionsText} onChange={(e) => patchConfig({ captionsText: e.target.value })} className="mt-1 min-h-[120px]" /></div>
             <div className="flex justify-end"><Button onClick={onSaveConfig} disabled={saving} >{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}Enregistrer</Button></div>
           </div>
           <div className="console-panel space-y-4 p-4">
-            <h3 className="text-sm font-semibold">Test de géoblocage</h3>
+            <h3 className="text-sm font-semibold">Test de geoblocage</h3>
             <Input value={geoProbe} onChange={(e) => setGeoProbe(e.target.value)} placeholder="FR"  />
             {geoResult ? <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3"><StatusBadge status={geoResult.status} /><p className="mt-2 text-sm text-slate-400">{geoResult.text}</p></div> : null}
             <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
-              Checklist de mise en service : manifest accessible, DRM OK, géoblocage vérifié, EPG publié.
+              Checklist de mise en service : manifest accessible, DRM OK, geoblocage verifie, EPG publie.
             </div>
             <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
-              État d’édition : <span className="font-medium text-slate-100">{configDirty ? "Modifications non sauvegardées" : "À jour"}</span>
+              Etat d&apos;edition : <span className="font-medium text-slate-100">{configDirty ? "Modifications non sauvegardees" : "A jour"}</span>
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
-          <DataTableShell title="Série 24 h" description="Audience, bitrate et erreurs" loading={analyticsLoading} isEmpty={!analyticsLoading && series.length === 0} emptyTitle="Pas de métriques" emptyDescription="Aucune mesure sur 24 h.">
+          <DataTableShell title="Serie 24 h" description="Audience, bitrate et erreurs" loading={analyticsLoading} isEmpty={!analyticsLoading && series.length === 0} emptyTitle="Pas de metriques" emptyDescription="Aucune mesure sur 24 h.">
             <Table>
               <TableHeader><TableRow><TableHead>Horodatage</TableHead><TableHead>Audience</TableHead><TableHead>Bitrate</TableHead><TableHead>Erreurs</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -956,9 +956,9 @@ export default function StreamDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4">
-          <DataTableShell title="Journal d’audit" description="Qui a changé quoi sur ce flux" isEmpty={audits.length === 0} emptyTitle="Aucun événement" emptyDescription="L’audit est alimenté à chaque action sensible.">
+          <DataTableShell title="Journal d'audit" description="Qui a change quoi sur ce flux" isEmpty={audits.length === 0} emptyTitle="Aucun evenement" emptyDescription="L'audit est alimente a chaque action sensible.">
             <Table>
-              <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acteur</TableHead><TableHead>Action</TableHead><TableHead>Détails</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acteur</TableHead><TableHead>Action</TableHead><TableHead>Details</TableHead></TableRow></TableHeader>
               <TableBody>
                 {audits.map((row) => (
                   <TableRow key={row.id} >
@@ -976,5 +976,4 @@ export default function StreamDetailPage() {
     </PageShell>
   );
 }
-
 

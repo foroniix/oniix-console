@@ -114,7 +114,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         });
         const tokenJson = await tokenRes.json().catch(() => null);
         if (!tokenRes.ok || !tokenJson?.ok) {
-          throw new Error(tokenJson?.error || "Impossible d’initialiser l’accès de lecture.");
+          throw new Error(tokenJson?.error || "Impossible d'initialiser l'acces de lecture.");
         }
 
         const token = String(tokenJson.token ?? "");
@@ -134,7 +134,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         });
         const playbackJson = (await playbackRes.json().catch(() => null)) as PlaybackUrlResponse | null;
         if (!playbackRes.ok || !playbackJson?.ok) {
-          throw new Error((playbackJson as { error?: string } | null)?.error || "Impossible de résoudre la lecture en direct.");
+          throw new Error((playbackJson as { error?: string } | null)?.error || "Impossible de resoudre la lecture en direct.");
         }
 
         const channelId = String(playbackJson.channel_id ?? "").trim();
@@ -281,7 +281,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-[#8ea5c5]">
-                      Aucune source lisible n’est disponible pour cette chaîne.
+                      Aucune source lisible n&apos;est disponible pour cette chaine.
                     </div>
                   )}
                 </div>
@@ -378,7 +378,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                         </div>
                         {lane.next?.title ? (
                           <p className="mt-2 text-xs text-[#7f95b3]">
-                            À suivre à {formatClock(lane.next.starts_at)} - {lane.next.title}
+                            A suivre a {formatClock(lane.next.starts_at)} - {lane.next.title}
                           </p>
                         ) : null}
                       </button>
@@ -410,7 +410,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     ))}
                     {(!activeLane || activeLane.slots.length === 0) && (
                       <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf]">
-                        Aucune grille publiée pour cette chaîne pour le moment.
+                        Aucune grille publiee pour cette chaine pour le moment.
                       </p>
                     )}
                   </div>
@@ -432,13 +432,13 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       <div className="mt-2 flex items-center gap-2 text-[11px] text-[#97adca]">
                         <Clapperboard className="h-3.5 w-3.5" />
                         <span>{replay.channel.name || "Replay"}</span>
-                        {replay.duration_sec ? <span>• {formatDuration(replay.duration_sec)}</span> : null}
+                        {replay.duration_sec ? <span>- {formatDuration(replay.duration_sec)}</span> : null}
                       </div>
                     </button>
                   ))}
                   {activeReplaysForChannel.length === 0 && (
                     <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf] sm:col-span-2">
-                      Aucun replay disponible pour cette chaîne.
+                      Aucun replay disponible pour cette chaine.
                     </p>
                   )}
                 </div>
@@ -447,22 +447,22 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
 
             <aside className="space-y-4">
               <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
-                <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">Contexte éditorial</p>
+                <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">Contexte editorial</p>
                 <div className="mt-3 space-y-2 text-xs text-[#9cb1cd]">
                   <p>
-                    Chaîne : <span className="text-[#eaf3ff]">{activeLane?.channel.name || "--"}</span>
+                    Chaine : <span className="text-[#eaf3ff]">{activeLane?.channel.name || "--"}</span>
                   </p>
                   <p>
                     En cours : <span className="text-[#eaf3ff]">{activeLane?.now?.title || "Aucun programme en cours"}</span>
                   </p>
                   <p>
-                    À suivre : <span className="text-[#eaf3ff]">{activeLane?.next?.title || "--"}</span>
+                    A suivre : <span className="text-[#eaf3ff]">{activeLane?.next?.title || "--"}</span>
                   </p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
-                <p className="mb-3 font-[var(--font-we-display)] text-sm font-semibold text-white">Sélection rapide</p>
+                <p className="mb-3 font-[var(--font-we-display)] text-sm font-semibold text-white">Selection rapide</p>
                 <div className="space-y-2">
                   {grid.map((lane) => (
                     <button

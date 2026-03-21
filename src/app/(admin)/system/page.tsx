@@ -289,7 +289,7 @@ export default function SystemPage() {
                 <MetricRow
                   label="Evenements analytics"
                   value={numberFormat(data?.kpis.events_24h ?? 0)}
-                  hint="Volume agrégé sur les dernieres 24 heures."
+                  hint="Volume agrege sur les dernieres 24 heures."
                 />
                 <MetricRow
                   label="Parc editeurs"

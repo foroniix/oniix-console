@@ -32,7 +32,7 @@ export async function GET(
     if (result.code === "NOT_FOUND") {
       return NextResponse.json({ error: "Ressource introuvable." }, { status: 404 });
     }
-    if (result.error === "Migration OTT non appliquée.") {
+    if (result.error === "Migration OTT non appliquee.") {
       return NextResponse.json({ error: result.error }, { status: 503 });
     }
 

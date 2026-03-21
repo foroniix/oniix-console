@@ -30,9 +30,9 @@ function badgeTone(status: Campaign["status"]) {
 }
 
 function fmtDate(ts?: string | null) {
-  if (!ts) return "—";
+  if (!ts) return "-";
   const d = new Date(ts);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleString();
 }
 
@@ -48,8 +48,8 @@ export default function CampaignRowCard({
 
   const scheduleLabel = useMemo(() => {
     if (!campaign.starts_at && !campaign.ends_at) return "Toujours actif (si status=active)";
-    return `${campaign.starts_at ? `Début: ${fmtDate(campaign.starts_at)}` : "Début: —"} • ${
-      campaign.ends_at ? `Fin: ${fmtDate(campaign.ends_at)}` : "Fin: —"
+    return `${campaign.starts_at ? `Debut: ${fmtDate(campaign.starts_at)}` : "Debut: -"} - ${
+      campaign.ends_at ? `Fin: ${fmtDate(campaign.ends_at)}` : "Fin: -"
     }`;
   }, [campaign.starts_at, campaign.ends_at]);
 
@@ -70,7 +70,7 @@ export default function CampaignRowCard({
   };
 
   const del = async () => {
-    const ok = confirm("Supprimer cette campagne ? (les creatives liées seront supprimées)");
+    const ok = confirm("Supprimer cette campagne ? (les creatives liees seront supprimees)");
     if (!ok) return;
 
     setBusy(true);
@@ -97,7 +97,7 @@ export default function CampaignRowCard({
                 </div>
                 <div className="text-sm font-semibold text-white truncate">{campaign.name}</div>
                 <div className="text-[10px] text-zinc-500 border border-white/10 rounded-md px-2 py-1">
-                  {campaign.type} • prio {campaign.priority}
+                  {campaign.type} - prio {campaign.priority}
                 </div>
               </div>
 
@@ -150,7 +150,7 @@ export default function CampaignRowCard({
                   disabled={busy}
                 >
                   <PlayCircle className="h-4 w-4 mr-2" />
-                  Réactiver
+                  Reactiver
                 </Button>
               )}
 

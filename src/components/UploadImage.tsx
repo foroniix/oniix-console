@@ -18,7 +18,7 @@ export default function UploadImage({
     setBusy(true);
     setError(null);
     try {
-      // preview immédiate
+      // preview immediate
       const obj = URL.createObjectURL(f);
       setLocal(obj);
       const fd = new FormData();
@@ -46,7 +46,7 @@ export default function UploadImage({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={local || value} alt="thumb" className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">Aperçu</div>
+            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">Apercu</div>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ export default function UploadImage({
             onChange={(e) => onFile(e.target.files?.item(0) ?? null)}
           />
           <Button type="button" className="bg-white/10 hover:bg-white/20" onClick={selectFile} disabled={busy}>
-            {busy ? "Envoi…" : "Choisir un fichier"}
+            {busy ? "Envoi..." : "Choisir un fichier"}
           </Button>
           {value && (
             <Button
@@ -73,7 +73,7 @@ export default function UploadImage({
           )}
         </div>
       </div>
-      <div className="text-xs text-zinc-400">Recommandé: 1280×720, &lt; 1 Mo.</div>
+      <div className="text-xs text-zinc-400">Recommande: 1280720, &lt; 1 Mo.</div>
       {error ? <div className="text-xs text-rose-300">{error}</div> : null}
     </div>
   );

@@ -115,7 +115,7 @@ export async function getChannelOttRealtimeStats(input: {
   if (tableErrors.length > 0) {
     const firstError = tableErrors[0]!;
     if (isMissingRelationError(firstError.code ?? null)) {
-      return { ok: false as const, error: "Migration OTT non appliquée.", code: firstError.code ?? null };
+      return { ok: false as const, error: "Migration OTT non appliquee.", code: firstError.code ?? null };
     }
 
     return { ok: false as const, error: firstError.message, code: firstError.code ?? null };

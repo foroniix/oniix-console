@@ -104,7 +104,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
       return;
     }
     if (endsAt && startsAt && new Date(endsAt) < new Date(startsAt)) {
-      setError("La date de fin doit être après la date de début.");
+      setError("La date de fin doit etre apres la date de debut.");
       return;
     }
 
@@ -158,7 +158,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="bg-zinc-950/60 border-white/10"
-                    placeholder="Ex: Promo Chaîne Sport"
+                    placeholder="Ex: Promo Chaine Sport"
                   />
                 </div>
 
@@ -179,7 +179,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
 
               <div className="grid md:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Priorité</label>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Priorite</label>
                   <Input
                     type="number"
                     value={priority}
@@ -205,7 +205,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-widest text-zinc-500">Raccourci</label>
                   <div className="h-10 rounded-md bg-white/5 border border-white/10 px-3 flex items-center text-xs text-zinc-400">
-                    {isEdit ? "Edition" : "Création"}
+                    {isEdit ? "Edition" : "Creation"}
                   </div>
                 </div>
               </div>
@@ -219,7 +219,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
 
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Début</label>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Debut</label>
                   <Input
                     type="datetime-local"
                     value={startsAt}
@@ -239,7 +239,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
               </div>
 
               <div className="text-[11px] text-zinc-500">
-                Si aucune date n’est fournie, la campagne est “toujours active” (si status=active).
+                Si aucune date n&apos;est fournie, la campagne est &quot;toujours active&quot; (si status=active).
               </div>
             </CardContent>
           </Card>

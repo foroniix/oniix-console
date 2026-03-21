@@ -223,8 +223,8 @@ export async function POST() {
 
     if (Object.keys(patch).length === 0) {
       const reasons: string[] = [];
-      if (!hasOrigin && candidateUrls.length !== 1) reasons.push("Origin ambiguë ou absente dans streams.");
-      if (!hasTenant && candidateTenants.length !== 1) reasons.push("Tenant non déductible depuis streams.");
+      if (!hasOrigin && candidateUrls.length !== 1) reasons.push("Origin ambigue ou absente dans streams.");
+      if (!hasTenant && candidateTenants.length !== 1) reasons.push("Tenant non deductible depuis streams.");
       skipped.push({
         id: channelId,
         name: String(channel.name ?? ""),

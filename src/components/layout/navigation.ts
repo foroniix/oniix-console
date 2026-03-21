@@ -38,7 +38,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         href: "/channels",
-        label: "Chaînes TV",
+        label: "Chaines TV",
         description: "Catalogue et distribution",
         icon: Tv2,
       },

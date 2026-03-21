@@ -43,7 +43,7 @@ export async function getKPIs(): Promise<KPIs> {
   };
 }
 
-// 14 jours de séries utilisateurs / viewers
+// 14 jours de series utilisateurs / viewers
 export async function getSeries(days: number) {
   const { data: snaps } = await supabase
     .from("stream_snapshots")
@@ -52,12 +52,12 @@ export async function getSeries(days: number) {
 
   return snaps?.map(s => ({
     date: s.ts,
-    users: Math.floor(Math.random() * 2000), // à remplacer par vraie data
+    users: Math.floor(Math.random() * 2000), // a remplacer par vraie data
     viewers: s.concurrent_viewers,
   })) ?? [];
 }
 
-// top chaînes
+// top chaines
 export async function getTopChannels() {
   const { data } = await supabase
     .from("channels")

@@ -214,7 +214,7 @@ export default function CampaignsPage() {
     <PageShell>
       <PageHeader
         title="Campagnes publicitaires"
-        subtitle="Pilotez les campagnes de monétisation, leur fenetre de diffusion et leur priorisation opérationnelle."
+        subtitle="Pilotez les campagnes de monetisation, leur fenetre de diffusion et leur priorisation operationnelle."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Publicite", href: "/ads" },
@@ -250,7 +250,7 @@ export default function CampaignsPage() {
         onRetry={() => void load(false)}
         isEmpty={!loading && !loadError && filtered.length === 0}
         emptyTitle="Aucune campagne"
-        emptyDescription="Créez une campagne ou élargissez votre recherche."
+        emptyDescription="Creez une campagne ou elargissez votre recherche."
       >
         <FilterBar onReset={() => setQuery("")} resetDisabled={!query}>
           <div className="min-w-[260px] flex-1">

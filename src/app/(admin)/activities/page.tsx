@@ -78,7 +78,7 @@ function formatActionLabel(action: string) {
   return action
     .split(".")
     .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
-    .join(" · ");
+    .join(" - ");
 }
 
 function formatDateLabel(value: string) {

@@ -22,7 +22,7 @@ export interface MediaContent {
   video_url?: string; 
   duration_min?: number;
   source_type?: 'UPLOAD' | 'URL';
-  // Pour les séries / Mangas
+  // Pour les series / Mangas
   episodes?: Episode[];
   total_seasons?: number;
 }

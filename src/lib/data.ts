@@ -12,7 +12,7 @@ export type Category =
   | "Art"
   | "Mode"
   | "Faits Divers"
-  | "Animé"
+  | "Anime"
   | "Manga"
   | "Autre";
 
@@ -915,29 +915,29 @@ function titleCaseWords(value: string) {
 function humanizeAction(action: string) {
   const normalized = action.trim().toLowerCase();
   const map: Record<string, string> = {
-    "program.create": "Création programme",
-    "program.update": "Mise à jour programme",
+    "program.create": "Creation programme",
+    "program.update": "Mise a jour programme",
     "program.publish": "Publication programme",
     "program.delete": "Suppression programme",
     "program_slot.create": "Planification diffusion",
-    "program_slot.update": "Mise à jour diffusion",
+    "program_slot.update": "Mise a jour diffusion",
     "program_slot.publish": "Publication diffusion",
     "program_slot.delete": "Suppression diffusion",
-    "replay.create": "Création replay",
-    "replay.update": "Mise à jour replay",
+    "replay.create": "Creation replay",
+    "replay.update": "Mise a jour replay",
     "replay.publish": "Publication replay",
     "replay.delete": "Suppression replay",
-    "stream.create": "Création direct",
-    "stream.update": "Mise à jour direct",
-    "stream.start": "Démarrage direct",
+    "stream.create": "Creation direct",
+    "stream.update": "Mise a jour direct",
+    "stream.start": "Demarrage direct",
     "stream.end": "Fin direct",
     "stream.delete": "Suppression direct",
-    "channel.create": "Création chaîne",
-    "channel.update": "Mise à jour chaîne",
-    "channel.delete": "Suppression chaîne",
-    "tenant.create": "Création espace",
+    "channel.create": "Creation chaine",
+    "channel.update": "Mise a jour chaine",
+    "channel.delete": "Suppression chaine",
+    "tenant.create": "Creation espace",
     "invite.create": "Invitation membre",
-    "member.update": "Mise à jour membre",
+    "member.update": "Mise a jour membre",
   };
 
   if (map[normalized]) return map[normalized];
@@ -954,13 +954,13 @@ function describeActivity(row: AuditLogRow) {
         : null;
 
   const targetLabel = row.target_type ? titleCaseWords(row.target_type) : "Console";
-  const title = metadataTitle ? `${targetLabel} · ${metadataTitle}` : targetLabel;
+  const title = metadataTitle ? `${targetLabel} - ${metadataTitle}` : targetLabel;
 
   let description: string | null = humanizeAction(row.action);
   if (typeof metadata.previousStatus === "string" && typeof metadata.nextStatus === "string") {
-    description = `${description} · ${metadata.previousStatus} → ${metadata.nextStatus}`;
+    description = `${description} - ${metadata.previousStatus} -> ${metadata.nextStatus}`;
   } else if (typeof metadata.slotStatus === "string") {
-    description = `${description} · ${metadata.slotStatus}`;
+    description = `${description} - ${metadata.slotStatus}`;
   }
 
   return { title, description };

@@ -116,7 +116,7 @@ function resolveLaneIdentity(args: {
 
   return {
     channelId: args.fallbackChannel?.id ?? args.key,
-    channelName: args.fallbackChannel?.name ?? "Chaîne",
+    channelName: args.fallbackChannel?.name ?? "Chaine",
     channelLogo: args.fallbackChannel?.logo ?? null,
   };
 }

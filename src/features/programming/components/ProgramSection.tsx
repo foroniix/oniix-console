@@ -57,7 +57,7 @@ export function ProgramSection(props: ProgramSectionProps) {
         <div className="mb-4 flex flex-col gap-1">
           <h2 className="text-base font-semibold text-white">Catalogue programmes</h2>
           <p className="text-sm text-slate-400">
-            Un programme décrit le contenu éditorial. Pour apparaître dans la grille TV, il doit ensuite être planifié
+            Un programme decrit le contenu editorial. Pour apparaitre dans la grille TV, il doit ensuite etre planifie
             dans un slot de diffusion.
           </p>
         </div>
@@ -74,7 +74,7 @@ export function ProgramSection(props: ProgramSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaîne par défaut</Label>
+            <Label>Chaine par defaut</Label>
             <Select value={form.channelId} onValueChange={(channelId) => onPatch({ channelId })}>
               <SelectTrigger className="console-field">
                 <SelectValue />
@@ -110,7 +110,7 @@ export function ProgramSection(props: ProgramSectionProps) {
           </div>
 
           <div className="grid gap-2 sm:col-span-2">
-            <Label>Catégorie</Label>
+            <Label>Categorie</Label>
             <Input
               value={form.category}
               onChange={(e) => onPatch({ category: e.target.value })}
@@ -144,7 +144,7 @@ export function ProgramSection(props: ProgramSectionProps) {
             <Input
               value={form.synopsis}
               onChange={(e) => onPatch({ synopsis: e.target.value })}
-              placeholder="Résumé éditorial"
+              placeholder="Resume editorial"
               className="console-field"
             />
           </div>
@@ -157,7 +157,7 @@ export function ProgramSection(props: ProgramSectionProps) {
             className="bg-indigo-600 text-white hover:bg-indigo-500"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {saving ? "Enregistrement..." : form.id ? "Mettre à jour le programme" : "Créer le programme"}
+            {saving ? "Enregistrement..." : form.id ? "Mettre a jour le programme" : "Creer le programme"}
           </Button>
           {form.id ? (
             <Button
@@ -165,7 +165,7 @@ export function ProgramSection(props: ProgramSectionProps) {
               onClick={onReset}
               className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
             >
-              Annuler l’édition
+              Annuler l&apos;edition
             </Button>
           ) : null}
         </div>
@@ -176,9 +176,9 @@ export function ProgramSection(props: ProgramSectionProps) {
           <thead className="bg-[rgba(255,255,255,0.03)] text-slate-400">
             <tr>
               <th className="px-3 py-2 text-left">Titre</th>
-              <th className="px-3 py-2 text-left">Chaîne</th>
+              <th className="px-3 py-2 text-left">Chaine</th>
               <th className="px-3 py-2 text-left">Statut</th>
-              <th className="px-3 py-2 text-left">Publié</th>
+              <th className="px-3 py-2 text-left">Publie</th>
               <th className="px-3 py-2 text-right">Actions</th>
             </tr>
           </thead>
@@ -220,7 +220,7 @@ export function ProgramSection(props: ProgramSectionProps) {
                       onClick={() => onEdit(program)}
                       className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
                     >
-                      Éditer
+                      Editer
                     </Button>
                     {canTransitionProgramStatus(program.status, "published") &&
                     program.status !== "published" ? (

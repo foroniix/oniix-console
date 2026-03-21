@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import type { Channel, Stream } from "@/lib/data";
 import { Tv, Wifi } from "lucide-react";
 
-// ✅ HOOK REALTIME
+// OK HOOK REALTIME
 import { useLiveStatsRealtime } from "./useLiveStatsRealtime";
 
 type Props = {
@@ -16,7 +16,7 @@ type Props = {
 };
 
 export default function StreamCard({ stream, channel, onOpen }: Props) {
-  // 🔴 Stats RÉELLES temps réel (Supabase Realtime)
+  //  Stats REELLES temps reel (Supabase Realtime)
   const stats = useLiveStatsRealtime(
     stream.id,
     stream.status === "LIVE"
@@ -46,7 +46,7 @@ export default function StreamCard({ stream, channel, onOpen }: Props) {
         </div>
 
         <div className="truncate text-xs text-zinc-400">
-          {channel?.name ?? "—"}
+          {channel?.name ?? "-"}
         </div>
 
         {/* Stats LIVE */}

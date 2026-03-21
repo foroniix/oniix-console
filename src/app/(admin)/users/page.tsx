@@ -396,7 +396,7 @@ export default function UsersPage() {
                   />
                 </div>
                 <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                  {filteredMembers.length} resultat(s) • page {membersPage}/{membersPages}
+                  {filteredMembers.length} resultat(s) - page {membersPage}/{membersPages}
                 </div>
               </div>
 
@@ -473,7 +473,7 @@ export default function UsersPage() {
                   />
                 </div>
                 <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                  {filteredInvites.length} resultat(s) • page {invitesPage}/{invitesPages}
+                  {filteredInvites.length} resultat(s) - page {invitesPage}/{invitesPages}
                 </div>
               </div>
 
@@ -604,7 +604,7 @@ export default function UsersPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Regles d exploitation</CardTitle>
-                    <CardDescription>Une equipe maitrisée vaut mieux qu un perimetre trop large.</CardDescription>
+                    <CardDescription>Une equipe maitrisee vaut mieux qu un perimetre trop large.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm leading-6 text-slate-300">
                     <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">

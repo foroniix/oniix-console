@@ -97,7 +97,7 @@ function SidebarFooter() {
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-white">{displayName}</p>
             <p className="truncate text-xs text-slate-400">
-              {workspaceName} • {formatRoleLabel(role)}
+              {workspaceName} - {formatRoleLabel(role)}
             </p>
           </div>
         </div>

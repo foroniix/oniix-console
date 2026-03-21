@@ -24,7 +24,7 @@ export default function LiveMonitor({ streams }: LiveMonitorProps) {
       <div className="flex flex-col items-center justify-center h-[400px] border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">
         <Activity className="w-12 h-12 text-zinc-700 mb-4" />
         <h3 className="text-zinc-400 font-medium">Aucun flux en direct</h3>
-        <p className="text-zinc-600 text-sm">Démarrez un flux dans l'onglet "Gestion" pour le voir ici.</p>
+        <p className="text-zinc-600 text-sm">Demarrez un flux dans l&apos;onglet &quot;Gestion&quot; pour le voir ici.</p>
       </div>
     );
   }
@@ -44,7 +44,7 @@ function StreamCard({ stream }: { stream: Stream }) {
   // Connexion au Hook Realtime
   const stats = useLiveStatsRealtime(stream.id, isLive);
 
-  // Calcul de la couleur de santé
+  // Calcul de la couleur de sante
   const healthColor = {
     Excellent: "bg-emerald-500 text-white",
     Good: "bg-emerald-600 text-white",
@@ -61,7 +61,7 @@ function StreamCard({ stream }: { stream: Stream }) {
            <Badge variant="outline" className="bg-black/40 border-white/10 text-white backdrop-blur-md font-normal">
              {stream.title}
            </Badge>
-           {/* Badge de Santé dynamique */}
+           {/* Badge de Sante dynamique */}
            <Badge className={`${healthColor} h-5 px-1.5 text-[10px] hover:${healthColor} transition-colors`}>
              {isLive ? `${stats.fps} FPS` : 'OFF'}
            </Badge>
@@ -80,7 +80,7 @@ function StreamCard({ stream }: { stream: Stream }) {
           </div>
         ) : (
           <>
-            {/* Image de fond simulée (ou <video> réelle plus tard) */}
+            {/* Image de fond simulee (ou <video> reelle plus tard) */}
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity grayscale hover:grayscale-0"></div>
             
             {/* Compteur Viewers (Overlay permanent discret) */}
@@ -95,7 +95,7 @@ function StreamCard({ stream }: { stream: Stream }) {
       {/* --- FOOTER CONTROLS --- */}
       <div className="bg-zinc-900/80 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between">
         
-        {/* Vumètre Audio Connecté */}
+        {/* Vumetre Audio Connecte */}
         <div className="flex items-center gap-2">
            <Volume2 className={`w-4 h-4 transition-colors ${stats.audioLevel > 10 ? 'text-zinc-200' : 'text-zinc-600'}`} />
            <div className="flex gap-0.5 items-end h-4 w-16">
@@ -103,16 +103,16 @@ function StreamCard({ stream }: { stream: Stream }) {
                <AudioBar 
                  key={i} 
                  index={i} 
-                 // La barre s'active si le niveau audio global dépasse un certain seuil proportionnel
+                 // La barre s'active si le niveau audio global depasse un certain seuil proportionnel
                  active={isLive && stats.audioLevel > (i * 12)} 
-                 // Ajoute un peu de chaos aléatoire local pour faire réaliste
+                 // Ajoute un peu de chaos aleatoire local pour faire realiste
                  chaos={stats.audioLevel > 0} 
                />
              ))}
            </div>
         </div>
 
-        {/* Données Techniques (Bitrate) */}
+        {/* Donnees Techniques (Bitrate) */}
         <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
           <div className="flex items-center gap-1.5">
             <Signal className={`w-3 h-3 ${stats.health === 'Excellent' ? 'text-emerald-500' : 'text-zinc-600'}`} />
@@ -130,9 +130,9 @@ function StreamCard({ stream }: { stream: Stream }) {
   );
 }
 
-// Composant AudioBar amélioré pour réagir aux données
+// Composant AudioBar ameliore pour reagir aux donnees
 function AudioBar({ index, active, chaos }: { index: number, active: boolean, chaos: boolean }) {
-  // On génère une hauteur de base selon l'index (les premières barres sont plus hautes)
+  // On genere une hauteur de base selon l'index (les premieres barres sont plus hautes)
   // + une variation si "chaos" est actif
   
   return (
@@ -141,7 +141,7 @@ function AudioBar({ index, active, chaos }: { index: number, active: boolean, ch
         active ? 'bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.5)]' : 'bg-zinc-800'
       }`}
       style={{
-        // Si actif, hauteur aléatoire pour simuler la voix/musique. Si inactif, 2px.
+        // Si actif, hauteur aleatoire pour simuler la voix/musique. Si inactif, 2px.
         height: active ? `${30 + Math.random() * 70}%` : '2px', 
       }}
     />

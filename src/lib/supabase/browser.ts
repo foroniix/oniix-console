@@ -15,7 +15,7 @@ export function supabaseBrowser(accessToken: string) {
     },
   });
 
-  // ✅ indispensable : Realtime respecte RLS uniquement si on set le JWT
+  // OK indispensable : Realtime respecte RLS uniquement si on set le JWT
   sb.realtime.setAuth(accessToken);
 
   return sb;

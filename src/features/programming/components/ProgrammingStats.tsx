@@ -14,11 +14,11 @@ function StatCard(props: { title: string; total: number; published: number }) {
         <p className="text-sm text-slate-300">{title}</p>
         <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2 py-1 text-xs text-indigo-200">
           <ListChecks className="h-3.5 w-3.5" />
-          Publiés {published}
+          Publies {published}
         </span>
       </div>
       <div className="mt-2 text-2xl font-semibold tracking-tight text-white">{total}</div>
-      <p className="mt-1 text-xs text-slate-400">État courant du catalogue</p>
+      <p className="mt-1 text-xs text-slate-400">Etat courant du catalogue</p>
     </div>
   );
 }

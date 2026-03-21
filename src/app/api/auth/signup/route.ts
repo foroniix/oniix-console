@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
     if (!email || !password || !tenantName) return jsonError("Email, mot de passe et organisation requis.", 400);
     if (typeof password !== "string" || password.length < 12) {
-      return jsonError("Mot de passe trop faible (12 caractères minimum).", 400);
+      return jsonError("Mot de passe trop faible (12 caracteres minimum).", 400);
     }
 
     const rateLimit = getRateLimitConfig("AUTH", { limit: 10, windowMs: 60_000 });
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     });
     if (signUpErr) {
       console.error("Signup error", { error: signUpErr.message });
-      return jsonError("Impossible de créer le compte.", 401);
+      return jsonError("Impossible de creer le compte.", 401);
     }
 
     const user = signUpData.user;
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
         {
           ok: true,
           requires_email_confirmation: true,
-          message: "Compte créé. Vérifiez votre email pour confirmer votre adresse.",
+          message: "Compte cree. Verifiez votre email pour confirmer votre adresse.",
         },
         { status: 200 }
       );
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
         {
           ok: true,
           requires_email_confirmation: true,
-          message: "Compte créé. Vérifiez votre email pour confirmer votre adresse, puis connectez-vous.",
+          message: "Compte cree. Verifiez votre email pour confirmer votre adresse, puis connectez-vous.",
         },
         { status: 200 }
       );

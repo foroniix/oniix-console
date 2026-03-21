@@ -32,18 +32,18 @@ export default function WebViewerEntryPage() {
             </span>
             <div>
               <p className="font-[var(--font-we-display)] text-lg font-semibold tracking-tight">Visionneuse web Oniix</p>
-              <p className="text-sm text-[#a8b7cf]">Accès direct de contrôle et de démonstration</p>
+              <p className="text-sm text-[#a8b7cf]">Acces direct de controle et de demonstration</p>
             </div>
           </div>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
             <div>
               <h1 className="font-[var(--font-we-display)] text-3xl font-semibold leading-tight text-white sm:text-4xl">
-                Ouvrez un direct Oniix dans une interface web claire, rapide et alignée sur la console.
+                Ouvrez un direct Oniix dans une interface web claire, rapide et alignee sur la console.
               </h1>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#b6c4d9] sm:text-base">
-                Saisissez un identifiant de flux pour charger une page de lecture avec direct, bascule de chaîne,
-                grille éditoriale et replays.
+                Saisissez un identifiant de flux pour charger une page de lecture avec direct, bascule de chaine,
+                grille editoriale et replays.
               </p>
             </div>
 

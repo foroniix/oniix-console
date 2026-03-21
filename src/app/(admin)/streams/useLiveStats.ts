@@ -4,7 +4,7 @@ type Stats = {
   viewers: number;
   bitrate: number; // en kbps
   fps: number;
-  audioLevel: number; // 0 à 100 (pour le vumètre)
+  audioLevel: number; // 0 a 100 (pour le vumetre)
   errors: number;
   health: "Excellent" | "Good" | "Unstable" | "Critical";
   formattedBitrate: string;
@@ -22,7 +22,7 @@ const INITIAL_STATS: Stats = {
 
 export function useLiveStats(streamId: string, isLive: boolean) {
   const [stats, setStats] = useState<Stats>(INITIAL_STATS);
-  // Ref pour éviter les re-renders inutiles sur les intervalles
+  // Ref pour eviter les re-renders inutiles sur les intervalles
   const errorCountRef = useRef(0);
 
   useEffect(() => {
@@ -36,10 +36,10 @@ export function useLiveStats(streamId: string, isLive: boolean) {
 
     const fetchOrSimulate = async () => {
       try {
-        // TENTATIVE D'APPEL API RÉEL
-        // Si vous n'avez pas encore d'API, cela échouera et passera au catch (simulation)
+        // TENTATIVE D'APPEL API REEL
+        // Si vous n'avez pas encore d'API, cela echouera et passera au catch (simulation)
         const res = await fetch(`/api/streams/${streamId}/stats`, { 
-            signal: AbortSignal.timeout(1000) // Timeout rapide pour passer en simu si pas de réponse
+            signal: AbortSignal.timeout(1000) // Timeout rapide pour passer en simu si pas de reponse
         });
         
         if (!res.ok) throw new Error("API unavailable");
@@ -48,8 +48,8 @@ export function useLiveStats(streamId: string, isLive: boolean) {
         if (isMounted) setStats(processStats(data));
 
       } catch (err) {
-        // MODE SIMULATION (Fallback pour la démo)
-        // Génère des fluctuations réalistes pour rendre l'UI vivante
+        // MODE SIMULATION (Fallback pour la demo)
+        // Genere des fluctuations realistes pour rendre l'UI vivante
         if (isMounted) {
           const simulatedBitrate = 4500 + Math.random() * 500 - 250; // Fluctue autour de 4500
           const simulatedAudio = Math.floor(Math.random() * 60) + 20; // Audio entre 20 et 80%
@@ -70,7 +70,7 @@ export function useLiveStats(streamId: string, isLive: boolean) {
     // Appel initial
     fetchOrSimulate();
 
-    // Polling toutes les 2 secondes (plus rapide pour un effet temps réel)
+    // Polling toutes les 2 secondes (plus rapide pour un effet temps reel)
     const interval = setInterval(fetchOrSimulate, 2000);
 
     return () => {
@@ -82,7 +82,7 @@ export function useLiveStats(streamId: string, isLive: boolean) {
   return stats;
 }
 
-// Helper pour formater les données brutes de l'API si besoin
+// Helper pour formater les donnees brutes de l'API si besoin
 function processStats(data: any): Stats {
   return {
     ...data,

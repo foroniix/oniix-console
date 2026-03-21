@@ -62,14 +62,14 @@ export function CookieBanner() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Préférences cookies
+              Preferences cookies
             </p>
             <h2 className="text-lg font-semibold text-white">
-              Oniix utilise des cookies de session indispensables et des mesures d’usage produit.
+              Oniix utilise des cookies de session indispensables et des mesures d&apos;usage produit.
             </h2>
             <p className="text-sm leading-6 text-slate-300">
-              Les cookies essentiels maintiennent la connexion et la sécurité. Les cookies de mesure nous aident à
-              améliorer l’expérience console et les parcours d’accès. Tu peux en savoir plus dans la page{" "}
+              Les cookies essentiels maintiennent la connexion et la securite. Les cookies de mesure nous aident a
+              ameliorer l&apos;experience console et les parcours d&apos;acces. Tu peux en savoir plus dans la page{" "}
               <Link href="/cookies" className="font-medium text-[#7cb4ff] hover:text-[#9bc6ff]">
                 Cookies
               </Link>
