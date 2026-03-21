@@ -33,25 +33,25 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/dashboard",
         label: "Pilotage",
-        description: "Audience, direct et opérations",
+        description: " ",
         icon: LayoutDashboard,
       },
       {
         href: "/channels",
         label: "Chaînes TV",
-        description: "Catalogue, branding et accès",
+        description: " ",
         icon: Tv2,
       },
       {
         href: "/streams",
         label: "Directs",
-        description: "Flux live et qualité de diffusion",
+        description: " ",
         icon: RadioTower,
       },
       {
         href: "/programming",
         label: "Programmation",
-        description: "Grille, now/next et replays",
+        description: " ",
         icon: CalendarClock,
       },
     ],
@@ -62,13 +62,13 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/ads",
         label: "Monétisation",
-        description: "Campagnes, créations et décision",
+        description: " ",
         icon: Megaphone,
       },
       {
         href: "/revenue",
         label: "Revenus",
-        description: "Suivi business et performance",
+        description: " ",
         icon: BadgeDollarSign,
       },
     ],
@@ -79,13 +79,13 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/users",
         label: "Équipe",
-        description: "Membres, rôles et invitations",
+        description: " ",
         icon: Users,
       },
       {
         href: "/activities",
         label: "Journal",
-        description: "Audit et opérations",
+        description: " ",
         icon: Activity,
       },
     ],
@@ -96,7 +96,7 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/settings",
         label: "Paramètres",
-        description: "Compte, sécurité et organisation",
+        description: " ",
         icon: Settings,
       },
     ],
@@ -108,19 +108,19 @@ const AUX_ROUTES: NavItem[] = [
   {
     href: "/tenants",
     label: "Éditeurs",
-    description: "Portefeuille multi-éditeur",
+    description: " ",
     icon: Database,
   },
   {
     href: "/system",
     label: "Système",
-    description: "Santé plateforme et supervision",
+    description: " ",
     icon: Shield,
   },
   {
     href: "/series",
     label: "Catalogue",
-    description: "Séries et univers éditoriaux",
+    description: " ",
     icon: Film,
   },
 ];
@@ -138,7 +138,7 @@ export function resolveRoute(pathname: string) {
   return {
     href: pathname,
     label: "Console",
-    description: "Pilotage OTT multi-éditeur",
+    description: " ",
     icon: LayoutDashboard,
   };
 }

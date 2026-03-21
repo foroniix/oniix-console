@@ -23,7 +23,7 @@ export function ConsoleFooter({ compact = false, className }: ConsoleFooterProps
       <div className={cn("flex flex-col gap-3 md:flex-row md:items-center md:justify-between", compact && "gap-2")}>
         <div className="space-y-1">
           <p className="font-medium text-white">
-            © {year} Oniix. Plateforme de pilotage OTT pour chaînes, éditeurs et applications.
+            © {year} Oniix. Plateforme de pilotage OTT pour chaînes et éditeurs TV.
           </p>
           <p className="text-slate-400">
             Sessions sécurisées, gouvernance multi-éditeur, support opérationnel et conformité produit.
