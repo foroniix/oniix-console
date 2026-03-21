@@ -8,9 +8,5 @@ type PageShellProps = {
 };
 
 export function PageShell({ children, className }: PageShellProps) {
-  return (
-    <div className={cn("console-page", className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn("console-page animate-in fade-in-0 duration-300", className)}>{children}</div>;
 }

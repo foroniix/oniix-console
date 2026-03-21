@@ -1,18 +1,16 @@
 import { cookies } from "next/headers";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  BellRing,
   Building2,
   CalendarRange,
   ChartColumnIncreasing,
-  Clock3,
   LockKeyhole,
   PlayCircle,
   RadioTower,
   ShieldCheck,
   Smartphone,
-  Tv2,
   Users,
 } from "lucide-react";
 
@@ -21,73 +19,70 @@ import { ConsoleFooter } from "@/components/legal/console-footer";
 import { SupportMailLink } from "@/components/support/support-mail-link";
 import { Button } from "@/components/ui/button";
 
+const OPERATING_PILLARS = [
+  {
+    label: "Cadre",
+    value: "Multi-tenant reel",
+    body: "Espaces, roles et invitations alignes avec l'exploitation.",
+  },
+  {
+    label: "Diffusion",
+    value: "Programmation + live",
+    body: "Une meme surface pour la grille, le direct et la reprise.",
+  },
+  {
+    label: "Mesure",
+    value: "Analytics consolidees",
+    body: "Web, mobile, watch time et activite dans le meme poste.",
+  },
+];
+
 const PLATFORM_AREAS = [
   {
     title: "Exploitation live",
-    description: "Surveillance des chaînes, états de diffusion, incidents, reprise et lecture de santé dans une même boucle.",
+    description: "Suivi des chaines, etats de diffusion et incidents depuis une seule boucle operateur.",
     icon: RadioTower,
   },
   {
     title: "Programmation TV",
-    description: "Programmes, diffusions, publication, grille mobile et continuité entre préparation éditoriale et lecture réelle.",
+    description: "Preparation editoriale, diffusion planifiee et continuite de grille.",
     icon: CalendarRange,
   },
   {
     title: "Distribution et players",
-    description: "Playback signé, alignement web et mobile, contrôles d'accès, analytics runtime et cohérence multi-tenant.",
+    description: "Playback securise, lecture web et mobile, controle d'acces et runtime.",
     icon: Smartphone,
   },
   {
-    title: "Pilotage d'équipe",
-    description: "Espaces, rôles, activités, notifications, support et gouvernance exploitable au quotidien par les éditeurs.",
+    title: "Equipe et gouvernance",
+    description: "Workspaces, roles, journal d'activite, notifications et support.",
     icon: Users,
   },
 ];
 
-const CONTROL_BOARD = [
+const TRUST_SIGNALS = [
   {
-    label: "Espace actif",
-    value: "Régie multi-tenant",
-    meta: "Chaînes, rôles, diffusion et analytics sur une même surface.",
-    icon: Building2,
+    title: "Acces securises",
+    body: "Sessions protegees, cookies applicatifs et isolation des espaces.",
+    icon: LockKeyhole,
   },
   {
-    label: "Chaîne en cours",
-    value: "Live, now/next, reprise",
-    meta: "La console doit piloter la chaîne comme un vrai poste d'exploitation.",
-    icon: Tv2,
-  },
-  {
-    label: "Audience",
-    value: "Web + mobile consolidés",
-    meta: "Présence live, watch time, répartition appareils et signaux runtime sans doubles sources.",
+    title: "Pilotage business",
+    body: "Monetisation, revenus et audience lisibles sans changer d'outil.",
     icon: ChartColumnIncreasing,
+  },
+  {
+    title: "Support plateforme",
+    body: "Onboarding, incidents et support operationnel integres au produit.",
+    icon: ShieldCheck,
   },
 ];
 
 const EXECUTION_STEPS = [
-  "Préparer un programme et sa diffusion sur la bonne chaîne.",
-  "Publier le direct et suivre l'état technique sans changer d'écran.",
-  "Lire l'audience live et la ventilation web / mobile sans angle mort.",
-  "Tracer les activités, incidents et décisions dans un historique exploitable.",
-];
-
-const TRUST_SIGNALS = [
-  {
-    title: "Sécurité plateforme",
-    body: "Sessions protégées, rôles isolés, tenancy appliquée côté backend et accès cohérents entre console et application.",
-    icon: LockKeyhole,
-  },
-  {
-    title: "Cadre opérateur",
-    body: "Support, footer, pages légales, cookies et langage produit cohérent au lieu d'une interface laissée à l'état de prototype.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Temps réel exploitable",
-    body: "La valeur n'est pas d'avoir des cartes animées, mais des signaux fiables pour prendre une décision pendant un direct.",
-    icon: BellRing,
-  },
+  "Preparer un programme sur la bonne chaine.",
+  "Lancer ou surveiller le direct dans la meme console.",
+  "Lire l'audience live et les signaux web/mobile sans double source.",
+  "Tracer les actions sensibles dans un historique exploitable.",
 ];
 
 const HOME_STRUCTURED_DATA = {
@@ -116,8 +111,7 @@ const HOME_STRUCTURED_DATA = {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       name: "Oniix",
-      description:
-        "Plateforme OTT pour chaînes TV, éditeurs, programmation, diffusion sécurisée et analytics web/mobile.",
+      description: "Plateforme OTT pour chaines TV, editeurs, diffusion securisee, programmation et analytics.",
       url: "https://oniix.space",
     },
   ],
@@ -130,20 +124,12 @@ export default async function HomePage() {
   const continueHref = hasSession ? "/dashboard" : "/login";
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(109,130,255,0.12),transparent_24%),linear-gradient(180deg,#06101b,#0a1320_46%,#0d1724)] text-slate-100">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_STRUCTURED_DATA) }}
-      />
+    <main className="relative min-h-dvh overflow-hidden text-slate-100">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_STRUCTURED_DATA) }} />
 
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-20 top-0 h-[360px] w-[360px] rounded-full bg-[#223b77]/28 blur-[120px]" />
-        <div className="absolute right-[-8%] top-16 h-[320px] w-[320px] rounded-full bg-[#164e63]/16 blur-[120px]" />
-      </div>
-
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[1440px] flex-col px-4 pb-10 pt-5 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-4 rounded-[28px] border border-[#223249] bg-[rgba(10,18,30,0.84)] px-5 py-4 shadow-[0_18px_48px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
-          <OniixLogo size="lg" subtitle="Console OTT pour chaînes, éditeurs et exploitation multi-équipe" />
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-[1480px] flex-col px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+        <header className="console-toolbar flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <OniixLogo size="lg" subtitle="Console OTT pour operations, programmation et revenus" />
 
           <div className="flex flex-wrap items-center gap-3">
             <SupportMailLink className="text-sm font-medium text-slate-300 transition hover:text-white">
@@ -152,14 +138,10 @@ export default async function HomePage() {
             <Link href="/login" className="text-sm font-medium text-slate-300 transition hover:text-white">
               Connexion
             </Link>
-            <Button
-              asChild
-              variant="outline"
-              className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
-            >
-              <Link href="/signup">Créer un espace</Link>
+            <Button asChild variant="outline">
+              <Link href="/signup">Creer un espace</Link>
             </Button>
-            <Button asChild className="bg-[#4f67d9] text-white hover:bg-[#5c76f2]">
+            <Button asChild>
               <Link href={continueHref}>
                 Continuer
                 <ArrowRight className="size-4" />
@@ -168,160 +150,101 @@ export default async function HomePage() {
           </div>
         </header>
 
-        <section className="mt-6 grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
+        <section className="mt-6 grid gap-5 xl:grid-cols-[1.04fr_0.96fr]">
           <section className="console-hero p-6 sm:p-8">
             <div className="max-w-4xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#223249] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Console de pilotage OTT
-              </div>
+              <div className="console-chip">Plateforme OTT</div>
 
-              <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-white sm:text-5xl xl:text-[4rem]">
-                {
-                  "Une console conçue pour exploiter des chaînes TV, pas pour jouer le rôle d'une vitrine."
-                }
+              <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-white sm:text-5xl xl:text-[4.1rem]">
+                Pilotage OTT pour operations, programmation et revenus.
               </h1>
 
               <p className="mt-5 max-w-3xl text-base leading-8 text-slate-300 sm:text-[1.02rem]">
-                {
-                  "Oniix doit servir la production, la régie, la distribution et la lecture d'audience comme un outil de travail sérieux. La page d'entrée présente donc le produit comme un poste opérateur: clair, dense, crédible et immédiatement orienté vers l'action."
-                }
+                Oniix centralise chaines, directs, planning, inventaire publicitaire et analytics dans un espace securise.
               </p>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" className="h-11 rounded-xl bg-[#4f67d9] px-5 text-white hover:bg-[#5c76f2]">
+              <Button asChild size="lg" className="h-11 px-5">
                 <Link href={continueHref}>
                   <PlayCircle className="size-4" />
                   Entrer dans la console
                 </Link>
               </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="h-11 rounded-xl border-[#223249] bg-[rgba(255,255,255,0.03)] px-5 text-slate-100 hover:bg-white/6"
-              >
+              <Button asChild variant="outline" size="lg" className="h-11 px-5">
                 <Link href="/signup">
                   <Building2 className="size-4" />
-                  Ouvrir un espace éditeur
+                  Ouvrir un espace
                 </Link>
               </Button>
-              <SupportMailLink className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#223249] px-5 text-sm font-semibold text-slate-200 transition hover:bg-white/6 hover:text-[#9cbcff]">
-                <ShieldCheck className="size-4" />
+              <SupportMailLink className="inline-flex h-11 items-center gap-2 rounded-[18px] border border-white/10 px-5 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.05] hover:text-white">
+                <ShieldCheck className="size-4 text-[var(--brand-primary)]" />
                 Parler au support
               </SupportMailLink>
             </div>
 
             <div className="mt-8 grid gap-3 md:grid-cols-3">
-              <div className="rounded-[24px] border border-[#223249] bg-[rgba(255,255,255,0.03)] px-4 py-4">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Cadre</div>
-                <div className="mt-2 text-sm font-semibold text-white">Multi-tenant réel</div>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  {
-                    "Espaces, rôles, invitations et bascule de workspace alignés avec l'exploitation."
-                  }
-                </p>
-              </div>
-              <div className="rounded-[24px] border border-[#223249] bg-[rgba(255,255,255,0.03)] px-4 py-4">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Diffusion</div>
-                <div className="mt-2 text-sm font-semibold text-white">Programmation + live</div>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Une seule grammaire entre la grille TV, la diffusion, le replay et la lecture mobile.
-                </p>
-              </div>
-              <div className="rounded-[24px] border border-[#223249] bg-[rgba(255,255,255,0.03)] px-4 py-4">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Mesure</div>
-                <div className="mt-2 text-sm font-semibold text-white">Analytics consolidées</div>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Live, watch time, web, mobile et activités tracées sans couches concurrentes.
-                </p>
-              </div>
+              {OPERATING_PILLARS.map((pillar) => (
+                <div key={pillar.label} className="rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{pillar.label}</div>
+                  <div className="mt-2 text-sm font-semibold text-white">{pillar.value}</div>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">{pillar.body}</p>
+                </div>
+              ))}
             </div>
           </section>
 
           <aside className="console-panel p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Vue opérateur
-                </div>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-                  {"Ce que l'équipe doit comprendre en moins d'une minute."}
-                </h2>
-              </div>
-              <div className="rounded-full border border-[#223249] bg-[rgba(255,255,255,0.03)] px-3 py-1 text-[11px] font-medium text-slate-400">
-                Entrée console
+            <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0a1119]">
+              <Image
+                src="/branding/editorial/oniix-signal-wall.svg"
+                alt="Oniix signal wall"
+                width={1600}
+                height={1200}
+                className="aspect-[4/3] w-full object-cover"
+                priority
+              />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,12,18,0.14),rgba(8,12,18,0.68))]" />
+              <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
+                <span className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-white">
+                  Live operations
+                </span>
+                <span className="rounded-full border border-[#7ab7ff]/18 bg-[#7ab7ff]/12 px-3 py-1 text-[11px] text-[#b9d8ff]">
+                  Web + mobile
+                </span>
               </div>
             </div>
 
-            <div className="mt-6 space-y-3">
-              {CONTROL_BOARD.map((item) => {
-                const Icon = item.icon;
+            <div className="mt-5 space-y-3">
+              {TRUST_SIGNALS.map((signal) => {
+                const Icon = signal.icon;
                 return (
-                  <article
-                    key={item.label}
-                    className="rounded-[24px] border border-[#223249] bg-[rgba(255,255,255,0.03)] p-4"
-                  >
+                  <article key={signal.title} className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
                     <div className="flex items-start gap-4">
-                      <div className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl border border-[#2c3f5b] bg-[#111b2a] text-[#9cbcff]">
+                      <div className="inline-flex size-11 shrink-0 items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.04] text-[var(--brand-primary)]">
                         <Icon className="size-5" />
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                          {item.label}
-                        </div>
-                        <div className="mt-2 text-base font-semibold text-white">{item.value}</div>
-                        <p className="mt-2 text-sm leading-6 text-slate-300">{item.meta}</p>
+                      <div>
+                        <div className="text-sm font-semibold text-white">{signal.title}</div>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">{signal.body}</p>
                       </div>
                     </div>
                   </article>
                 );
               })}
             </div>
-
-            <div className="mt-5 rounded-[26px] border border-[#223249] bg-[linear-gradient(180deg,rgba(13,21,34,0.96),rgba(10,16,28,0.96))] p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {"Boucle d'exécution"}
-                  </div>
-                  <div className="mt-2 text-lg font-semibold text-white">De la préparation à la lecture live</div>
-                </div>
-                <Clock3 className="size-4 text-[#9cbcff]" />
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {EXECUTION_STEPS.map((step, index) => (
-                  <div key={step} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="inline-flex size-8 items-center justify-center rounded-full border border-[#2b3d58] bg-[#121c2b] text-xs font-semibold text-white">
-                        {index + 1}
-                      </div>
-                      {index < EXECUTION_STEPS.length - 1 ? (
-                        <div className="mt-2 h-full w-px bg-[#25364d]" />
-                      ) : null}
-                    </div>
-                    <p className="pb-4 pt-1 text-sm leading-6 text-slate-300">{step}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </aside>
         </section>
 
-        <section className="mt-6 grid gap-5 xl:grid-cols-[1.04fr_0.96fr]">
+        <section className="mt-6 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
           <div className="console-panel p-5 sm:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Périmètre produit
-                </div>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-                  Les blocs métier que la console doit couvrir proprement.
-                </h2>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Couverture produit</div>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">Une console concue pour le travail operateur.</h2>
               </div>
-              <div className="rounded-full border border-[#223249] bg-[rgba(255,255,255,0.03)] px-3 py-1 text-[11px] font-medium text-slate-400">
-                Oniix platform
+              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-slate-400">
+                Oniix Platform
               </div>
             </div>
 
@@ -329,11 +252,8 @@ export default async function HomePage() {
               {PLATFORM_AREAS.map((area) => {
                 const Icon = area.icon;
                 return (
-                  <article
-                    key={area.title}
-                    className="rounded-[24px] border border-[#223249] bg-[rgba(255,255,255,0.03)] p-5"
-                  >
-                    <div className="inline-flex size-11 items-center justify-center rounded-2xl border border-[#2c3f5b] bg-[#111b2a] text-[#9cbcff]">
+                  <article key={area.title} className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5">
+                    <div className="inline-flex size-11 items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.04] text-[var(--brand-primary)]">
                       <Icon className="size-5" />
                     </div>
                     <h3 className="mt-4 text-lg font-semibold text-white">{area.title}</h3>
@@ -346,67 +266,41 @@ export default async function HomePage() {
 
           <div className="grid gap-5">
             <div className="console-panel p-5 sm:p-6">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Ce qui crédibilise la plateforme
-              </div>
-              <div className="mt-3 text-2xl font-semibold tracking-tight text-white">
-                Moins de rhétorique. Plus de confiance visible.
-              </div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Parcours operateur</div>
+              <div className="mt-3 text-2xl font-semibold tracking-tight text-white">Du planning a la lecture live.</div>
 
               <div className="mt-5 space-y-3">
-                {TRUST_SIGNALS.map((signal) => {
-                  const Icon = signal.icon;
-                  return (
-                    <article
-                      key={signal.title}
-                      className="rounded-[22px] border border-[#223249] bg-[rgba(255,255,255,0.03)] p-4"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="inline-flex size-10 shrink-0 items-center justify-center rounded-2xl border border-[#2c3f5b] bg-[#111b2a] text-[#9cbcff]">
-                          <Icon className="size-4" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-white">{signal.title}</div>
-                          <p className="mt-2 text-sm leading-6 text-slate-300">{signal.body}</p>
-                        </div>
+                {EXECUTION_STEPS.map((step, index) => (
+                  <div key={step} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="inline-flex size-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-xs font-semibold text-white">
+                        {index + 1}
                       </div>
-                    </article>
-                  );
-                })}
+                      {index < EXECUTION_STEPS.length - 1 ? <div className="mt-2 h-full w-px bg-white/10" /> : null}
+                    </div>
+                    <p className="pb-4 pt-1 text-sm leading-6 text-slate-300">{step}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="console-panel p-5 sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Accès direct
-                  </div>
-                  <div className="mt-3 text-2xl font-semibold tracking-tight text-white">
-                    Ouvrir la console ou lancer un espace proprement.
-                  </div>
-                  <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
-                    {
-                      "La page d'accueil doit t'amener vers un produit sérieux, pas vers une vitrine décorative."
-                    }
-                  </p>
-                </div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Acces direct</div>
+              <div className="mt-3 text-2xl font-semibold tracking-tight text-white">Ouvrir la console ou lancer un espace.</div>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
+                Une entree claire pour un produit de pilotage, pas une vitrine decorative.
+              </p>
 
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
-                  >
-                    <Link href="/login">Connexion</Link>
-                  </Button>
-                  <Button asChild className="bg-[#4f67d9] text-white hover:bg-[#5c76f2]">
-                    <Link href={continueHref}>
-                      Continuer
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  </Button>
-                </div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Button asChild variant="outline">
+                  <Link href="/login">Connexion</Link>
+                </Button>
+                <Button asChild>
+                  <Link href={continueHref}>
+                    Continuer
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>

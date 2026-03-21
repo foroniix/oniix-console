@@ -1,60 +1,107 @@
 "use client";
 
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { AlertTriangle, Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { upsertStream, type Channel, type Stream } from "@/lib/data";
-import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { upsertStream, type Channel, type Stream, type StreamStatus } from "@/lib/data";
 
 interface StreamDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  streamToEdit?: Stream | null; // Si null, c'est une création
+  streamToEdit?: Stream | null;
   channels: Channel[];
   onSuccess: () => void;
 }
 
+type StreamFormState = {
+  title: string;
+  hlsUrl: string;
+  channelId: string;
+  status: StreamStatus;
+  description: string;
+};
+
+const EMPTY_FORM: StreamFormState = {
+  title: "",
+  hlsUrl: "",
+  channelId: "NONE",
+  status: "OFFLINE",
+  description: "",
+};
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error && error.message ? error.message : "Impossible de sauvegarder le flux.";
+}
+
 export default function StreamDialog({ open, onOpenChange, streamToEdit, channels, onSuccess }: StreamDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    hlsUrl: "",
-    channelId: "",
-    status: "OFFLINE"
-  });
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<StreamFormState>(EMPTY_FORM);
 
-  // Remplir le formulaire si on est en mode édition
+  const isEditing = Boolean(streamToEdit);
+  const channelOptions = useMemo(() => channels.slice().sort((a, b) => a.name.localeCompare(b.name)), [channels]);
+
   useEffect(() => {
+    if (!open) return;
+
     if (streamToEdit) {
       setFormData({
         title: streamToEdit.title,
         hlsUrl: streamToEdit.hlsUrl,
-        channelId: streamToEdit.channelId,
-        status: streamToEdit.status
+        channelId: streamToEdit.channelId || "NONE",
+        status: streamToEdit.status,
+        description: streamToEdit.description ?? "",
       });
     } else {
-      // Reset pour création
-      setFormData({ title: "", hlsUrl: "", channelId: "", status: "OFFLINE" });
+      setFormData(EMPTY_FORM);
     }
-  }, [streamToEdit, open]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    setError(null);
+    setIsLoading(false);
+  }, [open, streamToEdit]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const title = formData.title.trim();
+    const hlsUrl = formData.hlsUrl.trim();
+    const description = formData.description.trim();
+
+    if (!title || !hlsUrl) {
+      setError("Le titre et la source du flux sont obligatoires.");
+      return;
+    }
+
     setIsLoading(true);
+    setError(null);
+
     try {
       await upsertStream({
-        id: streamToEdit?.id, // Si présent, c'est un update
-        ...formData,
-        status: formData.status as any
+        id: streamToEdit?.id,
+        title,
+        hlsUrl,
+        channelId: formData.channelId === "NONE" ? undefined : formData.channelId,
+        status: formData.status,
+        description: description || undefined,
       });
-      onSuccess(); // Recharger la liste
-      onOpenChange(false); // Fermer la modale
-    } catch (error) {
-      console.error("Erreur lors de la sauvegarde", error);
-      alert("Erreur lors de la sauvegarde");
+      onSuccess();
+      onOpenChange(false);
+    } catch (submitError) {
+      console.error("Stream save error", submitError);
+      setError(getErrorMessage(submitError));
     } finally {
       setIsLoading(false);
     }
@@ -62,61 +109,115 @@ export default function StreamDialog({ open, onOpenChange, streamToEdit, channel
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
-          <DialogTitle>{streamToEdit ? "Modifier le flux" : "Créer un nouveau flux"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Mettre a jour le flux" : "Creer un nouveau flux"}</DialogTitle>
+          <DialogDescription>
+            Renseignez la source, le canal de diffusion et le statut operateur pour garder la supervision propre.
+          </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          
-          <div className="space-y-2">
-            <Label htmlFor="title" className="text-zinc-400">Titre du flux</Label>
-            <Input 
-              id="title" 
-              placeholder="Ex: Caméra Studio 1" 
-              className="bg-zinc-900 border-zinc-800 focus:ring-indigo-500"
-              value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-              required
-            />
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="stream-title">Titre du flux</Label>
+              <Input
+                id="stream-title"
+                placeholder="Ex: Plateau principal"
+                value={formData.title}
+                onChange={(event) => {
+                  setFormData((current) => ({ ...current, title: event.target.value }));
+                  if (error) setError(null);
+                }}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stream-channel">Chaine associee</Label>
+              <Select
+                value={formData.channelId}
+                onValueChange={(value) => {
+                  setFormData((current) => ({ ...current, channelId: value }));
+                  if (error) setError(null);
+                }}
+              >
+                <SelectTrigger id="stream-channel" className="w-full">
+                  <SelectValue placeholder="Selectionner une chaine" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Aucune chaine</SelectItem>
+                  {channelOptions.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      {channel.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="stream-status">Statut</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => {
+                  setFormData((current) => ({ ...current, status: value as StreamStatus }));
+                  if (error) setError(null);
+                }}
+              >
+                <SelectTrigger id="stream-status" className="w-full">
+                  <SelectValue placeholder="Choisir un statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="OFFLINE">Hors ligne</SelectItem>
+                  <SelectItem value="LIVE">En direct</SelectItem>
+                  <SelectItem value="ENDED">Termine</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="stream-source">URL source</Label>
+              <Input
+                id="stream-source"
+                placeholder="https://cdn.example.com/master.m3u8"
+                value={formData.hlsUrl}
+                onChange={(event) => {
+                  setFormData((current) => ({ ...current, hlsUrl: event.target.value }));
+                  if (error) setError(null);
+                }}
+                required
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="stream-description">Note operateur</Label>
+              <Textarea
+                id="stream-description"
+                placeholder="Contexte technique, fenetre de diffusion, contact d'escalade..."
+                value={formData.description}
+                onChange={(event) => {
+                  setFormData((current) => ({ ...current, description: event.target.value }));
+                  if (error) setError(null);
+                }}
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="channel" className="text-zinc-400">Chaîne associée</Label>
-            <Select 
-              value={formData.channelId} 
-              onValueChange={(val) => setFormData({...formData, channelId: val})}
-            >
-              <SelectTrigger className="bg-zinc-900 border-zinc-800">
-                <SelectValue placeholder="Choisir une chaîne..." />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
-                {channels.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {error ? (
+            <div className="flex items-start gap-3 rounded-[20px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <p>{error}</p>
+            </div>
+          ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="hls" className="text-zinc-400">URL Source (HLS/RTMP)</Label>
-            <Input 
-              id="hls" 
-              placeholder="https://..." 
-              className="bg-zinc-900 border-zinc-800 font-mono text-sm"
-              value={formData.hlsUrl}
-              onChange={(e) => setFormData({...formData, hlsUrl: e.target.value})}
-              required
-            />
-          </div>
-
-          <DialogFooter className="mt-6">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="hover:bg-zinc-800 text-zinc-400">
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Annuler
             </Button>
-            <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {streamToEdit ? "Sauvegarder" : "Créer le flux"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+              {isEditing ? "Enregistrer" : "Creer le flux"}
             </Button>
           </DialogFooter>
         </form>

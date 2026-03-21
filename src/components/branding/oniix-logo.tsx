@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 import { cn } from "@/lib/utils";
 
 type OniixLogoProps = {
@@ -9,21 +11,21 @@ type OniixLogoProps = {
 
 const SIZE_STYLES = {
   sm: {
-    root: "gap-2.5",
-    mark: "size-9 rounded-2xl",
-    word: "text-[1.9rem]",
+    root: "gap-3",
+    mark: "size-10 rounded-[20px]",
+    word: "text-[1.45rem]",
     subtitle: "text-[11px]",
   },
   md: {
-    root: "gap-3",
-    mark: "size-11 rounded-[18px]",
-    word: "text-[2.3rem]",
+    root: "gap-3.5",
+    mark: "size-12 rounded-[22px]",
+    word: "text-[1.9rem]",
     subtitle: "text-xs",
   },
   lg: {
-    root: "gap-3.5",
-    mark: "size-14 rounded-[22px]",
-    word: "text-[2.9rem]",
+    root: "gap-4",
+    mark: "size-[3.75rem] rounded-[26px]",
+    word: "text-[2.35rem]",
     subtitle: "text-sm",
   },
 } as const;
@@ -34,6 +36,7 @@ export function OniixLogo({
   subtitle,
   showMark = true,
 }: OniixLogoProps) {
+  const gradientId = useId();
   const styles = SIZE_STYLES[size];
 
   return (
@@ -41,24 +44,29 @@ export function OniixLogo({
       {showMark ? (
         <span
           className={cn(
-            "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-[#2a3d5a] bg-[linear-gradient(180deg,#101a2a,#0b1320)] shadow-[0_18px_40px_-28px_rgba(0,0,0,0.5)]",
+            "relative inline-flex shrink-0 items-center justify-center overflow-hidden border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] shadow-[0_20px_40px_rgba(0,0,0,0.28)]",
             styles.mark
           )}
           aria-hidden="true"
         >
+          <span className="absolute inset-0 bg-[radial-gradient(circle_at_24%_20%,rgba(122,183,255,0.34),transparent_40%),radial-gradient(circle_at_78%_82%,rgba(229,179,100,0.18),transparent_42%)]" />
           <svg viewBox="0 0 192 192" className="h-full w-full">
             <defs>
-              <linearGradient id="oniix-mark-fill" x1="32" y1="24" x2="164" y2="168" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#4D65DA" />
-                <stop offset="1" stopColor="#3148BE" />
+              <linearGradient id={`${gradientId}-line`} x1="44" y1="44" x2="148" y2="148" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#89C8FF" />
+                <stop offset="1" stopColor="#4F8FFF" />
+              </linearGradient>
+              <linearGradient id={`${gradientId}-core`} x1="84" y1="78" x2="132" y2="132" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#F2C275" />
+                <stop offset="1" stopColor="#4F8FFF" />
               </linearGradient>
             </defs>
-            <rect x="10" y="10" width="172" height="172" rx="52" fill="url(#oniix-mark-fill)" />
-            <path
-              d="M96 48C122.51 48 144 69.49 144 96C144 122.51 122.51 144 96 144C69.49 144 48 122.51 48 96C48 69.49 69.49 48 96 48ZM96 69C81.09 69 69 81.09 69 96C69 110.91 81.09 123 96 123C110.91 123 123 110.91 123 96C123 81.09 110.91 69 96 69Z"
-              fill="#ffffff"
-            />
-            <circle cx="133" cy="57" r="10" fill="#8FA1FF" fillOpacity="0.85" />
+            <rect x="18" y="18" width="156" height="156" rx="42" fill="rgba(8,12,18,0.58)" />
+            <path d="M48 58H120" stroke={`url(#${gradientId}-line)`} strokeWidth="13" strokeLinecap="round" />
+            <path d="M48 92H120" stroke={`url(#${gradientId}-line)`} strokeWidth="13" strokeLinecap="round" />
+            <path d="M48 126H86" stroke={`url(#${gradientId}-line)`} strokeWidth="13" strokeLinecap="round" />
+            <circle cx="118" cy="126" r="24" fill={`url(#${gradientId}-core)`} />
+            <circle cx="118" cy="126" r="9" fill="#F7FAFE" />
           </svg>
         </span>
       ) : null}
@@ -66,14 +74,14 @@ export function OniixLogo({
       <span className="min-w-0">
         <span
           className={cn(
-            "block whitespace-nowrap font-[var(--font-oniix-brand)] text-[#7b8fff] italic font-black leading-none tracking-[-0.08em]",
+            "block whitespace-nowrap font-[var(--font-oniix-brand)] font-semibold leading-none tracking-[-0.08em] text-white",
             styles.word
           )}
         >
           Oniix
         </span>
         {subtitle ? (
-          <span className={cn("mt-1 block whitespace-nowrap font-medium text-[#8ea1bc]", styles.subtitle)}>
+          <span className={cn("mt-1.5 block whitespace-nowrap font-medium text-[var(--text-muted)]", styles.subtitle)}>
             {subtitle}
           </span>
         ) : null}

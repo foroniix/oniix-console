@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Baloo_2, Manrope } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
 import { CookieBanner } from "@/components/legal/cookie-banner";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,9 +12,8 @@ const manrope = Manrope({
   display: "swap",
 });
 
-const baloo = Baloo_2({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["700"],
   variable: "--font-oniix-brand",
   display: "swap",
 });
@@ -72,7 +71,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className="h-full dark">
-      <body className={`${manrope.variable} ${baloo.variable} h-full`}>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable} h-full`}>
         {children}
         <CookieBanner />
         <Toaster richColors theme="dark" />

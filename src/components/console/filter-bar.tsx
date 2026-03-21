@@ -14,23 +14,12 @@ type FilterBarProps = {
 
 export function FilterBar({ children, onReset, resetDisabled = false, className }: FilterBarProps) {
   return (
-    <section
-      className={cn(
-        "console-panel flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between",
-        className
-      )}
-    >
+    <section className={cn("console-toolbar flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between", className)}>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">{children}</div>
       {onReset ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onReset}
-          disabled={resetDisabled}
-          className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:bg-white/[0.08]"
-        >
-          <RotateCcw className="mr-2 size-4" />
-          Réinitialiser
+        <Button type="button" variant="outline" onClick={onReset} disabled={resetDisabled}>
+          <RotateCcw className="size-4" />
+          Reinitialiser
         </Button>
       ) : null}
     </section>

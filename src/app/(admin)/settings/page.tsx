@@ -1,16 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Building2,
   CheckCircle2,
   Copy,
   KeyRound,
@@ -19,10 +12,15 @@ import {
   Save,
   Shield,
   Smartphone,
-  Building2,
-  User2
+  User2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+
+import { KpiCard, KpiRow } from "@/components/console/kpi";
+import { PageHeader } from "@/components/console/page-header";
+import { PageShell } from "@/components/console/page-shell";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { formatRoleLabel } from "@/lib/console-branding";
 
@@ -46,6 +44,24 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function formatDateTime(value?: string | null) {
+  if (!value) return "--";
+  try {
+    return new Date(value).toLocaleString("fr-FR");
+  } catch {
+    return value;
+  }
+}
+
+function InfoRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3">
+      <span className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</span>
+      <span className={cn("truncate text-sm text-white", mono && "font-mono")}>{value}</span>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
@@ -60,8 +76,8 @@ export default function SettingsPage() {
   const [savingPwd, setSavingPwd] = useState(false);
   const [rotatingIngest, setRotatingIngest] = useState(false);
 
-  const [msg, setMsg] = useState<string>("");
-  const [err, setErr] = useState<string>("");
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
 
   const pwdOk = useMemo(() => newPassword.length >= 8, [newPassword]);
 
@@ -70,11 +86,12 @@ export default function SettingsPage() {
     setErr("");
     setMsg("");
     setNewIngestKey("");
+
     try {
       const [uRes, tRes, iRes] = await Promise.all([
         fetch("/api/settings/user", { cache: "no-store" }),
         fetch("/api/settings/tenant", { cache: "no-store" }),
-        fetch("/api/settings/ingest-key", { cache: "no-store" })
+        fetch("/api/settings/ingest-key", { cache: "no-store" }),
       ]);
 
       const uJson = await uRes.json().catch(() => null);
@@ -90,14 +107,14 @@ export default function SettingsPage() {
         setIngest(iJson.ingest);
       }
     } catch {
-      setErr("Impossible de charger les paramètres.");
+      setErr("Impossible de charger les parametres.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const saveTenant = async () => {
@@ -108,14 +125,14 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings/tenant", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: tenantName })
+        body: JSON.stringify({ name: tenantName }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setTenant(json.tenant);
-      setMsg("Organisation mise à jour.");
-    } catch (e: unknown) {
-      setErr(getErrorMessage(e, "Erreur mise à jour organisation"));
+      setMsg("Organisation mise a jour.");
+    } catch (error) {
+      setErr(getErrorMessage(error, "Erreur de mise a jour de l organisation."));
     } finally {
       setSavingTenant(false);
     }
@@ -129,14 +146,14 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings/password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword })
+        body: JSON.stringify({ newPassword }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setNewPassword("");
-      setMsg("Mot de passe modifié.");
-    } catch (e: unknown) {
-      setErr(getErrorMessage(e, "Erreur changement mot de passe"));
+      setMsg("Mot de passe mis a jour.");
+    } catch (error) {
+      setErr(getErrorMessage(error, "Erreur de mise a jour du mot de passe."));
     } finally {
       setSavingPwd(false);
     }
@@ -151,15 +168,15 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings/ingest-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "manual_rotation" })
+        body: JSON.stringify({ reason: "manual_rotation" }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setIngest(json.ingest);
       setNewIngestKey(json.key || "");
-      setMsg("Clé ingest régénérée. Copiez-la maintenant.");
-    } catch (e: unknown) {
-      setErr(getErrorMessage(e, "Erreur rotation clé ingest"));
+      setMsg("Cle ingest regeneree. Copiez-la maintenant.");
+    } catch (error) {
+      setErr(getErrorMessage(error, "Erreur de rotation de la cle ingest."));
     } finally {
       setRotatingIngest(false);
     }
@@ -169,337 +186,253 @@ export default function SettingsPage() {
     if (!newIngestKey) return;
     try {
       await navigator.clipboard.writeText(newIngestKey);
-      setMsg("Clé ingest copiée.");
+      setMsg("Cle ingest copiee.");
     } catch {
-      setErr("Impossible de copier la clé.");
+      setErr("Impossible de copier la cle.");
     }
   };
 
   const ingestStatusLabel = useMemo(() => {
-    if (ingest?.configured) return "Configuré";
+    if (ingest?.configured) return "Configure";
     if (ingest?.requiresMigration) return "Migration requise";
-    return "Non configuré";
+    return "Non configure";
   }, [ingest]);
 
   const ingestSourceLabel = useMemo(() => {
     if (!ingest) return "-";
-    if (ingest.source === "db") return "Base de données";
-    if (ingest.source === "env") return "Variable d'environnement";
+    if (ingest.source === "db") return "Base de donnees";
+    if (ingest.source === "env") return "Variable d environnement";
     return "Aucune";
   }, [ingest]);
 
-  const ingestRotatedLabel = useMemo(() => {
-    const v = ingest?.rotated_at ?? ingest?.created_at;
-    if (!v) return "-";
-    try {
-      return new Date(v).toLocaleString();
-    } catch {
-      return v;
-    }
-  }, [ingest?.created_at, ingest?.rotated_at]);
-
-  const createdAtLabel = useMemo(() => {
-    if (!tenant?.created_at) return "—";
-    try {
-      return new Date(tenant.created_at).toLocaleString();
-    } catch {
-      return tenant.created_at;
-    }
-  }, [tenant?.created_at]);
+  const ingestRotatedLabel = useMemo(() => formatDateTime(ingest?.rotated_at ?? ingest?.created_at), [ingest?.created_at, ingest?.rotated_at]);
+  const createdAtLabel = useMemo(() => formatDateTime(tenant?.created_at), [tenant?.created_at]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-slate-500 dark:text-slate-300">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" />
-        Chargement…
-      </div>
+      <PageShell>
+        <PageHeader
+          title="Securite et parametres"
+          subtitle="Chargement du poste operateur, de l espace actif et des secrets applicatifs."
+          breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Parametres" }]}
+          icon={<Shield className="size-5" />}
+        />
+        <Card>
+          <CardContent className="flex min-h-[260px] items-center justify-center gap-2 text-sm text-slate-400">
+            <Loader2 className="size-4 animate-spin" />
+            Chargement...
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
   return (
-    <div className="console-page">
-      <div className="mx-auto max-w-6xl space-y-6">
-        {/* Sticky header */}
-        <div className="console-hero sticky top-0 z-20 px-5 pt-4 pb-4 sm:px-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.05]">
-                <Shield className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">
-                  Sécurité et paramètres
-                </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Compte opérateur, espace actif et clés d’intégration.
-                </p>
-              </div>
-            </div>
+    <PageShell>
+      <PageHeader
+        title="Securite et parametres"
+        subtitle="Compte operateur, espace actif et secrets applicatifs dans une vue de gouvernance unique."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Parametres" }]}
+        icon={<Shield className="size-5" />}
+        actions={
+          <Button variant="outline" onClick={() => void load()}>
+            <RefreshCw className="size-4" />
+            Recharger
+          </Button>
+        }
+      />
 
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <Button
-                variant="outline"
-                onClick={load}
-                className="w-full md:w-auto"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Recharger
+      {(err || msg) && (
+        <section
+          className={cn(
+            "console-panel flex items-start gap-3 px-5 py-4",
+            err ? "border-rose-500/20 bg-rose-500/10" : "border-emerald-400/18 bg-emerald-500/10"
+          )}
+        >
+          <span
+            className={cn(
+              "inline-flex size-10 shrink-0 items-center justify-center rounded-[18px] border",
+              err
+                ? "border-rose-500/20 bg-rose-500/14 text-rose-100"
+                : "border-emerald-400/20 bg-emerald-500/14 text-emerald-100"
+            )}
+          >
+            {err ? <AlertTriangle className="size-4" /> : <CheckCircle2 className="size-4" />}
+          </span>
+          <div className="space-y-1">
+            <p className={cn("text-sm font-semibold", err ? "text-rose-100" : "text-emerald-50")}>
+              {err ? "Action interrompue" : "Action confirmee"}
+            </p>
+            <p className={cn("text-sm", err ? "text-rose-100/75" : "text-emerald-100/75")}>{err || msg}</p>
+          </div>
+        </section>
+      )}
+
+      <KpiRow>
+        <KpiCard
+          label="Compte"
+          value={user?.email ?? "-"}
+          hint={`Role ${user?.role ? roleLabel(user.role) : "-"}`}
+          icon={<User2 className="size-4" />}
+        />
+        <KpiCard
+          label="Espace actif"
+          value={tenant?.name ?? "-"}
+          hint={`Creation ${createdAtLabel}`}
+          icon={<Building2 className="size-4" />}
+          tone="info"
+        />
+        <KpiCard
+          label="Ingest"
+          value={ingestStatusLabel}
+          hint={`Source ${ingestSourceLabel}`}
+          icon={<Smartphone className="size-4" />}
+          tone={ingest?.configured ? "success" : ingest?.requiresMigration ? "warning" : "neutral"}
+        />
+        <KpiCard
+          label="Derniere rotation"
+          value={ingestRotatedLabel}
+          hint="Lecture du secret applicatif courant."
+          icon={<RefreshCw className="size-4" />}
+        />
+      </KpiRow>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User2 className="size-4" />
+              Compte operateur
+            </CardTitle>
+            <CardDescription>Identite de connexion actuellement utilisee pour piloter la console.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <InfoRow label="Email" value={user?.email ?? "-"} />
+            <InfoRow label="Role" value={user?.role ? roleLabel(user.role) : "-"} />
+            <InfoRow label="Tenant" value={user?.tenant_id ?? "-"} mono />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="size-4" />
+              Espace actif
+            </CardTitle>
+            <CardDescription>Identite visible dans la navigation, les exports et les surfaces partagees.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-[0.16em] text-slate-500">Nom de l espace</label>
+              <Input value={tenantName} onChange={(event) => setTenantName(event.target.value)} placeholder="Nom de l espace" />
+              <p className="text-xs text-slate-500">Ce nom structure les vues operateur et les sorties de reporting.</p>
+            </div>
+            <InfoRow label="Cree le" value={createdAtLabel} />
+            <div className="flex justify-end">
+              <Button onClick={saveTenant} disabled={savingTenant || !tenantName.trim()}>
+                {savingTenant ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                Enregistrer
               </Button>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {(err || msg) && (
-            <div
-              className={cn(
-                "mt-4 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm",
-                err
-                  ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200"
-                  : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
-              )}
-            >
-              {err ? (
-                <AlertTriangle className="h-4 w-4 mt-0.5 text-rose-300" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-300" />
-              )}
-              <div className="flex-1">{err || msg}</div>
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="size-4" />
+              Cle ingest applicative
+            </CardTitle>
+            <CardDescription>Secret utilise par les applications et connecteurs pour remonter les signaux runtime.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 lg:grid-cols-3">
+              <InfoRow label="Etat" value={ingestStatusLabel} />
+              <InfoRow label="Source" value={ingestSourceLabel} />
+              <InfoRow label="Rotation" value={ingestRotatedLabel} mono />
             </div>
-          )}
-        </div>
 
-        {/* Content */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Account */}
-          <Card className="console-panel">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <User2 className="h-4 w-4 text-indigo-300" />
-                Compte opérateur
-              </CardTitle>
-              <CardDescription className="text-slate-600 dark:text-slate-300">
-                Identité de connexion utilisée pour opérer la console.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-3">
-              <div className="console-panel-muted overflow-hidden">
-                <Row label="Email" value={user?.email ?? "-"} />
-                <Divider />
-                <Row label="Rôle" value={user?.role ? roleLabel(user.role) : "-"} />
+            {ingest?.requiresMigration ? (
+              <div className="rounded-[22px] border border-amber-400/18 bg-amber-500/10 px-4 py-4 text-sm text-amber-100">
+                Migration requise: appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis la console.
               </div>
-            </CardContent>
-          </Card>
+            ) : null}
 
-          {/* Organisation */}
-          <Card className="console-panel">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-indigo-300" />
-                Espace actif
-              </CardTitle>
-              <CardDescription className="text-slate-500 dark:text-slate-400">
-                Identité opérationnelle de l’espace actuellement sélectionné.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <div className="grid gap-2">
-                <label className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  Nom de l’espace
-                </label>
-                <Input
-                  value={tenantName}
-                  onChange={(e) => setTenantName(e.target.value)}
-                  className="console-field"
-                  placeholder="Nom de l’espace"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Ce nom apparaît dans la navigation, les exports et les écrans partagés.
-                </p>
-              </div>
-
-              <div className="console-panel-muted overflow-hidden">
-                <Row label="Créé le" value={createdAtLabel} />
-              </div>
-
-              <div className="flex items-center justify-end">
-                <Button
-                  onClick={saveTenant}
-                  disabled={savingTenant || !tenantName.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  {savingTenant ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Enregistrer
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Mobile ingest */}
-          <Card className="console-panel lg:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Smartphone className="h-4 w-4 text-indigo-300" />
-                Clé d’ingest applicative
-              </CardTitle>
-              <CardDescription className="text-slate-600 dark:text-slate-300">
-                Clé sécurisée utilisée par les applications pour remonter les signaux runtime.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <div className="console-panel-muted overflow-hidden">
-                <Row label="État" value={ingestStatusLabel} />
-                <Divider />
-                <Row label="Source" value={ingestSourceLabel} />
-                <Divider />
-                <Row label="Dernière rotation" value={ingestRotatedLabel} mono />
-              </div>
-
-              {ingest?.requiresMigration && (
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-200">
-                  Migration requise : appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis la console.
-                </div>
-              )}
-
-              {newIngestKey && (
-                <div className="space-y-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
-                  <div className="text-xs font-medium text-emerald-700 dark:text-emerald-200">
-                    Nouvelle clé sécurisée (affichée une seule fois)
+            {newIngestKey ? (
+              <div className="rounded-[24px] border border-emerald-400/18 bg-emerald-500/10 p-4">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-50">Nouvelle cle securisee</p>
+                    <p className="text-sm text-emerald-100/75">Elle n est affichee qu une seule fois.</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      value={newIngestKey}
-                      readOnly
-                      className="border-emerald-500/20 bg-white/80 font-mono text-xs text-slate-900 dark:bg-white/[0.05] dark:text-white"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200"
-                      onClick={copyIngestKey}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input value={newIngestKey} readOnly className="font-mono text-xs" />
+                    <Button type="button" variant="outline" onClick={copyIngestKey}>
+                      <Copy className="size-4" />
                       Copier
                     </Button>
                   </div>
                 </div>
-              )}
+              </div>
+            ) : null}
 
-              <div className="flex items-center justify-end">
-                <Button
-                  type="button"
-                  onClick={rotateIngestKey}
-                  disabled={rotatingIngest || Boolean(ingest && !ingest.canRotate)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  {rotatingIngest ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                  )}
-                  Faire tourner la clé
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={rotateIngestKey}
+                disabled={rotatingIngest || Boolean(ingest && !ingest.canRotate)}
+              >
+                {rotatingIngest ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                Faire tourner la cle
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="size-4" />
+              Securite d acces
+            </CardTitle>
+            <CardDescription>Durcissez le poste operateur avec un mot de passe recent et une hygiene minimale de gestion.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-[0.16em] text-slate-500">Nouveau mot de passe</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                placeholder="Minimum 8 caracteres"
+              />
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">Minimum 8 caracteres.</span>
+                <span className={pwdOk ? "text-emerald-300" : "text-slate-500"}>
+                  {pwdOk ? "Pret" : `${Math.max(0, 8 - newPassword.length)} restant(s)`}
+                </span>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button type="button" variant="outline" onClick={changePassword} disabled={savingPwd || !pwdOk}>
+                  {savingPwd ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+                  Mettre a jour
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Security */}
-          <Card className="console-panel lg:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-indigo-300" />
-                Sécurité d’accès
-              </CardTitle>
-              <CardDescription className="text-slate-500 dark:text-slate-400">
-                Renforcez l’accès au poste opérateur.
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  Nouveau mot de passe
-                </label>
-                <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="console-field"
-                  placeholder="Minimum 8 caractères"
-                />
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Minimum 8 caractères.</span>
-                  <span className={pwdOk ? "text-emerald-600 dark:text-emerald-300" : "text-slate-500 dark:text-slate-400"}>
-                    {pwdOk ? "OK" : `${Math.max(0, 8 - newPassword.length)} restant(s)`}
-                  </span>
-                </div>
+            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-white">Hygiene d acces</p>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li>Evitez les mots de passe reutilises entre plusieurs outils.</li>
+                  <li>Mixez lettres, chiffres et symboles sur les comptes operateurs.</li>
+                  <li>Stockez les secrets dans un gestionnaire dedie et non dans les navigateurs partages.</li>
+                </ul>
               </div>
-
-              <div className="console-panel-muted flex flex-col justify-between gap-3 p-4">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-slate-950 dark:text-white">
-                    Hygiène d’accès
-                  </div>
-                  <ul className="list-inside list-disc space-y-1 text-xs text-slate-500 dark:text-slate-400">
-                    <li>Évitez les mots de passe réutilisés.</li>
-                    <li>Mélangez lettres, chiffres et symboles.</li>
-                    <li>Utilisez un gestionnaire de mots de passe.</li>
-                  </ul>
-                </div>
-
-                <div className="flex items-center justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={changePassword}
-                    disabled={savingPwd || !pwdOk}
-                    className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
-                  >
-                    {savingPwd ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <KeyRound className="h-4 w-4 mr-2" />
-                    )}
-                    Mettre à jour le mot de passe
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    </PageShell>
   );
-}
-
-function Row({
-  label,
-  value,
-  mono,
-  action
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
-      <div className="flex items-center gap-2 min-w-0">
-        <span className={cn("truncate text-sm text-slate-900 dark:text-white", mono && "font-mono")}>
-          {value}
-        </span>
-        {action}
-      </div>
-    </div>
-  );
-}
-
-function Divider() {
-  return <div className="h-px w-full bg-slate-200 dark:bg-white/10" />;
 }

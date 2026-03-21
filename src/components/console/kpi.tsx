@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils";
 type KpiTone = "neutral" | "success" | "warning" | "error" | "info";
 
 const toneClassMap: Record<KpiTone, string> = {
-  neutral: "border-slate-200/80 bg-white/85 text-slate-950 shadow-[0_16px_40px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:shadow-none",
-  success: "border-emerald-300/70 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300",
-  warning: "border-amber-300/70 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300",
-  error: "border-rose-300/70 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300",
-  info: "border-sky-300/70 bg-sky-50 text-sky-700 dark:border-sky-400/20 dark:bg-sky-500/10 dark:text-sky-300",
+  neutral: "border-white/10 bg-[linear-gradient(180deg,rgba(18,28,40,0.94),rgba(10,16,24,0.9))] text-white",
+  success: "border-emerald-400/18 bg-[linear-gradient(180deg,rgba(16,40,33,0.92),rgba(10,24,20,0.9))] text-emerald-50",
+  warning: "border-amber-400/18 bg-[linear-gradient(180deg,rgba(50,32,13,0.92),rgba(28,18,10,0.9))] text-amber-50",
+  error: "border-rose-400/18 bg-[linear-gradient(180deg,rgba(50,18,27,0.92),rgba(28,12,18,0.9))] text-rose-50",
+  info: "border-sky-400/18 bg-[linear-gradient(180deg,rgba(16,34,50,0.92),rgba(10,18,28,0.9))] text-sky-50",
 };
 
 type KpiRowProps = {
@@ -42,23 +42,19 @@ export function KpiCard({
   className,
 }: KpiCardProps) {
   return (
-    <article className={cn("rounded-[24px] border p-4", toneClassMap[tone], className)}>
+    <article className={cn("rounded-[28px] border p-5 shadow-[0_20px_46px_rgba(0,0,0,0.2)] backdrop-blur", toneClassMap[tone], className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
-          {loading ? (
-            <Skeleton className="h-8 w-24 bg-white/10" />
-          ) : (
-            <p className="text-3xl font-semibold leading-none">{value}</p>
-          )}
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{label}</p>
+          {loading ? <Skeleton className="h-9 w-24 bg-white/10" /> : <p className="text-3xl font-semibold leading-none">{value}</p>}
         </div>
         {icon ? (
-          <span className="inline-flex size-10 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50 text-current dark:border-white/10 dark:bg-white/5">
+          <span className="inline-flex size-11 items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.06] text-current">
             {icon}
           </span>
         ) : null}
       </div>
-      {hint ? <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{hint}</p> : null}
+      {hint ? <p className="mt-4 text-xs leading-5 text-slate-400">{hint}</p> : null}
     </article>
   );
 }

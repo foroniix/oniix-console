@@ -1,8 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, RefreshCw, ShieldCheck, Siren, Waves } from "lucide-react";
+import { useCallback, useEffect, useMemo, type ReactNode, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  Building2,
+  CheckCircle2,
+  Loader2,
+  RadioTower,
+  RefreshCw,
+  ShieldCheck,
+  Siren,
+  Waves,
+} from "lucide-react";
 
+import { KpiCard, KpiRow } from "@/components/console/kpi";
 import { PageHeader } from "@/components/console/page-header";
 import { PageShell } from "@/components/console/page-shell";
 import { Button } from "@/components/ui/button";
@@ -26,12 +38,73 @@ type OverviewResponse = {
   warnings?: string[];
 };
 
+type CoverageBlockProps = {
+  label: string;
+  description: string;
+  value: number;
+  numerator: number;
+  denominator: number;
+  icon: ReactNode;
+};
+
 function numberFormat(value: number) {
   try {
     return new Intl.NumberFormat("fr-FR").format(value);
   } catch {
     return String(value);
   }
+}
+
+function dateTimeFormat(value: string | null | undefined) {
+  if (!value) return "--";
+
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return "--";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(parsed));
+}
+
+function CoverageBlock({ label, description, value, numerator, denominator, icon }: CoverageBlockProps) {
+  return (
+    <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-white">{label}</p>
+          <p className="text-sm text-slate-400">{description}</p>
+        </div>
+        <span className="inline-flex size-10 items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.05] text-slate-200">
+          {icon}
+        </span>
+      </div>
+
+      <div className="mt-5 space-y-3">
+        <div className="flex items-end justify-between gap-4">
+          <p className="text-3xl font-semibold text-white">{value}%</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+            {numberFormat(numerator)} / {numberFormat(denominator)}
+          </p>
+        </div>
+        <Progress value={value} className="h-2.5 bg-white/[0.06]" />
+      </div>
+    </div>
+  );
+}
+
+function MetricRow({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-white">{label}</p>
+        <p className="text-xs text-slate-500">{hint}</p>
+      </div>
+      <p className="text-lg font-semibold text-white">{value}</p>
+    </div>
+  );
 }
 
 export default function SystemPage() {
@@ -45,17 +118,19 @@ export default function SystemPage() {
     else setLoading(true);
 
     setError("");
+
     try {
-      const res = await fetch("/api/superadmin/overview", { cache: "no-store" });
-      const json = (await res.json().catch(() => null)) as OverviewResponse | { error?: string } | null;
-      if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible de charger la santé plateforme.");
+      const response = await fetch("/api/superadmin/overview", { cache: "no-store" });
+      const json = (await response.json().catch(() => null)) as OverviewResponse | { error?: string } | null;
+
+      if (!response.ok || !json || !("ok" in json) || !json.ok) {
+        setError((json && "error" in json && json.error) || "Impossible de charger la sante plateforme.");
         return;
       }
 
       setData(json);
     } catch {
-      setError("Erreur réseau sur la santé plateforme.");
+      setError("Erreur reseau sur la sante plateforme.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,6 +139,7 @@ export default function SystemPage() {
 
   useEffect(() => {
     void load(false);
+
     const timer = window.setInterval(() => {
       void load(true);
     }, 30_000);
@@ -86,153 +162,177 @@ export default function SystemPage() {
     return Math.round((data.kpis.streams_live / data.kpis.streams_total) * 100);
   }, [data]);
 
+  const warnings = data?.warnings ?? [];
+
   return (
     <PageShell>
       <PageHeader
-        title="Exploitation système"
-        subtitle="Observabilité et maturité d’exploitation de la plateforme Oniix multi-éditeur."
-        breadcrumbs={[
-          { label: "Oniix Console", href: "/dashboard" },
-          { label: "Système" },
-        ]}
+        title="Exploitation systeme"
+        subtitle="Surveillez la couverture, la charge et les alertes de la plateforme depuis un point de controle unique."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Systeme" }]}
         icon={<ShieldCheck className="size-5" />}
         actions={
-          <Button
-            variant="outline"
-            onClick={() => void load(true)}
-            className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
-          >
-            <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
+          <Button variant="outline" onClick={() => void load(true)}>
+            <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
             Actualiser
           </Button>
         }
       />
 
       {error ? (
-        <Card className="border-rose-300/70 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">
-          <CardContent className="p-4 text-sm">{error}</CardContent>
-        </Card>
+        <section className="console-panel flex items-start gap-3 border-rose-500/20 bg-rose-500/10 px-5 py-4">
+          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-[18px] border border-rose-500/20 bg-rose-500/14 text-rose-200">
+            <AlertTriangle className="size-4" />
+          </span>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-rose-100">Incident de chargement</p>
+            <p className="text-sm text-rose-200/80">{error}</p>
+          </div>
+        </section>
       ) : null}
 
-      {loading ? (
+      <KpiRow>
+        <KpiCard
+          label="Editeurs actifs 24h"
+          value={numberFormat(data?.kpis.tenants_active_24h ?? 0)}
+          hint={`${activityCoverage}% du parc a emet du trafic recent.`}
+          tone="success"
+          icon={<Building2 className="size-4" />}
+          loading={loading}
+        />
+        <KpiCard
+          label="Flux en direct"
+          value={numberFormat(data?.kpis.streams_live ?? 0)}
+          hint={`${streamLiveRatio}% des flux sont actuellement ouverts.`}
+          tone="info"
+          icon={<RadioTower className="size-4" />}
+          loading={loading}
+        />
+        <KpiCard
+          label="Sessions live"
+          value={numberFormat(data?.kpis.live_sessions ?? 0)}
+          hint="Charge instantanee observee sur la plateforme."
+          icon={<Waves className="size-4" />}
+          loading={loading}
+        />
+        <KpiCard
+          label="Evenements 24h"
+          value={numberFormat(data?.kpis.events_24h ?? 0)}
+          hint={`Derniere synchro ${dateTimeFormat(data?.generated_at)}`}
+          tone="warning"
+          icon={<Activity className="size-4" />}
+          loading={loading}
+        />
+      </KpiRow>
+
+      {loading && !data ? (
         <Card>
-          <CardContent className="flex min-h-[240px] items-center justify-center text-slate-500 dark:text-slate-400">
-            <Loader2 className="mr-2 size-4 animate-spin" />
-            Chargement de la santé...
+          <CardContent className="flex min-h-[280px] items-center justify-center gap-2 text-sm text-slate-400">
+            <Loader2 className="size-4 animate-spin" />
+            Chargement du cockpit systeme...
           </CardContent>
         </Card>
       ) : (
         <>
-          <section className="grid gap-4 lg:grid-cols-3">
+          <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ShieldCheck className="size-4 text-primary" />
-                  Couverture ingest
-                </CardTitle>
-                <CardDescription>Éditeurs configurés pour la collecte live.</CardDescription>
+              <CardHeader>
+                <CardTitle>Couverture operationnelle</CardTitle>
+                <CardDescription>
+                  Trois lectures pour verifier si le parc est correctement relie a l&apos;ingest, actif et exploitable.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-2xl font-semibold text-slate-950 dark:text-white">{ingestCoverage}%</div>
-                <Progress value={ingestCoverage} />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {numberFormat(data?.kpis.ingest_configured_tenants ?? 0)} /{" "}
-                  {numberFormat(data?.kpis.tenants_total ?? 0)} éditeurs.
-                </p>
+              <CardContent className="grid gap-4">
+                <CoverageBlock
+                  label="Couverture ingest"
+                  description="Editeurs relies a la collecte live."
+                  value={ingestCoverage}
+                  numerator={data?.kpis.ingest_configured_tenants ?? 0}
+                  denominator={data?.kpis.tenants_total ?? 0}
+                  icon={<ShieldCheck className="size-4" />}
+                />
+                <CoverageBlock
+                  label="Activite editeurs"
+                  description="Part des editeurs actifs sur les dernieres 24 heures."
+                  value={activityCoverage}
+                  numerator={data?.kpis.tenants_active_24h ?? 0}
+                  denominator={data?.kpis.tenants_total ?? 0}
+                  icon={<Building2 className="size-4" />}
+                />
+                <CoverageBlock
+                  label="Occupation live"
+                  description="Ratio des flux actifs par rapport au portefeuille total."
+                  value={streamLiveRatio}
+                  numerator={data?.kpis.streams_live ?? 0}
+                  denominator={data?.kpis.streams_total ?? 0}
+                  icon={<RadioTower className="size-4" />}
+                />
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Waves className="size-4 text-primary" />
-                  Occupation live
-                </CardTitle>
-                <CardDescription>Ratio des flux actuellement en direct.</CardDescription>
+              <CardHeader>
+                <CardTitle>Pulse temps reel</CardTitle>
+                <CardDescription>Mesures de charge et de trafic suivies par les operations.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="text-2xl font-semibold text-slate-950 dark:text-white">{streamLiveRatio}%</div>
-                <Progress value={streamLiveRatio} />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {numberFormat(data?.kpis.streams_live ?? 0)} /{" "}
-                  {numberFormat(data?.kpis.streams_total ?? 0)} flux.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <CheckCircle2 className="size-4 text-primary" />
-                  Activité éditeurs
-                </CardTitle>
-                <CardDescription>Part des éditeurs actifs sur les dernières 24 heures.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-2xl font-semibold text-slate-950 dark:text-white">{activityCoverage}%</div>
-                <Progress value={activityCoverage} />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {numberFormat(data?.kpis.tenants_active_24h ?? 0)} /{" "}
-                  {numberFormat(data?.kpis.tenants_total ?? 0)} éditeurs.
-                </p>
+                <MetricRow
+                  label="Sessions live"
+                  value={numberFormat(data?.kpis.live_sessions ?? 0)}
+                  hint="Sessions de lecture ou de supervision actives."
+                />
+                <MetricRow
+                  label="Flux ouverts"
+                  value={numberFormat(data?.kpis.streams_live ?? 0)}
+                  hint="Flux passes en direct a cet instant."
+                />
+                <MetricRow
+                  label="Evenements analytics"
+                  value={numberFormat(data?.kpis.events_24h ?? 0)}
+                  hint="Volume agrégé sur les dernieres 24 heures."
+                />
+                <MetricRow
+                  label="Parc editeurs"
+                  value={numberFormat(data?.kpis.tenants_total ?? 0)}
+                  hint="Base de reference pour la couverture operationnelle."
+                />
               </CardContent>
             </Card>
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pulse temps réel</CardTitle>
-                <CardDescription>Charge actuelle de la plateforme.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
-                  <span className="text-slate-500 dark:text-slate-400">Sessions live</span>
-                  <span className="font-semibold text-slate-950 dark:text-white">
-                    {numberFormat(data?.kpis.live_sessions ?? 0)}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Siren className="size-4 text-amber-300" />
+                Checkpoints d&apos;exploitation
+              </CardTitle>
+              <CardDescription>
+                Alertes structurelles et prerequis critiques detectes lors de la derniere remontee.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {warnings.length === 0 ? (
+                <div className="flex items-start gap-3 rounded-[24px] border border-emerald-400/18 bg-emerald-500/10 px-4 py-4">
+                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-[18px] border border-emerald-400/20 bg-emerald-500/14 text-emerald-100">
+                    <CheckCircle2 className="size-4" />
                   </span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
-                  <span className="text-slate-500 dark:text-slate-400">Événements analytics 24 h</span>
-                  <span className="font-semibold text-slate-950 dark:text-white">
-                    {numberFormat(data?.kpis.events_24h ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
-                  <span className="text-slate-500 dark:text-slate-400">Flux en direct</span>
-                  <span className="font-semibold text-slate-950 dark:text-white">
-                    {numberFormat(data?.kpis.streams_live ?? 0)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Siren className="size-4 text-amber-500 dark:text-amber-300" />
-                  Checkpoints d’exploitation
-                </CardTitle>
-                <CardDescription>État des prérequis SaaS critiques.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {(data?.warnings ?? []).length === 0 ? (
-                  <div className="rounded-2xl border border-emerald-300/70 bg-emerald-50 px-3 py-3 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                    Aucun avertissement majeur détecté.
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-emerald-50">Aucune alerte majeure</p>
+                    <p className="text-sm text-emerald-100/75">Les prerequis critiques suivis par le cockpit sont au vert.</p>
                   </div>
-                ) : (
-                  (data?.warnings ?? []).map((warning) => (
-                    <div
-                      key={warning}
-                      className="rounded-2xl border border-amber-300/70 bg-amber-50 px-3 py-3 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300"
-                    >
-                      {warning}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          </section>
+                </div>
+              ) : (
+                warnings.map((warning) => (
+                  <div key={warning} className="flex items-start gap-3 rounded-[24px] border border-amber-400/18 bg-amber-500/10 px-4 py-4">
+                    <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-[18px] border border-amber-400/20 bg-amber-500/14 text-amber-100">
+                      <AlertTriangle className="size-4" />
+                    </span>
+                    <p className="pt-1 text-sm text-amber-50">{warning}</p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </PageShell>

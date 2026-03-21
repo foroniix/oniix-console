@@ -1,136 +1,153 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import * as React from "react";
 
-function isElement<P = any>(node: unknown): node is React.ReactElement<P> {
+import { cn } from "@/lib/utils";
+
+function isElement<P = unknown>(node: unknown): node is React.ReactElement<P> {
   return React.isValidElement(node);
 }
 
-type TabsContext = {
-  value: string;
-  setValue: (v: string) => void;
+type TabsContextValue = {
   id: string;
+  value: string;
+  setValue: (value: string) => void;
 };
-const Ctx = React.createContext<TabsContext | null>(null);
+
+const TabsContext = React.createContext<TabsContextValue | null>(null);
 
 type TabsProps = {
   defaultValue?: string;
   value?: string;
-  onValueChange?: (v: string) => void;
+  onValueChange?: (value: string) => void;
   className?: string;
   children: React.ReactNode;
 };
 
 export function Tabs({ defaultValue, value, onValueChange, className, children }: TabsProps) {
-  const [internal, setInternal] = React.useState<string>(defaultValue ?? "");
+  const [internalValue, setInternalValue] = React.useState<string>(defaultValue ?? "");
   const controlled = value !== undefined;
-  const current = controlled ? (value as string) : internal;
-
-  const setValue = (v: string) => {
-    if (!controlled) setInternal(v);
-    onValueChange?.(v);
-  };
-
+  const currentValue = controlled ? value : internalValue;
   const id = React.useId();
 
+  const setValue = React.useCallback(
+    (nextValue: string) => {
+      if (!controlled) setInternalValue(nextValue);
+      onValueChange?.(nextValue);
+    },
+    [controlled, onValueChange]
+  );
+
   React.useEffect(() => {
-    if (!current) {
-      // pick first TabsTrigger child value if not set
-      const first = (() => {
-        const arr = React.Children.toArray(children);
+    if (currentValue) return;
 
-        for (const el of arr) {
-          if (!isElement(el)) continue;
+    const firstValue = (() => {
+      const rootChildren = React.Children.toArray(children);
 
-          // TabsList
-          if ((el as any).type?.displayName === "TabsList") {
-            const listKids = React.Children.toArray((el as React.ReactElement<any>).props.children).filter(isElement);
-            const trig = listKids.find((k: any) => (k as any)?.type?.displayName === "TabsTrigger");
-            const v = trig ? (trig.props as any)?.value : undefined;
-            if (v) return String(v);
-          }
-        }
+      for (const child of rootChildren) {
+        if (!isElement(child) || (child.type as { displayName?: string }).displayName !== "TabsList") continue;
 
-        return "";
-      })();
+        const listChildren = React.Children.toArray(child.props.children).filter(isElement);
+        const trigger = listChildren.find(
+          (listChild) => (listChild.type as { displayName?: string }).displayName === "TabsTrigger"
+        );
+        const nextValue = trigger?.props?.value;
+        if (nextValue) return String(nextValue);
+      }
 
-      if (first) setValue(first);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      return "";
+    })();
+
+    if (firstValue) setValue(firstValue);
+  }, [children, currentValue, setValue]);
 
   return (
-    <Ctx.Provider value={{ value: current, setValue, id }}>
+    <TabsContext.Provider value={{ id, value: currentValue, setValue }}>
       <div className={cn("w-full", className)}>{children}</div>
-    </Ctx.Provider>
+    </TabsContext.Provider>
   );
 }
 
 type TabsListProps = React.HTMLAttributes<HTMLDivElement>;
+
 export function TabsList({ className, ...props }: TabsListProps) {
   return (
     <div
       role="tablist"
       className={cn(
-        "inline-flex items-center justify-start gap-1 rounded-2xl border border-slate-200/80 bg-slate-50/90 p-1 dark:border-white/10 dark:bg-white/[0.04]",
+        "inline-flex items-center gap-1 rounded-[20px] border border-white/10 bg-white/[0.04] p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]",
         className
       )}
       {...props}
     />
   );
 }
+
 TabsList.displayName = "TabsList";
 
-type TabsTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { value: string };
+type TabsTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  value: string;
+};
+
 export function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
-  const ctx = React.useContext(Ctx);
+  const ctx = React.useContext(TabsContext);
   if (!ctx) throw new Error("TabsTrigger must be used inside <Tabs>");
+
   const selected = ctx.value === value;
+  const tabId = `${ctx.id}-tab-${value}`;
+  const panelId = `${ctx.id}-panel-${value}`;
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    e.preventDefault();
+  const onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
 
-    const container = (e.currentTarget.parentElement as HTMLElement) || null;
+    const container = event.currentTarget.parentElement;
     if (!container) return;
 
-    const buttons = Array.from(container.querySelectorAll("[role=tab]")) as HTMLButtonElement[];
-    const idx = buttons.indexOf(e.currentTarget);
-    const nextIdx =
-      e.key === "ArrowRight" ? (idx + 1) % buttons.length : (idx - 1 + buttons.length) % buttons.length;
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>("[role=tab]"));
+    const currentIndex = buttons.indexOf(event.currentTarget);
+    const nextIndex =
+      event.key === "ArrowRight"
+        ? (currentIndex + 1) % buttons.length
+        : (currentIndex - 1 + buttons.length) % buttons.length;
 
-    buttons[nextIdx]?.focus();
+    const nextButton = buttons[nextIndex];
+    nextButton?.focus();
 
-    const nextVal = (buttons[nextIdx] as any)?.dataset?.value as string | undefined;
-    if (nextVal) ctx.setValue(nextVal);
+    const nextValue = nextButton?.dataset.value;
+    if (nextValue) ctx.setValue(nextValue);
   };
 
   return (
     <button
       role="tab"
+      id={tabId}
+      aria-controls={panelId}
       aria-selected={selected}
       data-state={selected ? "active" : "inactive"}
       data-value={value}
       onClick={() => ctx.setValue(value)}
       onKeyDown={onKeyDown}
       className={cn(
-        "min-w-24 rounded-xl px-3 py-2 text-sm font-semibold outline-none transition",
-        "text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
-        "data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-sm dark:data-[state=active]:bg-white dark:data-[state=active]:text-slate-950",
-        "data-[state=inactive]:bg-transparent",
+        "min-w-24 rounded-[16px] px-3.5 py-2 text-sm font-semibold outline-none transition-all",
+        "text-slate-400 hover:text-white data-[state=active]:bg-white data-[state=active]:text-slate-950 data-[state=active]:shadow-[0_12px_24px_rgba(15,23,42,0.12)]",
         className
       )}
       {...props}
     />
   );
 }
+
 TabsTrigger.displayName = "TabsTrigger";
 
-type TabsContentProps = React.HTMLAttributes<HTMLDivElement> & { value: string };
+type TabsContentProps = React.HTMLAttributes<HTMLDivElement> & {
+  value: string;
+};
+
 export function TabsContent({ className, value, ...props }: TabsContentProps) {
-  const ctx = React.useContext(Ctx);
+  const ctx = React.useContext(TabsContext);
   if (!ctx) throw new Error("TabsContent must be used inside <Tabs>");
+
   const selected = ctx.value === value;
   const panelId = `${ctx.id}-panel-${value}`;
   const tabId = `${ctx.id}-tab-${value}`;
@@ -146,4 +163,5 @@ export function TabsContent({ className, value, ...props }: TabsContentProps) {
     />
   );
 }
+
 TabsContent.displayName = "TabsContent";

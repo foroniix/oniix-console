@@ -20,9 +20,9 @@ function Field({
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</label>
+      <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</label>
       <div className="relative">
-        <Icon className="pointer-events-none absolute left-3 top-3.5 size-4 text-slate-400" />
+        <Icon className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
         {children}
       </div>
     </div>
@@ -58,7 +58,7 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Erreur de connexion. Réessayez.");
+      setError("Erreur de connexion. Reessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -66,19 +66,19 @@ export default function LoginPage() {
 
   return (
     <AuthFrame
-      eyebrow="Connexion sécurisée"
-      title="Accédez au poste de pilotage Oniix."
-      subtitle="Retrouvez vos espaces, vos chaînes, vos audiences et vos opérations live dans un environnement unifié."
+      eyebrow="Connexion"
+      title="Accedez a votre console."
+      subtitle="Retrouvez vos espaces, vos chaines, vos operations live et vos rapports depuis un poste unique."
       footer={
-        <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
             Nouveau sur Oniix ?{" "}
-            <Link href="/signup" className="font-semibold text-[#4056c8] hover:text-[#3148be]">
-              Créer un espace
+            <Link href="/signup" className="font-semibold text-[var(--brand-primary)] hover:text-white">
+              Creer un espace
             </Link>
           </p>
-          <Link href="/accept-invite" className="font-medium text-slate-700 hover:text-slate-950">
-            Vous avez reçu une invitation ?
+          <Link href="/accept-invite" className="font-medium text-slate-300 hover:text-white">
+            Vous avez recu une invitation ?
           </Link>
         </div>
       }
@@ -91,7 +91,7 @@ export default function LoginPage() {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="nom@organisation.tv"
             autoFocus
-            className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+            className="pl-11"
           />
         </Field>
 
@@ -101,42 +101,38 @@ export default function LoginPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Votre mot de passe"
-            className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+            className="pl-11"
           />
         </Field>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-          <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3">
+          <label className="inline-flex items-center gap-2 text-sm text-slate-300">
             <input
               type="checkbox"
               checked={remember}
               onChange={(event) => setRemember(event.target.checked)}
-              className="size-4 rounded border-slate-300 text-[#4056c8] focus:ring-[#4056c8]"
+              className="size-4 rounded border-white/15 bg-transparent text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
             />
-            Rester connecté sur cet appareil
+            Rester connecte sur cet appareil
           </label>
-          <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
-            <ShieldCheck className="size-4 text-[#4056c8]" />
-            Session protégée
+          <div className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+            <ShieldCheck className="size-4 text-[var(--brand-primary)]" />
+            Session protegee
           </div>
         </div>
 
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-[20px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
             {error}
           </div>
         ) : null}
 
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="h-11 w-full rounded-xl bg-[#4056c8] text-white hover:bg-[#3148be]"
-        >
+        <Button type="submit" disabled={isLoading} className="h-11 w-full">
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <>
-              Continuer vers la console
+              Continuer
               <ArrowRight className="size-4" />
             </>
           )}

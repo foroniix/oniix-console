@@ -2,21 +2,29 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowUpRight, CheckCircle2, Loader2, RefreshCw, Save } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  Sparkles,
+  Unplug,
+  Waypoints,
+} from "lucide-react";
 
+import { DataTableShell } from "@/components/console/data-table-shell";
+import { FilterBar } from "@/components/console/filter-bar";
+import { KpiCard, KpiRow } from "@/components/console/kpi";
+import { PageHeader } from "@/components/console/page-header";
+import { PageShell } from "@/components/console/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type BackfillTenant = {
   id: string;
@@ -71,11 +79,25 @@ type DraftState = {
   originHlsUrl: string;
 };
 
+const FILTER_OPTIONS: Array<{ value: FilterMode; label: string }> = [
+  { value: "incomplete", label: "Incompletes" },
+  { value: "missingTenant", label: "Sans editeur" },
+  { value: "missingOrigin", label: "Sans origine" },
+  { value: "all", label: "Toutes" },
+];
+
 function dateTimeFormat(value: string | null) {
   if (!value) return "--";
+
   const parsed = Date.parse(value);
   if (!Number.isFinite(parsed)) return "--";
-  return new Date(parsed).toLocaleString("fr-FR");
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(parsed));
 }
 
 function numberFormat(value: number) {
@@ -93,6 +115,28 @@ function buildDraft(channel: BackfillChannel): DraftState {
   };
 }
 
+function IssueBadge({
+  active,
+  okLabel,
+  issueLabel,
+}: {
+  active: boolean;
+  okLabel: string;
+  issueLabel: string;
+}) {
+  return active ? (
+    <Badge className="border-amber-500/25 bg-amber-500/10 text-amber-200">
+      <AlertTriangle className="size-3.5" />
+      {issueLabel}
+    </Badge>
+  ) : (
+    <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-200">
+      <CheckCircle2 className="size-3.5" />
+      {okLabel}
+    </Badge>
+  );
+}
+
 export default function ChannelBackfillPage() {
   const [data, setData] = useState<BackfillResponse | null>(null);
   const [filter, setFilter] = useState<FilterMode>("incomplete");
@@ -105,9 +149,7 @@ export default function ChannelBackfillPage() {
   const [notice, setNotice] = useState("");
 
   const syncDrafts = useCallback((channels: BackfillChannel[]) => {
-    setDrafts(
-      Object.fromEntries(channels.map((channel) => [channel.id, buildDraft(channel)]))
-    );
+    setDrafts(Object.fromEntries(channels.map((channel) => [channel.id, buildDraft(channel)])));
   }, []);
 
   const load = useCallback(
@@ -120,14 +162,14 @@ export default function ChannelBackfillPage() {
         const res = await fetch("/api/superadmin/channel-backfill", { cache: "no-store" });
         const json = (await res.json().catch(() => null)) as BackfillResponse | { ok?: false; error?: string } | null;
         if (!res.ok || !json || !("ok" in json) || !json.ok) {
-          setError((json && "error" in json && json.error) || "Impossible de charger la remédiation des chaînes.");
+          setError((json && "error" in json && json.error) || "Impossible de charger la remediation des chaines.");
           return;
         }
 
         setData(json);
         syncDrafts(json.channels);
       } catch {
-        setError("Erreur réseau sur la remédiation des chaînes.");
+        setError("Erreur reseau sur la remediation des chaines.");
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -157,6 +199,7 @@ export default function ChannelBackfillPage() {
 
     setSavingId(channel.id);
     setError("");
+    setNotice("");
 
     try {
       const res = await fetch("/api/superadmin/channel-backfill", {
@@ -171,7 +214,7 @@ export default function ChannelBackfillPage() {
 
       const json = (await res.json().catch(() => null)) as SaveResponse | null;
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible de sauvegarder la chaîne.");
+        setError((json && "error" in json && json.error) || "Impossible de sauvegarder la chaine.");
         return;
       }
 
@@ -192,8 +235,10 @@ export default function ChannelBackfillPage() {
 
         return { ...current, channels, stats };
       });
+
+      setNotice("Les changements ont ete sauvegardes.");
     } catch {
-      setError("Erreur réseau pendant la sauvegarde.");
+      setError("Erreur reseau pendant la sauvegarde.");
     } finally {
       setSavingId(null);
     }
@@ -208,259 +253,248 @@ export default function ChannelBackfillPage() {
       const res = await fetch("/api/superadmin/channel-backfill", { method: "POST" });
       const json = (await res.json().catch(() => null)) as AutofillResponse | null;
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible d'exécuter l'autofill.");
+        setError((json && "error" in json && json.error) || "Impossible d executer le preremplissage.");
         return;
       }
 
       setNotice(
-        `${json.updated} chaîne(s) mises à jour automatiquement (${json.updated_origin} origine(s), ${json.updated_tenant} rattachement(s) éditeur).`
+        `${json.updated} chaine(s) mises a jour automatiquement (${json.updated_origin} origine(s), ${json.updated_tenant} rattachement(s) editeur).`
       );
       await load(true);
     } catch {
-      setError("Erreur réseau pendant l'autofill.");
+      setError("Erreur reseau pendant le preremplissage.");
     } finally {
       setAutofilling(false);
     }
   };
 
+  const resetFilter = () => setFilter("incomplete");
+  const tableError = !data ? error : null;
+
   return (
-    <div className="console-page">
-      <header className="console-hero flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Remédiation des chaînes</h1>
-            <Badge className="border border-amber-300/70 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300">
-              Préparation OTT
-            </Badge>
+    <PageShell>
+      <PageHeader
+        title="Remediation des chaines"
+        subtitle="Rattachez les chaines orphelines et injectez les origines HLS manquantes avant exposition OTT."
+        breadcrumbs={[
+          { label: "Oniix Console", href: "/dashboard" },
+          { label: "Systeme", href: "/system" },
+          { label: "Remediation des chaines" },
+        ]}
+        icon={<ShieldCheck className="size-5" />}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => void load(true)}>
+              <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
+              Actualiser
+            </Button>
+            <Button variant="outline" onClick={() => void onAutofill()} disabled={autofilling}>
+              {autofilling ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              Preremplir
+            </Button>
+            <Button asChild>
+              <Link href="/channels">
+                Ouvrir les chaines
+                <ArrowUpRight className="size-4" />
+              </Link>
+            </Button>
+          </>
+        }
+      />
+
+      {error && data ? (
+        <section className="console-panel flex items-start gap-3 border-rose-500/20 bg-rose-500/10 px-5 py-4">
+          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-[18px] border border-rose-500/20 bg-rose-500/14 text-rose-100">
+            <AlertTriangle className="size-4" />
+          </span>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-rose-100">Operation en echec</p>
+            <p className="text-sm text-rose-100/75">{error}</p>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Rattachez les chaînes orphelines à un éditeur puis renseignez leur origine HLS pour activer la gateway Oniix.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => void load(true)} className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]">
-            <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
-            Actualiser
-          </Button>
-          <Button variant="outline" onClick={onAutofill} disabled={autofilling} className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]">
-            {autofilling ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <CheckCircle2 className="mr-2 size-4" />
-            )}
-            Préremplir depuis les directs
-          </Button>
-          <Button asChild>
-            <Link href="/channels">
-              Ouvrir les chaînes
-              <ArrowUpRight className="ml-2 size-4" />
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {error ? (
-        <Card className="border-rose-300/70 bg-rose-50 dark:border-rose-400/20 dark:bg-rose-500/10">
-          <CardContent className="p-4 text-sm text-rose-700 dark:text-rose-300">{error}</CardContent>
-        </Card>
+        </section>
       ) : null}
 
       {notice ? (
-        <Card className="border-emerald-300/70 bg-emerald-50 dark:border-emerald-400/20 dark:bg-emerald-500/10">
-          <CardContent className="p-4 text-sm text-emerald-700 dark:text-emerald-300">{notice}</CardContent>
-        </Card>
+        <section className="console-panel flex items-start gap-3 border-emerald-400/18 bg-emerald-500/10 px-5 py-4">
+          <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-[18px] border border-emerald-400/20 bg-emerald-500/14 text-emerald-100">
+            <CheckCircle2 className="size-4" />
+          </span>
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-emerald-50">Operation terminee</p>
+            <p className="text-sm text-emerald-100/75">{notice}</p>
+          </div>
+        </section>
       ) : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Chaînes totales</CardDescription>
-            <CardTitle>{numberFormat(data?.stats.total ?? 0)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Chaînes incomplètes</CardDescription>
-            <CardTitle>{numberFormat(data?.stats.incomplete ?? 0)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Éditeur manquant</CardDescription>
-            <CardTitle>{numberFormat(data?.stats.missingTenant ?? 0)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Origine manquante</CardDescription>
-            <CardTitle>{numberFormat(data?.stats.missingOrigin ?? 0)}</CardTitle>
-          </CardHeader>
-        </Card>
-      </section>
+      <KpiRow>
+        <KpiCard
+          label="Chaines totales"
+          value={numberFormat(data?.stats.total ?? 0)}
+          hint="Base complete detectee dans le parc."
+          icon={<Waypoints className="size-4" />}
+          loading={loading && !data}
+        />
+        <KpiCard
+          label="Chaines incompletes"
+          value={numberFormat(data?.stats.incomplete ?? 0)}
+          hint="Au moins un prerequis manque pour l exposition OTT."
+          tone="warning"
+          icon={<AlertTriangle className="size-4" />}
+          loading={loading && !data}
+        />
+        <KpiCard
+          label="Sans editeur"
+          value={numberFormat(data?.stats.missingTenant ?? 0)}
+          hint="Chaines non rattachees a un tenant."
+          tone="error"
+          icon={<ShieldCheck className="size-4" />}
+          loading={loading && !data}
+        />
+        <KpiCard
+          label="Sans origine"
+          value={numberFormat(data?.stats.missingOrigin ?? 0)}
+          hint="Origines HLS encore absentes."
+          tone="info"
+          icon={<Unplug className="size-4" />}
+          loading={loading && !data}
+        />
+      </KpiRow>
 
-      <Card>
-        <CardHeader className="space-y-4">
-          <div>
-            <CardTitle>Corrections globales</CardTitle>
-            <CardDescription>
-              Cette vue cible les chaînes encore invisibles dans les consoles éditeur car elles ne sont pas correctement rattachées.
-            </CardDescription>
+      <DataTableShell
+        title="Corrections globales"
+        description={`${numberFormat(filteredChannels.length)} chaine(s) visibles sur ${numberFormat(data?.stats.total ?? 0)}.`}
+        loading={loading && !data}
+        error={tableError}
+        onRetry={() => void load(false)}
+        isEmpty={!loading && !tableError && filteredChannels.length === 0}
+        emptyTitle="Aucune chaine a traiter"
+        emptyDescription="Le filtre actif ne remonte plus de chaine a corriger."
+      >
+        <FilterBar onReset={resetFilter} resetDisabled={filter === "incomplete"}>
+          <div className="inline-flex flex-wrap items-center gap-2">
+            {FILTER_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                size="sm"
+                variant={filter === option.value ? "secondary" : "outline"}
+                onClick={() => setFilter(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
           </div>
+        </FilterBar>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant={filter === "incomplete" ? "default" : "outline"} onClick={() => setFilter("incomplete")}>
-              Incomplètes
-            </Button>
-            <Button variant={filter === "missingTenant" ? "default" : "outline"} onClick={() => setFilter("missingTenant")}>
-              Sans éditeur
-            </Button>
-            <Button variant={filter === "missingOrigin" ? "default" : "outline"} onClick={() => setFilter("missingOrigin")}>
-              Sans origine
-            </Button>
-            <Button variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>
-              Toutes
-            </Button>
-          </div>
-        </CardHeader>
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-[rgba(10,16,24,0.96)] backdrop-blur">
+            <TableRow className="hover:bg-transparent">
+              <TableHead>Chaine</TableHead>
+              <TableHead>Tenant</TableHead>
+              <TableHead>Origine HLS</TableHead>
+              <TableHead>Etat</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
 
-        <CardContent>
-          {loading ? (
-            <div className="flex min-h-[240px] items-center justify-center text-slate-500 dark:text-slate-400">
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              Chargement des chaînes...
-            </div>
-          ) : filteredChannels.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
-              Aucune chaîne ne correspond au filtre.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Chaîne</TableHead>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>Origine HLS</TableHead>
-                  <TableHead>État</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+          <TableBody>
+            {filteredChannels.map((channel) => {
+              const draft = drafts[channel.id] ?? buildDraft(channel);
+              const dirty =
+                draft.tenantId !== channel.tenant_id ||
+                draft.originHlsUrl.trim() !== (channel.origin_hls_url ?? "");
+
+              return (
+                <TableRow key={channel.id}>
+                  <TableCell className="align-top">
+                    <div className="space-y-1.5">
+                      <p className="font-medium text-white">{channel.name}</p>
+                      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                        /{channel.slug || channel.id.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-slate-500">Maj {dateTimeFormat(channel.updated_at)}</p>
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="align-top">
+                    <div className="space-y-2">
+                      <Select
+                        value={draft.tenantId ?? "__none__"}
+                        onValueChange={(value) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [channel.id]: {
+                              ...draft,
+                              tenantId: value === "__none__" ? null : value,
+                            },
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-[220px]">
+                          <SelectValue placeholder="Choisir un editeur" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Aucun editeur</SelectItem>
+                          {(data?.tenants ?? []).map((tenant) => (
+                            <SelectItem key={tenant.id} value={tenant.id}>
+                              {tenant.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-500">Actuel: {channel.tenant_name ?? "Non affecte"}</p>
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="align-top">
+                    <div className="space-y-2">
+                      <Input
+                        value={draft.originHlsUrl}
+                        onChange={(event) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [channel.id]: {
+                              ...draft,
+                              originHlsUrl: event.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="https://origin.example/live/master.m3u8"
+                        className="min-w-[340px] font-mono text-xs"
+                      />
+                      <p className="text-xs text-slate-500">
+                        {channel.origin_hls_url ? "Origine configuree." : "Origine manquante."}
+                      </p>
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="align-top">
+                    <div className="flex flex-col items-start gap-2">
+                      <IssueBadge
+                        active={channel.issues.missingTenant}
+                        okLabel="Editeur OK"
+                        issueLabel="Sans editeur"
+                      />
+                      <IssueBadge
+                        active={channel.issues.missingOrigin}
+                        okLabel="Origine OK"
+                        issueLabel="Origine manquante"
+                      />
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="text-right align-top">
+                    <Button onClick={() => void onSave(channel)} disabled={!dirty || savingId === channel.id}>
+                      {savingId === channel.id ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                      Sauvegarder
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {filteredChannels.map((channel) => {
-                  const draft = drafts[channel.id] ?? buildDraft(channel);
-                  const dirty =
-                    draft.tenantId !== channel.tenant_id ||
-                    draft.originHlsUrl.trim() !== (channel.origin_hls_url ?? "");
-
-                  return (
-                    <TableRow key={channel.id}>
-                      <TableCell className="align-top">
-                        <div className="space-y-1">
-                          <p className="font-medium text-white">{channel.name}</p>
-                          <p className="font-mono text-xs text-zinc-500">/{channel.slug || channel.id.slice(0, 8)}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Maj : {dateTimeFormat(channel.updated_at)}</p>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="align-top">
-                        <div className="space-y-2">
-                          <Select
-                            value={draft.tenantId ?? "__none__"}
-                            onValueChange={(value) =>
-                              setDrafts((current) => ({
-                                ...current,
-                                [channel.id]: {
-                                  ...draft,
-                                  tenantId: value === "__none__" ? null : value,
-                                },
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="w-[220px]">
-                              <SelectValue placeholder="Choisir un éditeur" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">Aucun éditeur</SelectItem>
-                              {(data?.tenants ?? []).map((tenant) => (
-                                <SelectItem key={tenant.id} value={tenant.id}>
-                                  {tenant.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Actuel : {channel.tenant_name ?? "Non affecté"}</p>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="align-top">
-                        <div className="space-y-2">
-                          <Input
-                            value={draft.originHlsUrl}
-                            onChange={(event) =>
-                              setDrafts((current) => ({
-                                ...current,
-                                [channel.id]: {
-                                  ...draft,
-                                  originHlsUrl: event.target.value,
-                                },
-                              }))
-                            }
-                            placeholder="https://origin.example/live/master.m3u8"
-                            className="min-w-[320px] font-mono text-xs"
-                          />
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {channel.origin_hls_url ? "Origine configurée." : "Origine manquante."}
-                          </p>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="align-top">
-                        <div className="flex flex-col gap-2">
-                          {channel.issues.missingTenant ? (
-                            <Badge className="border-amber-500/25 bg-amber-500/10 text-amber-300">
-                              <AlertTriangle className="mr-1 size-3.5" />
-                              Sans éditeur
-                            </Badge>
-                          ) : (
-                            <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300">
-                              <CheckCircle2 className="mr-1 size-3.5" />
-                              Éditeur OK
-                            </Badge>
-                          )}
-
-                          {channel.issues.missingOrigin ? (
-                            <Badge className="border-amber-500/25 bg-amber-500/10 text-amber-300">
-                              <AlertTriangle className="mr-1 size-3.5" />
-                              Origine manquante
-                            </Badge>
-                          ) : (
-                            <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300">
-                              <CheckCircle2 className="mr-1 size-3.5" />
-                              Origine OK
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-right align-top">
-                        <Button onClick={() => void onSave(channel)} disabled={!dirty || savingId === channel.id}>
-                          {savingId === channel.id ? (
-                            <Loader2 className="mr-2 size-4 animate-spin" />
-                          ) : (
-                            <Save className="mr-2 size-4" />
-                          )}
-                          Sauvegarder
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </DataTableShell>
+    </PageShell>
   );
 }

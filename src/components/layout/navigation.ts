@@ -28,75 +28,75 @@ export type NavSection = {
 
 export const NAV_SECTIONS: NavSection[] = [
   {
-    title: "Pilotage",
+    title: "Exploitation",
     items: [
       {
         href: "/dashboard",
         label: "Pilotage",
-        description: " ",
+        description: "Vue d'ensemble des operations",
         icon: LayoutDashboard,
       },
       {
         href: "/channels",
         label: "Chaînes TV",
-        description: " ",
+        description: "Catalogue et distribution",
         icon: Tv2,
       },
       {
         href: "/streams",
         label: "Directs",
-        description: " ",
+        description: "Supervision live",
         icon: RadioTower,
       },
       {
         href: "/programming",
         label: "Programmation",
-        description: " ",
+        description: "Grille et continuite",
         icon: CalendarClock,
       },
     ],
   },
   {
-    title: "Monétisation",
+    title: "Business",
     items: [
       {
         href: "/ads",
-        label: "Monétisation",
-        description: " ",
+        label: "Monetisation",
+        description: "Inventaire et campagnes",
         icon: Megaphone,
       },
       {
         href: "/revenue",
         label: "Revenus",
-        description: " ",
+        description: "Performance et rendement",
         icon: BadgeDollarSign,
       },
     ],
   },
   {
-    title: "Équipe",
+    title: "Equipe",
     items: [
       {
         href: "/users",
-        label: "Équipe",
-        description: " ",
+        label: "Equipe",
+        description: "Acces, roles et invites",
         icon: Users,
       },
       {
         href: "/activities",
         label: "Journal",
-        description: " ",
+        description: "Audit operationnel",
         icon: Activity,
       },
     ],
   },
   {
-    title: "Paramètres",
+    title: "Administration",
     items: [
       {
         href: "/settings",
-        label: "Paramètres",
-        description: " ",
+        label: "Parametres",
+        description: "Workspace et securite",
         icon: Settings,
       },
     ],
@@ -107,20 +107,20 @@ const ALL_ROUTES = NAV_SECTIONS.flatMap((section) => section.items);
 const AUX_ROUTES: NavItem[] = [
   {
     href: "/tenants",
-    label: "Éditeurs",
-    description: " ",
+    label: "Editeurs",
+    description: "Portefeuille multi-editeur",
     icon: Database,
   },
   {
     href: "/system",
-    label: "Système",
-    description: " ",
+    label: "Systeme",
+    description: "Outils plateforme",
     icon: Shield,
   },
   {
     href: "/series",
     label: "Catalogue",
-    description: " ",
+    description: "Actifs programmes",
     icon: Film,
   },
 ];
@@ -138,7 +138,7 @@ export function resolveRoute(pathname: string) {
   return {
     href: pathname,
     label: "Console",
-    description: " ",
+    description: "Pilotage Oniix",
     icon: LayoutDashboard,
   };
 }

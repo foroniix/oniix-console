@@ -2,16 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Building2,
-  CheckCircle2,
-  Loader2,
-  Lock,
-  Mail,
-  ShieldCheck,
-  User2,
-} from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, Loader2, Lock, Mail, ShieldCheck, User2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { AuthFrame } from "@/components/auth/auth-frame";
@@ -19,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const PASSWORD_RULES = [
-  { id: "length", label: "12 caractères minimum", test: (value: string) => value.length >= 12 },
-  { id: "lower", label: "au moins une minuscule", test: (value: string) => /[a-z]/.test(value) },
-  { id: "upper", label: "au moins une majuscule", test: (value: string) => /[A-Z]/.test(value) },
-  { id: "number", label: "au moins un chiffre", test: (value: string) => /\d/.test(value) },
-  { id: "symbol", label: "au moins un caractère spécial", test: (value: string) => /[^A-Za-z0-9]/.test(value) },
+  { id: "length", label: "12 caracteres minimum", test: (value: string) => value.length >= 12 },
+  { id: "lower", label: "une minuscule", test: (value: string) => /[a-z]/.test(value) },
+  { id: "upper", label: "une majuscule", test: (value: string) => /[A-Z]/.test(value) },
+  { id: "number", label: "un chiffre", test: (value: string) => /\d/.test(value) },
+  { id: "symbol", label: "un caractere special", test: (value: string) => /[^A-Za-z0-9]/.test(value) },
 ];
 
 function Field({
@@ -37,9 +28,9 @@ function Field({
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</label>
+      <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</label>
       <div className="relative">
-        <Icon className="pointer-events-none absolute left-3 top-3.5 size-4 text-slate-400" />
+        <Icon className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
         {children}
       </div>
     </div>
@@ -69,7 +60,7 @@ export default function SignupPage() {
     setSuccess("");
 
     if (!acceptedTerms) {
-      setError("Vous devez accepter les conditions d’utilisation pour créer un espace.");
+      setError("Vous devez accepter les conditions pour creer un espace.");
       return;
     }
 
@@ -79,7 +70,7 @@ export default function SignupPage() {
     }
 
     if (checks.some((rule) => !rule.valid)) {
-      setError("Le mot de passe ne respecte pas encore le niveau de sécurité requis.");
+      setError("Le mot de passe ne respecte pas le niveau de securite requis.");
       return;
     }
 
@@ -109,7 +100,7 @@ export default function SignupPage() {
       if (json.requires_email_confirmation) {
         setSuccess(
           json.message ||
-            "Compte créé. Vérifiez votre email pour confirmer votre adresse avant votre première connexion."
+            "Compte cree. Verifiez votre email pour confirmer votre adresse avant votre premiere connexion."
         );
         return;
       }
@@ -117,7 +108,7 @@ export default function SignupPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Erreur d’inscription. Réessayez.");
+      setError("Erreur d'inscription. Reessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -125,20 +116,20 @@ export default function SignupPage() {
 
   return (
     <AuthFrame
-      eyebrow="Création d’espace"
-      title="Ouvrez votre espace Oniix."
-      subtitle="Créez votre organisation, sécurisez vos accès et démarrez avec une base prête pour l’exploitation OTT."
+      eyebrow="Creation d'espace"
+      title="Lancez votre espace Oniix."
+      subtitle="Configurez votre organisation, securisez les acces et demarrez avec une base propre pour l'exploitation OTT."
       footer={
-        <div className="flex flex-col gap-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            Déjà équipé ?{" "}
-            <Link href="/login" className="font-semibold text-[#4056c8] hover:text-[#3148be]">
+            Deja equipe ?{" "}
+            <Link href="/login" className="font-semibold text-[var(--brand-primary)] hover:text-white">
               Se connecter
             </Link>
           </p>
-          <span className="inline-flex items-center gap-2 text-slate-500">
-            <ShieldCheck className="size-4 text-[#4056c8]" />
-            Onboarding SaaS professionnel
+          <span className="inline-flex items-center gap-2 text-slate-400">
+            <ShieldCheck className="size-4 text-[var(--brand-primary)]" />
+            Onboarding structure
           </span>
         </div>
       }
@@ -150,8 +141,8 @@ export default function SignupPage() {
               type="text"
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              placeholder="Prénom Nom"
-              className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+              placeholder="Prenom Nom"
+              className="pl-11"
             />
           </Field>
 
@@ -160,9 +151,9 @@ export default function SignupPage() {
               type="text"
               value={orgName}
               onChange={(event) => setOrgName(event.target.value)}
-              placeholder="Nom de votre chaîne ou groupe"
+              placeholder="Nom de votre chaine ou groupe"
               required
-              className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+              className="pl-11"
             />
           </Field>
         </div>
@@ -174,7 +165,7 @@ export default function SignupPage() {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="nom@organisation.tv"
             required
-            className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+            className="pl-11"
           />
         </Field>
 
@@ -186,32 +177,32 @@ export default function SignupPage() {
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Choisissez un mot de passe fort"
               required
-              className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+              className="pl-11"
             />
           </Field>
 
-          <Field label="Confirmer le mot de passe" icon={Lock}>
+          <Field label="Confirmation" icon={Lock}>
             <Input
               type="password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               placeholder="Retapez le mot de passe"
               required
-              className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-slate-950 placeholder:text-slate-400"
+              className="pl-11"
             />
           </Field>
         </div>
 
-        <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
-          <div className="text-sm font-semibold text-slate-950">Niveau de sécurité requis</div>
+        <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
+          <div className="text-sm font-semibold text-white">Niveau de securite requis</div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {checks.map((rule) => (
-              <div key={rule.id} className="inline-flex items-center gap-2 text-sm text-slate-600">
+              <div key={rule.id} className="inline-flex items-center gap-2 text-sm text-slate-300">
                 <span
                   className={
                     rule.valid
-                      ? "inline-flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"
-                      : "inline-flex size-5 items-center justify-center rounded-full bg-slate-200 text-slate-500"
+                      ? "inline-flex size-5 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-300"
+                      : "inline-flex size-5 items-center justify-center rounded-full bg-white/8 text-slate-500"
                   }
                 >
                   <CheckCircle2 className="size-3.5" />
@@ -222,38 +213,34 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+        <label className="flex items-start gap-3 rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
           <input
             type="checkbox"
             checked={acceptedTerms}
             onChange={(event) => setAcceptedTerms(event.target.checked)}
-            className="mt-0.5 size-4 rounded border-slate-300 text-[#4056c8] focus:ring-[#4056c8]"
+            className="mt-0.5 size-4 rounded border-white/15 bg-transparent text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
           />
-          <span>J’accepte les conditions d’utilisation et la création sécurisée de mon espace Oniix.</span>
+          <span>J&apos;accepte les conditions d&apos;utilisation et la creation securisee de mon espace Oniix.</span>
         </label>
 
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-[20px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
             {error}
           </div>
         ) : null}
 
         {success ? (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <div className="rounded-[20px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
             {success}
           </div>
         ) : null}
 
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="h-11 w-full rounded-xl bg-[#4056c8] text-white hover:bg-[#3148be]"
-        >
+        <Button type="submit" disabled={isLoading} className="h-11 w-full">
           {isLoading ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <>
-              Créer mon espace
+              Creer mon espace
               <ArrowRight className="size-4" />
             </>
           )}

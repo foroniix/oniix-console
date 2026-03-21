@@ -650,7 +650,7 @@ export default function StreamDetailPage() {
 
   if (loading || !stream || !config) {
     return (
-      <div className="flex min-h-[240px] items-center justify-center gap-2 text-[#8b93a7]">
+      <div className="flex min-h-[240px] items-center justify-center gap-2 text-slate-400">
         <Loader2 className="size-5 animate-spin" />
         Chargement...
       </div>
@@ -669,7 +669,7 @@ export default function StreamDetailPage() {
             <Button
               variant="outline"
               onClick={() => setAutoRefreshEnabled((value) => !value)}
-              className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+              
             >
               {autoRefreshEnabled ? <Pause className="mr-2 size-4" /> : <Play className="mr-2 size-4" />}
               {autoRefreshEnabled ? "Suspendre l'actualisation" : "Reprendre l'actualisation"}
@@ -681,7 +681,7 @@ export default function StreamDetailPage() {
                   setLastRefreshAt(new Date().toISOString());
                 });
               }}
-              className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+              
             >
               <RefreshCw className="mr-2 size-4" />
               Actualiser
@@ -690,12 +690,12 @@ export default function StreamDetailPage() {
         }
       />
 
-      {feedback ? <div className="rounded-xl border border-[#262b38] bg-[#1b1f2a] px-4 py-3 text-sm">{feedback}</div> : null}
+      {feedback ? <div className="rounded-[24px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-200">{feedback}</div> : null}
 
-      <div className="rounded-xl border border-[#262b38] bg-[#151821] px-4 py-3 text-xs text-[#8b93a7]">
-        Actualisation auto : <span className="font-medium text-[#e6eaf2]">{autoRefreshEnabled ? "ACTIVE" : "PAUSÉE"}</span>
+      <div className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-slate-400">
+        Actualisation auto : <span className="font-medium text-slate-100">{autoRefreshEnabled ? "ACTIVE" : "PAUSÉE"}</span>
         {" | "}
-        Dernière synchro diagnostics : <span className="font-medium text-[#e6eaf2]">{dateLabel(lastRefreshAt)}</span>
+        Dernière synchro diagnostics : <span className="font-medium text-slate-100">{dateLabel(lastRefreshAt)}</span>
       </div>
 
       <KpiRow>
@@ -707,7 +707,7 @@ export default function StreamDetailPage() {
       </KpiRow>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="border border-[#262b38] bg-[#1b1f2a]">
+        <TabsList >
           <TabsTrigger value="overview">Supervision</TabsTrigger>
           <TabsTrigger value="health">Qualité</TabsTrigger>
           <TabsTrigger value="config">Configuration</TabsTrigger>
@@ -717,7 +717,7 @@ export default function StreamDetailPage() {
 
         <TabsContent value="overview" className="mt-4 grid gap-4 xl:grid-cols-3">
           <div className="space-y-4 xl:col-span-2">
-            <div className="overflow-hidden rounded-xl border border-[#262b38] bg-[#151821]">
+            <div className="console-panel overflow-hidden">
               <div className="aspect-video bg-black">
                 <HlsPlayer
                   streamId={stream.id}
@@ -732,63 +732,63 @@ export default function StreamDetailPage() {
                   statsIngestPaused={!autoRefreshEnabled}
                 />
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#262b38] px-4 py-3">
-                <span className="text-xs text-[#8b93a7]">Dernière activité : {dateLabel(stream.updatedAt)}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3">
+                <span className="text-xs text-slate-400">Dernière activité : {dateLabel(stream.updatedAt)}</span>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => setMuted((v) => !v)} className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]">
+                  <Button variant="outline" onClick={() => setMuted((v) => !v)} >
                     {muted ? <VolumeX className="mr-2 size-4" /> : <Volume2 className="mr-2 size-4" />}
                     {muted ? "Activer le son" : "Couper le son"}
                   </Button>
-                  <Button variant="outline" onClick={() => navigator.clipboard.writeText(stream.hlsUrl).catch(() => {})} className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]">
+                  <Button variant="outline" onClick={() => navigator.clipboard.writeText(stream.hlsUrl).catch(() => {})} >
                     <Copy className="mr-2 size-4" />
                     Copier URL manifest
                   </Button>
-                  <Button onClick={() => void runValidation()} className="bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">
+                  <Button onClick={() => void runValidation()} >
                     {validating ? <Loader2 className="mr-2 size-4 animate-spin" /> : <ShieldAlert className="mr-2 size-4" />}
                     Valider HLS
                   </Button>
                 </div>
               </div>
             </div>
-            {playerError ? <div className="rounded-xl border border-[#ef4444]/30 bg-[#ef4444]/10 px-4 py-3 text-sm text-[#ef4444]">{playerError}</div> : null}
+            {playerError ? <div className="rounded-[24px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{playerError}</div> : null}
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-4">
+            <div className="console-panel p-4">
               <h3 className="text-sm font-semibold">Actions opérateur</h3>
               <div className="mt-3 space-y-2">
-                <Button onClick={onSetLive} disabled={stream.status === "LIVE"} className="w-full justify-start bg-[#22c55e] text-black hover:bg-[#22c55e]/90"><Play className="mr-2 size-4" />Passer en direct</Button>
-                <Button onClick={onStop} disabled={stream.status !== "LIVE"} variant="outline" className="w-full justify-start border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#f59e0b]"><Square className="mr-2 size-4" />Arrêter le flux</Button>
-                <Button onClick={onCreateReplayInstant} variant="outline" className="w-full justify-start border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"><MonitorPlay className="mr-2 size-4" />Créer un replay instantané</Button>
+                <Button onClick={onSetLive} disabled={stream.status === "LIVE"} className="w-full justify-start"><Play className="mr-2 size-4" />Passer en direct</Button>
+                <Button onClick={onStop} disabled={stream.status !== "LIVE"} variant="outline" className="w-full justify-start"><Square className="mr-2 size-4" />Arrêter le flux</Button>
+                <Button onClick={onCreateReplayInstant} variant="outline" className="w-full justify-start"><MonitorPlay className="mr-2 size-4" />Créer un replay instantané</Button>
               </div>
-              <div className="mt-3 space-y-2 rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3">
-                <p className="text-xs text-[#8b93a7]">Clip replay sur flux continu : sélectionnez un début et une fin.</p>
+              <div className="mt-3 space-y-2 rounded-[20px] border border-white/8 bg-white/[0.03] p-3">
+                <p className="text-xs text-slate-400">Clip replay sur flux continu : sélectionnez un début et une fin.</p>
                 <div>
-                  <Label className="text-xs text-[#8b93a7]">Début</Label>
+                  <Label className="text-xs text-slate-400">Début</Label>
                   <Input
                     type="datetime-local"
                     value={clipStartAt}
                     onChange={(event) => setClipStartAt(event.target.value)}
-                    className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]"
+                    className="mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-[#8b93a7]">Fin</Label>
+                  <Label className="text-xs text-slate-400">Fin</Label>
                   <Input
                     type="datetime-local"
                     value={clipEndAt}
                     onChange={(event) => setClipEndAt(event.target.value)}
-                    className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]"
+                    className="mt-1"
                   />
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#151821] px-3 py-2">
-                  <Label className="text-xs text-[#8b93a7]">Arrêter le flux après création</Label>
+                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-black/10 px-3 py-2">
+                  <Label className="text-xs text-slate-400">Arrêter le flux après création</Label>
                   <Switch checked={clipEndStream} onCheckedChange={setClipEndStream} />
                 </div>
                 <Button
                   onClick={() => void onCreateReplayClip()}
                   disabled={clipSubmitting}
-                  className="w-full bg-[#4c82fb] text-white hover:bg-[#3b6fe0]"
+                  className="w-full"
                 >
                   {clipSubmitting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <MonitorPlay className="mr-2 size-4" />}
                   Créer replay depuis fenêtre
@@ -797,27 +797,27 @@ export default function StreamDetailPage() {
                   variant="outline"
                   onClick={() => void onProcessClipQueue()}
                   disabled={clipQueueRunning}
-                  className="w-full border-[#262b38] bg-[#151821] text-[#e6eaf2]"
+                  className="w-full"
                 >
                   {clipQueueRunning ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RefreshCw className="mr-2 size-4" />}
                   Traiter la file clips
                 </Button>
               </div>
             </div>
-            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-4">
+            <div className="console-panel p-4">
               <h3 className="text-sm font-semibold">Dernière validation HLS</h3>
               {validation ? (
-                <div className="mt-3 space-y-2 text-sm text-[#8b93a7]">
+                <div className="mt-3 space-y-2 text-sm text-slate-400">
                   <StatusBadge status={validation.summary === "OK" ? "HEALTHY" : validation.summary === "WARN" ? "DEGRADED" : "DOWN"} />
                   <p>{dateLabel(validation.validatedAt)}</p>
                   <p>Variants {validation.metrics.variantsCount} | Audio {validation.metrics.audioTracks} | Sous-titres {validation.metrics.subtitleTracks}</p>
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-[#8b93a7]">Aucune validation exécutée.</p>
+                <p className="mt-3 text-sm text-slate-400">Aucune validation exécutée.</p>
               )}
-              <div className="mt-3 rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3 text-sm text-[#8b93a7]">
-                <p>Erreurs player 1h: <span className="font-medium text-[#e6eaf2]">{analytics?.summary.errors1h ?? 0}</span></p>
-                <p>Bitrate réel 1 h: <span className="font-medium text-[#e6eaf2]">{analytics?.summary.bitrateAvg1h ?? 0} kbps</span></p>
+              <div className="mt-3 rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
+                <p>Erreurs player 1h: <span className="font-medium text-slate-100">{analytics?.summary.errors1h ?? 0}</span></p>
+                <p>Bitrate réel 1 h: <span className="font-medium text-slate-100">{analytics?.summary.bitrateAvg1h ?? 0} kbps</span></p>
               </div>
             </div>
           </div>
@@ -825,42 +825,42 @@ export default function StreamDetailPage() {
 
         <TabsContent value="health" className="mt-4 space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-3">
-              <p className="text-xs uppercase tracking-[0.08em] text-[#8b93a7]">Contrôles OK</p>
-              <p className="mt-1 text-xl font-semibold text-[#22c55e]">{healthCounts.ok}</p>
+            <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-3">
+              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Contrôles OK</p>
+              <p className="mt-1 text-xl font-semibold text-emerald-300">{healthCounts.ok}</p>
             </div>
-            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-3">
-              <p className="text-xs uppercase tracking-[0.08em] text-[#8b93a7]">Contrôles WARN</p>
-              <p className="mt-1 text-xl font-semibold text-[#f59e0b]">{healthCounts.warn}</p>
+            <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-3">
+              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Contrôles WARN</p>
+              <p className="mt-1 text-xl font-semibold text-amber-300">{healthCounts.warn}</p>
             </div>
-            <div className="rounded-xl border border-[#262b38] bg-[#151821] p-3">
-              <p className="text-xs uppercase tracking-[0.08em] text-[#8b93a7]">Contrôles FAIL</p>
-              <p className="mt-1 text-xl font-semibold text-[#ef4444]">{healthCounts.fail}</p>
+            <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-3">
+              <p className="text-xs uppercase tracking-[0.08em] text-slate-500">Contrôles FAIL</p>
+              <p className="mt-1 text-xl font-semibold text-rose-300">{healthCounts.fail}</p>
             </div>
           </div>
 
           <DataTableShell title="Contrôles automatiques" description="Manifest, variants, playlist et segments." loading={validating} isEmpty={!validation || validation.checks.length === 0} emptyTitle="Aucun contrôle" emptyDescription="Lancez une validation HLS.">
             <Table>
-              <TableHeader className="bg-[#1b1f2a]"><TableRow className="border-[#262b38]"><TableHead>Contrôle</TableHead><TableHead>Statut</TableHead><TableHead>Détails</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Contrôle</TableHead><TableHead>Statut</TableHead><TableHead>Détails</TableHead></TableRow></TableHeader>
               <TableBody>
                 {(validation?.checks ?? []).map((check) => (
-                  <TableRow key={check.key} className="border-[#262b38] hover:bg-white/[0.03]">
+                  <TableRow key={check.key} >
                     <TableCell>{check.label}</TableCell>
                     <TableCell><StatusBadge status={check.status === "OK" ? "HEALTHY" : check.status === "WARN" ? "DEGRADED" : "DOWN"} /></TableCell>
-                    <TableCell className="text-sm text-[#8b93a7]">{check.message}</TableCell>
+                    <TableCell className="text-sm text-slate-400">{check.message}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </DataTableShell>
-          <div className="rounded-xl border border-[#262b38] bg-[#151821] p-4">
+          <div className="console-panel p-4">
             <h3 className="text-sm font-semibold">Chronologie incidents</h3>
-            {incidents.length === 0 ? <p className="mt-2 text-sm text-[#8b93a7]">Aucun incident détecté.</p> : <div className="mt-2 space-y-2">{incidents.map((line) => <p key={line} className="text-sm text-[#8b93a7]">{line}</p>)}</div>}
+            {incidents.length === 0 ? <p className="mt-2 text-sm text-slate-400">Aucun incident détecté.</p> : <div className="mt-2 space-y-2">{incidents.map((line) => <p key={line} className="text-sm text-slate-400">{line}</p>)}</div>}
           </div>
         </TabsContent>
 
         <TabsContent value="config" className="mt-4 grid gap-4 xl:grid-cols-3">
-          <div className="space-y-4 rounded-xl border border-[#262b38] bg-[#151821] p-4 xl:col-span-2">
+          <div className="console-panel space-y-4 p-4 xl:col-span-2">
             <div className="flex flex-wrap gap-2">
               {Object.entries(PRESETS).map(([key, preset]) => (
                 <Button
@@ -872,24 +872,24 @@ export default function StreamDetailPage() {
                     patchConfig(preset);
                     setFeedback(`Préréglage ${PRESET_LABELS[key] ?? key} appliqué.`);
                   }}
-                  className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]"
+                  
                 >
                   {PRESET_LABELS[key] ?? key}
                 </Button>
               ))}
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div><Label>Nom du flux</Label><Input value={config.title} onChange={(e) => patchConfig({ title: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
-              <div><Label>Manifest HLS</Label><Input value={config.hlsUrl} onChange={(e) => patchConfig({ hlsUrl: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
-              <div><Label>Fenêtre DVR (sec)</Label><Input type="number" value={config.dvrWindowSec} onChange={(e) => patchConfig({ dvrWindowSec: Number(e.target.value) || 0 })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+              <div><Label>Nom du flux</Label><Input value={config.title} onChange={(e) => patchConfig({ title: e.target.value })} className="mt-1" /></div>
+              <div><Label>Manifest HLS</Label><Input value={config.hlsUrl} onChange={(e) => patchConfig({ hlsUrl: e.target.value })} className="mt-1" /></div>
+              <div><Label>Fenêtre DVR (sec)</Label><Input type="number" value={config.dvrWindowSec} onChange={(e) => patchConfig({ dvrWindowSec: Number(e.target.value) || 0 })} className="mt-1" /></div>
               <div className="space-y-2 pt-6">
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>DVR</Label><Switch checked={config.dvrEnabled} onCheckedChange={(checked) => patchConfig({ dvrEnabled: checked, dvrWindowSec: checked ? Math.max(config.dvrWindowSec, 3600) : 0 })} /></div>
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>Faible latence</Label><Switch checked={config.latency !== "normal"} onCheckedChange={(checked) => patchConfig({ latency: checked ? "low" : "normal" })} /></div>
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>Retour arrière</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => patchConfig({ timeshift: checked })} /></div>
-                <div className="flex items-center justify-between rounded-lg border border-[#262b38] bg-[#1b1f2a] px-3 py-2"><Label>DRM</Label><Switch checked={config.drmEnabled} onCheckedChange={(checked) => patchConfig({ drmEnabled: checked })} /></div>
+                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>DVR</Label><Switch checked={config.dvrEnabled} onCheckedChange={(checked) => patchConfig({ dvrEnabled: checked, dvrWindowSec: checked ? Math.max(config.dvrWindowSec, 3600) : 0 })} /></div>
+                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Faible latence</Label><Switch checked={config.latency !== "normal"} onCheckedChange={(checked) => patchConfig({ latency: checked ? "low" : "normal" })} /></div>
+                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Retour arrière</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => patchConfig({ timeshift: checked })} /></div>
+                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>DRM</Label><Switch checked={config.drmEnabled} onCheckedChange={(checked) => patchConfig({ drmEnabled: checked })} /></div>
               </div>
             </div>
-            <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3">
+            <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3">
               <div className="flex flex-wrap gap-2">
                 {[
                   { value: "none", label: "Aucun" },
@@ -904,35 +904,35 @@ export default function StreamDetailPage() {
                     size="sm"
                     disabled={!config.drmEnabled}
                     onClick={() => setDrmConfig((prev) => ({ ...prev, provider: option.value as DrmProvider }))}
-                    className={drmConfig.provider === option.value ? "border-[#4c82fb]/40 bg-[#1c2a4a] text-[#4c82fb]" : "border-[#262b38] bg-[#151821] text-[#e6eaf2]"}
+                    className={drmConfig.provider === option.value ? "border-[#4c82fb]/40 bg-[#1c2a4a] text-[#4c82fb]" : "border-[#262b38] bg-[#151821] text-slate-100"}
                   >
                     {option.label}
                   </Button>
                 ))}
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <div><Label>URL licence Widevine</Label><Input value={drmConfig.widevineLicenseUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, widevineLicenseUrl: e.target.value }))} className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]" /></div>
-                <div><Label>URL licence FairPlay</Label><Input value={drmConfig.fairplayLicenseUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayLicenseUrl: e.target.value }))} className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]" /></div>
+                <div><Label>URL licence Widevine</Label><Input value={drmConfig.widevineLicenseUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, widevineLicenseUrl: e.target.value }))} className="mt-1" /></div>
+                <div><Label>URL licence FairPlay</Label><Input value={drmConfig.fairplayLicenseUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayLicenseUrl: e.target.value }))} className="mt-1" /></div>
               </div>
-              <div className="mt-3"><Label>URL certificat FairPlay</Label><Input value={drmConfig.fairplayCertificateUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayCertificateUrl: e.target.value }))} className="mt-1 border-[#262b38] bg-[#151821] text-[#e6eaf2]" /></div>
-              <p className="mt-2 text-xs text-[#8b93a7]">Les endpoints DRM restent stockés localement tant que le backend DRM dédié n’est pas activé.</p>
+              <div className="mt-3"><Label>URL certificat FairPlay</Label><Input value={drmConfig.fairplayCertificateUrl} disabled={!config.drmEnabled} onChange={(e) => setDrmConfig((prev) => ({ ...prev, fairplayCertificateUrl: e.target.value }))} className="mt-1" /></div>
+              <p className="mt-2 text-xs text-slate-400">Les endpoints DRM restent stockés localement tant que le backend DRM dédié n’est pas activé.</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <div><Label>Pays autorisés</Label><Input value={config.geoAllow} onChange={(e) => patchConfig({ geoAllow: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
-              <div><Label>Pays bloqués</Label><Input value={config.geoBlock} onChange={(e) => patchConfig({ geoBlock: e.target.value })} className="mt-1 border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
+              <div><Label>Pays autorisés</Label><Input value={config.geoAllow} onChange={(e) => patchConfig({ geoAllow: e.target.value })} className="mt-1" /></div>
+              <div><Label>Pays bloqués</Label><Input value={config.geoBlock} onChange={(e) => patchConfig({ geoBlock: e.target.value })} className="mt-1" /></div>
             </div>
-            <div><Label>Mappage sous-titres (lang|url ou lang|label|url)</Label><Textarea value={config.captionsText} onChange={(e) => patchConfig({ captionsText: e.target.value })} className="mt-1 min-h-[120px] border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" /></div>
-            <div className="flex justify-end"><Button onClick={onSaveConfig} disabled={saving} className="bg-[#4c82fb] text-white hover:bg-[#3b6fe0]">{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}Enregistrer</Button></div>
+            <div><Label>Mappage sous-titres (lang|url ou lang|label|url)</Label><Textarea value={config.captionsText} onChange={(e) => patchConfig({ captionsText: e.target.value })} className="mt-1 min-h-[120px]" /></div>
+            <div className="flex justify-end"><Button onClick={onSaveConfig} disabled={saving} >{saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Save className="mr-2 size-4" />}Enregistrer</Button></div>
           </div>
-          <div className="space-y-4 rounded-xl border border-[#262b38] bg-[#151821] p-4">
+          <div className="console-panel space-y-4 p-4">
             <h3 className="text-sm font-semibold">Test de géoblocage</h3>
-            <Input value={geoProbe} onChange={(e) => setGeoProbe(e.target.value)} placeholder="FR" className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]" />
-            {geoResult ? <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3"><StatusBadge status={geoResult.status} /><p className="mt-2 text-sm text-[#8b93a7]">{geoResult.text}</p></div> : null}
-            <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3 text-sm text-[#8b93a7]">
+            <Input value={geoProbe} onChange={(e) => setGeoProbe(e.target.value)} placeholder="FR"  />
+            {geoResult ? <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3"><StatusBadge status={geoResult.status} /><p className="mt-2 text-sm text-slate-400">{geoResult.text}</p></div> : null}
+            <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
               Checklist de mise en service : manifest accessible, DRM OK, géoblocage vérifié, EPG publié.
             </div>
-            <div className="rounded-lg border border-[#262b38] bg-[#1b1f2a] p-3 text-sm text-[#8b93a7]">
-              État d’édition : <span className="font-medium text-[#e6eaf2]">{configDirty ? "Modifications non sauvegardées" : "À jour"}</span>
+            <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
+              État d’édition : <span className="font-medium text-slate-100">{configDirty ? "Modifications non sauvegardées" : "À jour"}</span>
             </div>
           </div>
         </TabsContent>
@@ -940,11 +940,11 @@ export default function StreamDetailPage() {
         <TabsContent value="analytics" className="mt-4">
           <DataTableShell title="Série 24 h" description="Audience, bitrate et erreurs" loading={analyticsLoading} isEmpty={!analyticsLoading && series.length === 0} emptyTitle="Pas de métriques" emptyDescription="Aucune mesure sur 24 h.">
             <Table>
-              <TableHeader className="bg-[#1b1f2a]"><TableRow className="border-[#262b38]"><TableHead>Horodatage</TableHead><TableHead>Audience</TableHead><TableHead>Bitrate</TableHead><TableHead>Erreurs</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Horodatage</TableHead><TableHead>Audience</TableHead><TableHead>Bitrate</TableHead><TableHead>Erreurs</TableHead></TableRow></TableHeader>
               <TableBody>
                 {series.map((row) => (
-                  <TableRow key={row.ts} className="border-[#262b38] hover:bg-white/[0.03]">
-                    <TableCell className="text-sm text-[#8b93a7]">{dateLabel(row.ts)}</TableCell>
+                  <TableRow key={row.ts} >
+                    <TableCell className="text-sm text-slate-400">{dateLabel(row.ts)}</TableCell>
                     <TableCell>{row.viewers}</TableCell>
                     <TableCell>{row.bitrateKbps} kbps</TableCell>
                     <TableCell>{row.errors}</TableCell>
@@ -958,14 +958,14 @@ export default function StreamDetailPage() {
         <TabsContent value="activity" className="mt-4">
           <DataTableShell title="Journal d’audit" description="Qui a changé quoi sur ce flux" isEmpty={audits.length === 0} emptyTitle="Aucun événement" emptyDescription="L’audit est alimenté à chaque action sensible.">
             <Table>
-              <TableHeader className="bg-[#1b1f2a]"><TableRow className="border-[#262b38]"><TableHead>Date</TableHead><TableHead>Acteur</TableHead><TableHead>Action</TableHead><TableHead>Détails</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acteur</TableHead><TableHead>Action</TableHead><TableHead>Détails</TableHead></TableRow></TableHeader>
               <TableBody>
                 {audits.map((row) => (
-                  <TableRow key={row.id} className="border-[#262b38] hover:bg-white/[0.03]">
-                    <TableCell className="text-sm text-[#8b93a7]">{dateLabel(row.at)}</TableCell>
+                  <TableRow key={row.id} >
+                    <TableCell className="text-sm text-slate-400">{dateLabel(row.at)}</TableCell>
                     <TableCell>{row.actor}</TableCell>
-                    <TableCell><Badge className="border-[#262b38] bg-[#1b1f2a] text-[#e6eaf2]">{row.action}</Badge></TableCell>
-                    <TableCell className="text-sm text-[#8b93a7]">{row.details}</TableCell>
+                    <TableCell><Badge >{row.action}</Badge></TableCell>
+                    <TableCell className="text-sm text-slate-400">{row.details}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -976,3 +976,5 @@ export default function StreamDetailPage() {
     </PageShell>
   );
 }
+
+

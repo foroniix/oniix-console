@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Film } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Film, RefreshCw } from "lucide-react";
 
 import { DataTableShell } from "@/components/console/data-table-shell";
+import { KpiCard, KpiRow } from "@/components/console/kpi";
 import { PageHeader } from "@/components/console/page-header";
 import { PageShell } from "@/components/console/page-shell";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Series {
@@ -20,52 +22,75 @@ interface Series {
 export default function AdminSeriesPage() {
   const [series, setSeries] = useState<Series[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const load = async (soft = false) => {
+    if (soft) setRefreshing(true);
+    else setLoading(true);
+
+    setError(null);
+
+    try {
+      const response = await fetch("/admin/api/series", { cache: "no-store" });
+      const payload = await response.json().catch(() => []);
+      setSeries(Array.isArray(payload) ? payload : []);
+    } catch {
+      setError("Impossible de charger les series.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
-
-    void fetch("/admin/api/series", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setSeries(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Impossible de charger les séries.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    void load(false);
   }, []);
+
+  const stats = useMemo(() => {
+    const published = series.filter((item) => item.published).length;
+    return {
+      total: series.length,
+      published,
+      draft: Math.max(0, series.length - published),
+    };
+  }, [series]);
 
   return (
     <PageShell>
       <PageHeader
-        title="Séries"
-        subtitle="Catalogue éditorial des séries et état de publication."
-        breadcrumbs={[
-          { label: "Oniix Console", href: "/dashboard" },
-          { label: "Séries" },
-        ]}
+        title="Series"
+        subtitle="Catalogue editorial des series, statut de publication et lisibilite du portefeuille."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Series" }]}
         icon={<Film className="size-5" />}
+        actions={
+          <Button variant="outline" onClick={() => void load(true)}>
+            <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
+            Actualiser
+          </Button>
+        }
       />
 
+      <KpiRow>
+        <KpiCard label="Series total" value={stats.total} hint="Nombre de fiches presentes dans le catalogue." icon={<Film className="size-4" />} loading={loading} />
+        <KpiCard label="Publiees" value={stats.published} hint="Series visibles dans le parcours de diffusion." tone="success" icon={<RefreshCw className="size-4" />} loading={loading} />
+        <KpiCard label="Brouillons" value={stats.draft} hint="Fiches encore en preparation editoriale." tone="warning" icon={<Film className="size-4" />} loading={loading} />
+        <KpiCard label="Couverture" value={stats.total > 0 ? `${Math.round((stats.published / stats.total) * 100)}%` : "0%"} hint="Taux actuel de publication du catalogue." tone="info" icon={<Film className="size-4" />} loading={loading} />
+      </KpiRow>
+
       <DataTableShell
-        title="Catalogue séries"
-        description={`${series.length} série(s) suivie(s).`}
+        title="Catalogue series"
+        description={`${series.length} serie(s) suivie(s).`}
         loading={loading}
         error={error}
+        onRetry={() => void load(false)}
         isEmpty={!loading && !error && series.length === 0}
-        emptyTitle="Aucune série"
-        emptyDescription="Le catalogue séries est encore vide."
+        emptyTitle="Aucune serie"
+        emptyDescription="Le catalogue series est encore vide."
       >
         <Table>
           <TableHeader>
-            <TableRow className="border-slate-200/80 dark:border-white/10">
+            <TableRow>
               <TableHead>Titre</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Publication</TableHead>
@@ -73,21 +98,15 @@ export default function AdminSeriesPage() {
           </TableHeader>
           <TableBody>
             {series.map((item) => (
-              <TableRow key={item.id} className="border-slate-200/80 dark:border-white/10">
-                <TableCell className="font-medium text-slate-950 dark:text-white">{item.title}</TableCell>
-                <TableCell className="text-slate-600 dark:text-slate-300">
-                  {item.description?.trim() || "Aucune description"}
-                </TableCell>
+              <TableRow key={item.id}>
+                <TableCell className="font-medium text-white">{item.title}</TableCell>
+                <TableCell className="text-slate-300">{item.description?.trim() || "Aucune description"}</TableCell>
                 <TableCell>
-                  <Badge
-                    className={
-                      item.published
-                        ? "border-emerald-300/70 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300"
-                        : "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300"
-                    }
-                  >
-                    {item.published ? "Publiée" : "Brouillon"}
-                  </Badge>
+                  {item.published ? (
+                    <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-200">Publiee</Badge>
+                  ) : (
+                    <Badge variant="secondary">Brouillon</Badge>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

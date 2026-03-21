@@ -83,24 +83,20 @@ export default function Topbar() {
   }, [router]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#223249] bg-[rgba(8,16,28,0.78)] backdrop-blur-xl">
-      <div className="flex h-16 items-center gap-3 px-3 sm:px-5 lg:px-6">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-[rgba(8,12,18,0.72)] backdrop-blur-2xl">
+      <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
         <Sheet>
           <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 lg:hidden"
-            >
+            <Button variant="outline" size="icon" className="lg:hidden">
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
 
-          <SheetContent side="left" className="w-[320px] border-[#223249] bg-[#08101c] p-0 text-white">
-            <div className="border-b border-[#223249] px-4 py-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Navigation</p>
-              <div className="mt-3">
-                <OniixLogo size="sm" subtitle="Pilotage OTT, analytics et opérations" />
+          <SheetContent side="left" className="w-[340px] p-0">
+            <div className="border-b border-white/10 px-5 py-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Navigation</p>
+              <div className="mt-4">
+                <OniixLogo size="sm" subtitle="Console d'exploitation OTT" />
               </div>
             </div>
             <SidebarNav />
@@ -108,51 +104,48 @@ export default function Topbar() {
         </Sheet>
 
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="hidden text-slate-500 sm:inline">{CONSOLE_PRODUCT_NAME}</span>
-            <ChevronRight className="hidden size-4 text-slate-600 sm:inline" />
-            <span className="truncate font-semibold text-white">{route.label}</span>
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            <span className="hidden sm:inline">{CONSOLE_PRODUCT_NAME}</span>
+            <ChevronRight className="hidden size-3.5 sm:inline" />
+            <span>{route.label}</span>
           </div>
-          <p className="hidden text-xs text-slate-400 sm:block">{route.description}</p>
+          <div className="mt-1 flex min-w-0 items-center gap-3">
+            <h1 className="truncate text-lg font-semibold tracking-tight text-white">{route.label}</h1>
+            <span className="hidden truncate text-sm text-slate-500 xl:inline">{route.description}</span>
+          </div>
         </div>
 
-        <form onSubmit={onSearchSubmit} className="relative ml-auto hidden w-full max-w-[460px] md:block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+        <form onSubmit={onSearchSubmit} className="relative ml-auto hidden w-full max-w-[480px] lg:block">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Rechercher une page, une chaîne ou une action"
-            className="h-10 rounded-2xl border-[#223249] bg-[rgba(255,255,255,0.04)] pl-9 pr-16 text-sm text-white placeholder:text-slate-500"
+            placeholder="Rechercher une page ou une action"
+            className="h-11 pl-10 pr-16"
           />
-          <span className="pointer-events-none absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-xl border border-[#223249] bg-[rgba(255,255,255,0.03)] px-2 py-1 text-[10px] text-slate-500">
+          <span className="pointer-events-none absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             <Command className="size-3" />K
           </span>
         </form>
 
         <div className="flex items-center gap-2">
-          <Badge className="hidden border border-sky-400/20 bg-sky-500/10 text-sky-200 lg:inline-flex">
+          <Badge variant="secondary" className="hidden xl:inline-flex">
             {workspaceName}
           </Badge>
-          <Badge className="hidden border border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-200 md:inline-flex">
+          <Badge variant="outline" className="hidden md:inline-flex">
             {formatRoleLabel(role)}
           </Badge>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="hidden rounded-2xl border-[#223249] bg-[rgba(255,255,255,0.03)] text-white sm:inline-flex"
-              >
+              <Button variant="outline" size="icon" className="hidden sm:inline-flex">
                 <Plus className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56 border-[#223249] bg-[#0d1726] text-white"
-            >
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/channels">Nouvelle chaîne</Link>
+                <Link href="/channels">Nouvelle chaine</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/streams">Nouveau direct</Link>
@@ -163,13 +156,9 @@ export default function Topbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            asChild
-            variant="outline"
-            className="hidden rounded-2xl border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 xl:inline-flex"
-          >
+          <Button asChild variant="outline" className="hidden xl:inline-flex">
             <SupportMailLink>
-              <LifeBuoy className="mr-2 size-4" />
+              <LifeBuoy className="size-4" />
               Support
             </SupportMailLink>
           </Button>
@@ -178,47 +167,40 @@ export default function Topbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-10 gap-2 rounded-xl px-2 text-slate-100 hover:bg-white/5 sm:px-3">
-                <Avatar className="size-8 border border-[#223249]">
+              <Button variant="ghost" className="h-11 gap-2 rounded-[18px] px-2 text-slate-100 hover:text-white sm:px-3">
+                <Avatar className="size-9 border border-white/10">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-                  <AvatarFallback className="bg-[#10203d] text-[#7cb4ff]">
+                  <AvatarFallback className="bg-[rgba(122,183,255,0.16)] text-[var(--brand-primary)]">
                     {buildInitials(displayName, email)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="hidden text-left sm:block">
-                  <span className="block text-xs font-semibold text-white">{displayName}</span>
-                  <span className="block text-[11px] text-slate-400">{workspaceName}</span>
+                  <span className="block text-sm font-semibold text-white">{displayName}</span>
+                  <span className="block text-[11px] text-slate-500">{workspaceName}</span>
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-60 border-[#223249] bg-[#0d1726] text-white"
-            >
-              <DropdownMenuLabel className="space-y-1 px-2 py-2">
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel className="space-y-1 normal-case tracking-normal text-left">
                 <p className="truncate text-sm font-semibold text-white">{displayName}</p>
-                <p className="truncate text-xs text-slate-400">
-                  {email ?? CONSOLE_PRODUCT_DESCRIPTION}
-                </p>
+                <p className="truncate text-xs text-slate-400">{email ?? CONSOLE_PRODUCT_DESCRIPTION}</p>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-[#223249]" />
+              <DropdownMenuSeparator />
               <DropdownMenuItem>
-                <UserCircle2 className="mr-2 size-4" />
+                <UserCircle2 className="size-4" />
                 Mon compte
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <SupportMailLink>
-                  <Mail className="mr-2 size-4" />
+                  <Mail className="size-4" />
                   <span>Contacter le support</span>
-                  <span className="ml-auto text-[11px] text-slate-500">{SUPPORT_EMAIL}</span>
+                  <span className="ml-auto text-[11px] uppercase tracking-[0.12em] text-slate-500">{SUPPORT_EMAIL}</span>
                 </SupportMailLink>
               </DropdownMenuItem>
               {workspaces.length > 1 ? (
                 <>
-                  <DropdownMenuSeparator className="bg-[#223249]" />
-                  <DropdownMenuLabel className="px-2 py-2 text-xs uppercase tracking-[0.14em] text-slate-500">
-                    Espaces de travail
-                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Espaces</DropdownMenuLabel>
                   {workspaces.map((workspace) => {
                     const isSwitching = switchingWorkspaceId === workspace.id;
                     return (
@@ -233,12 +215,12 @@ export default function Topbar() {
                         {workspace.isActive ? (
                           <Check className="size-4 text-emerald-400" />
                         ) : isSwitching ? (
-                          <RefreshCw className="size-4 animate-spin text-sky-400" />
+                          <RefreshCw className="size-4 animate-spin text-[var(--brand-primary)]" />
                         ) : (
                           <span className="size-4" />
                         )}
                         <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] uppercase tracking-[0.12em] text-slate-500">
                           {formatRoleLabel(workspace.role)}
                         </span>
                       </DropdownMenuItem>
@@ -246,10 +228,10 @@ export default function Topbar() {
                   })}
                 </>
               ) : null}
-              <DropdownMenuSeparator className="bg-[#223249]" />
-              <DropdownMenuItem onClick={handleLogout} className="text-rose-300 focus:text-rose-200">
-                <LogOut className="mr-2 size-4" />
-                Déconnexion
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+                <LogOut className="size-4" />
+                Deconnexion
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

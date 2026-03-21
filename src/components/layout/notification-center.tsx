@@ -60,25 +60,25 @@ function getSeverityMeta(severity: NotificationSeverity) {
     case "success":
       return {
         icon: CircleCheck,
-        badgeClassName: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
-        label: "Succès",
+        badgeClassName: "border-emerald-500/20 bg-emerald-500/12 text-emerald-200",
+        label: "Succes",
       };
     case "warning":
       return {
         icon: CircleAlert,
-        badgeClassName: "border-amber-500/25 bg-amber-500/10 text-amber-300",
+        badgeClassName: "border-amber-500/20 bg-amber-500/12 text-amber-200",
         label: "Attention",
       };
     case "critical":
       return {
         icon: BellRing,
-        badgeClassName: "border-rose-500/25 bg-rose-500/10 text-rose-300",
+        badgeClassName: "border-rose-500/20 bg-rose-500/12 text-rose-200",
         label: "Critique",
       };
     default:
       return {
         icon: Info,
-        badgeClassName: "border-sky-500/25 bg-sky-500/10 text-sky-300",
+        badgeClassName: "border-sky-500/20 bg-sky-500/12 text-sky-200",
         label: "Info",
       };
   }
@@ -172,7 +172,7 @@ export default function NotificationCenter() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative hidden border-[#262b38] bg-[#1b1f2a] sm:inline-flex">
+        <Button variant="outline" size="icon" className="relative hidden sm:inline-flex">
           <Bell className="size-4" />
           {unreadCount > 0 ? (
             <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
@@ -182,27 +182,19 @@ export default function NotificationCenter() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full border-l border-[#262b38] bg-[#151821] p-0 text-[#e6eaf2] sm:max-w-md">
-        <SheetHeader className="border-b border-[#262b38] px-5 py-4">
+      <SheetContent side="right" className="w-full p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-white/10 px-5 py-4">
           <div className="flex items-start justify-between gap-3 pr-8">
             <div className="space-y-1">
-              <SheetTitle className="text-base text-[#e6eaf2]">Notifications</SheetTitle>
-              <SheetDescription className="text-[#8b93a7]">
-                {unreadCount > 0
-                  ? `${unreadCount} notification(s) non lue(s)`
-                  : "Aucune notification non lue"}
+              <SheetTitle>Notifications</SheetTitle>
+              <SheetDescription>
+                {unreadCount > 0 ? `${unreadCount} notification(s) non lue(s)` : "Aucune notification non lue"}
               </SheetDescription>
             </div>
 
             {unreadCount > 0 ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => void markAllRead()}
-                className="text-[#8b93a7] hover:text-[#e6eaf2]"
-              >
-                <CheckCheck className="mr-2 size-4" />
+              <Button type="button" variant="ghost" size="sm" onClick={() => void markAllRead()}>
+                <CheckCheck className="size-4" />
                 Tout lire
               </Button>
             ) : null}
@@ -211,17 +203,17 @@ export default function NotificationCenter() {
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {loading ? (
-            <div className="flex min-h-[220px] items-center justify-center text-sm text-[#8b93a7]">
+            <div className="flex min-h-[220px] items-center justify-center text-sm text-slate-400">
               <Loader2 className="mr-2 size-4 animate-spin" />
               Chargement des notifications...
             </div>
           ) : notifications.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#262b38] bg-[#1b1f2a] p-5 text-sm text-[#8b93a7]">
-              <p className="font-medium text-[#e6eaf2]">Aucune notification pour le moment.</p>
+            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 text-sm text-slate-400">
+              <p className="font-medium text-white">Aucune notification pour le moment.</p>
               <p className="mt-2">
-                La plateforme vous remontera ici les incidents, les actions requises et les messages opérationnels.
+                Les incidents, validations et actions prioritaires remonteront ici.
               </p>
-              <SupportMailLink className="mt-4 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
+              <SupportMailLink className="mt-4 inline-flex text-sm font-medium text-[var(--brand-primary)] hover:text-white">
                 Contacter le support
               </SupportMailLink>
             </div>
@@ -234,31 +226,27 @@ export default function NotificationCenter() {
                 return (
                   <div
                     key={item.id}
-                    className={`rounded-2xl border px-4 py-4 transition ${
+                    className={`rounded-[24px] border px-4 py-4 transition ${
                       item.isRead
-                        ? "border-[#262b38] bg-[#121721]"
-                        : "border-[#4c82fb]/25 bg-[#1a2130]"
+                        ? "border-white/8 bg-white/[0.03]"
+                        : "border-[#7ab7ff]/18 bg-[rgba(122,183,255,0.08)]"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <span className={`mt-0.5 inline-flex size-9 items-center justify-center rounded-xl ${meta.badgeClassName}`}>
+                      <span className={`mt-0.5 inline-flex size-10 items-center justify-center rounded-[16px] ${meta.badgeClassName}`}>
                         <Icon className="size-4" />
                       </span>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-[#e6eaf2]">{item.title}</p>
-                          {!item.isRead ? (
-                            <Badge className="border border-[#4c82fb]/25 bg-[#4c82fb]/10 text-[#9cbcff]">
-                              Nouveau
-                            </Badge>
-                          ) : null}
+                          <p className="text-sm font-semibold text-white">{item.title}</p>
+                          {!item.isRead ? <Badge>Nouveau</Badge> : null}
                           <Badge className={meta.badgeClassName}>{meta.label}</Badge>
                         </div>
 
-                        <p className="mt-2 text-sm leading-6 text-[#b8c0d4]">{item.body}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-300">{item.body}</p>
 
-                        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#8b93a7]">
+                        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                           <span>{formatRelativeTime(item.createdAt)}</span>
                           {refreshing ? (
                             <span className="inline-flex items-center gap-1">
@@ -270,27 +258,21 @@ export default function NotificationCenter() {
 
                         <div className="mt-4 flex flex-wrap items-center gap-2">
                           {!item.isRead ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => void markOne(item.id)}
-                              className="border-[#262b38] bg-[#0f141d] text-[#e6eaf2]"
-                            >
+                            <Button type="button" variant="outline" size="sm" onClick={() => void markOne(item.id)}>
                               Marquer comme lue
                             </Button>
                           ) : null}
 
                           {item.actionUrl ? (
                             isExternalUrl(item.actionUrl) ? (
-                              <Button asChild variant="ghost" size="sm" className="text-[#4c82fb] hover:text-[#7ea8ff]">
+                              <Button asChild variant="ghost" size="sm" className="text-[var(--brand-primary)] hover:text-white">
                                 <a href={item.actionUrl} onClick={() => void markOne(item.id)}>
                                   {item.actionLabel ?? "Ouvrir"}
-                                  <ExternalLink className="ml-2 size-4" />
+                                  <ExternalLink className="size-4" />
                                 </a>
                               </Button>
                             ) : (
-                              <Button asChild variant="ghost" size="sm" className="text-[#4c82fb] hover:text-[#7ea8ff]">
+                              <Button asChild variant="ghost" size="sm" className="text-[var(--brand-primary)] hover:text-white">
                                 <Link
                                   href={item.actionUrl}
                                   onClick={() => {
@@ -299,7 +281,7 @@ export default function NotificationCenter() {
                                   }}
                                 >
                                   {item.actionLabel ?? "Ouvrir"}
-                                  <ExternalLink className="ml-2 size-4" />
+                                  <ExternalLink className="size-4" />
                                 </Link>
                               </Button>
                             )
@@ -314,12 +296,12 @@ export default function NotificationCenter() {
           )}
         </div>
 
-        <Separator className="bg-[#262b38]" />
+        <Separator className="bg-white/8" />
 
-        <div className="px-5 py-4 text-xs text-[#8b93a7]">
-          <p className="font-medium text-[#e6eaf2]">Besoin d&apos;aide ?</p>
-          <p className="mt-1">Le support Oniix reste joignable pour les incidents, accès et besoins d&apos;onboarding.</p>
-          <SupportMailLink className="mt-3 inline-flex text-sm font-medium text-[#4c82fb] hover:underline">
+        <div className="px-5 py-4 text-xs text-slate-500">
+          <p className="font-medium text-white">Besoin d&apos;aide ?</p>
+          <p className="mt-1">Le support Oniix reste disponible pour les incidents, acces et demandes d&apos;onboarding.</p>
+          <SupportMailLink className="mt-3 inline-flex text-sm font-medium text-[var(--brand-primary)] hover:text-white">
             support@oniix.space
           </SupportMailLink>
         </div>
