@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { auditLog } from "../../_utils/audit";
-import { canTransitionSlotStatus, windowsOverlap } from "../../_utils/programming";
+import {
+  canTransitionSlotStatus,
+  deriveProgramStatusFromSlotStatus,
+  windowsOverlap,
+} from "../../_utils/programming";
 import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
@@ -34,6 +38,14 @@ function invalidTransitionResponse() {
 
 function conflictResponse() {
   return NextResponse.json({ error: "Conflit horaire avec un autre slot sur cette chaine." }, { status: 409 });
+}
+
+function missingChannelResponse() {
+  return NextResponse.json({ error: "La chaine de diffusion est requise." }, { status: 400 });
+}
+
+function missingEndResponse() {
+  return NextResponse.json({ error: "L'heure de fin est requise pour planifier une diffusion." }, { status: 400 });
 }
 
 async function findSlotConflict(params: {
@@ -98,7 +110,7 @@ export async function PATCH(
 
   const { data: current, error: currentError } = await ctx.sb
     .from("program_slots")
-    .select("id, starts_at, ends_at, slot_status, channel_id")
+    .select("id, program_id, starts_at, ends_at, slot_status, channel_id")
     .eq("tenant_id", ctx.tenant_id)
     .eq("id", id)
     .maybeSingle();
@@ -152,8 +164,29 @@ export async function PATCH(
 
   if (endsAtIso && startsAtIso && endsAtIso <= startsAtIso) return invalidResponse();
 
+  const nextProgramId = body.programId ?? current.program_id;
+  const { data: program, error: currentProgramError } = await ctx.sb
+    .from("programs")
+    .select("id, channel_id, status, published_at")
+    .eq("tenant_id", ctx.tenant_id)
+    .eq("id", nextProgramId)
+    .maybeSingle();
+
+  if (currentProgramError) {
+    console.error("Program lookup for slot status sync error", {
+      error: currentProgramError.message,
+      tenantId: ctx.tenant_id,
+      id,
+      programId: nextProgramId,
+    });
+    return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
+  if (!program) return notFoundResponse();
+
   const nextChannelId = body.channelId !== undefined ? body.channelId : current.channel_id;
   const nextSlotStatus = body.slotStatus ?? current.slot_status;
+  if (nextSlotStatus !== "cancelled" && !nextChannelId) return missingChannelResponse();
+  if (nextSlotStatus !== "cancelled" && !endsAtIso) return missingEndResponse();
   if (nextChannelId && nextSlotStatus !== "cancelled") {
     const { error: conflictLookupError, conflictId } = await findSlotConflict({
       sb: ctx.sb,
@@ -199,6 +232,43 @@ export async function PATCH(
     if (isNotFound(error)) return notFoundResponse();
     console.error("Program slot update error", { error: error.message, tenantId: ctx.tenant_id, id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
+
+  const nextProgramStatus = deriveProgramStatusFromSlotStatus(
+    program.status as "draft" | "scheduled" | "published" | "cancelled",
+    data.slot_status as "scheduled" | "published" | "cancelled"
+  );
+  const syncProgramUpdate: Record<string, unknown> = {
+    updated_at: updateData.updated_at,
+    updated_by: ctx.user_id,
+  };
+
+  if (nextProgramStatus !== program.status) {
+    syncProgramUpdate.status = nextProgramStatus;
+  }
+  if (nextProgramStatus === "published") {
+    syncProgramUpdate.published_at = program.published_at ?? updateData.updated_at;
+  }
+  if (!program.channel_id && nextChannelId) {
+    syncProgramUpdate.channel_id = nextChannelId;
+  }
+
+  if (Object.keys(syncProgramUpdate).length > 2) {
+    const { error: syncProgramError } = await ctx.sb
+      .from("programs")
+      .update(syncProgramUpdate)
+      .eq("tenant_id", ctx.tenant_id)
+      .eq("id", nextProgramId);
+
+    if (syncProgramError) {
+      console.error("Program sync after slot update error", {
+        error: syncProgramError.message,
+        tenantId: ctx.tenant_id,
+        id,
+        programId: nextProgramId,
+      });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
   }
 
   await auditLog({

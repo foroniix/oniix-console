@@ -59,6 +59,39 @@ const STUDIO_LANES = [
   },
 ];
 
+const HOME_STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      name: "Oniix",
+      url: "https://oniix.space",
+      email: "support@oniix.space",
+      logo: "https://oniix.space/icon.svg",
+      sameAs: ["https://oniix.space"],
+    },
+    {
+      "@type": "WebSite",
+      name: "Oniix",
+      url: "https://oniix.space",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://oniix.space/login",
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@type": "SoftwareApplication",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      name: "Oniix",
+      description:
+        "Plateforme de pilotage OTT pour chaînes TV, programmation, analytics, distribution web et application mobile.",
+      url: "https://oniix.space",
+    },
+  ],
+};
+
 export default async function HomePage() {
   const accessCookieName = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
   const cookieStore = await cookies();
@@ -67,6 +100,10 @@ export default async function HomePage() {
 
   return (
     <main className="relative min-h-dvh overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(74,144,226,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(33,84,164,0.10),transparent_22%),linear-gradient(180deg,#060d17,#091220_46%,#0c1626)] text-slate-100">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(HOME_STRUCTURED_DATA) }}
+      />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#19356a]/38 blur-[140px]" />
         <div className="absolute right-[-8%] top-20 h-[340px] w-[340px] rounded-full bg-[#0f766e]/16 blur-[140px]" />

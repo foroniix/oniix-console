@@ -44,16 +44,29 @@ function unauthorizedResponse() {
   );
 }
 
+function readBearerToken(request?: Request | null) {
+  const authHeader = (request?.headers.get("authorization") ?? "").trim();
+  if (!authHeader.toLowerCase().startsWith("bearer ")) return "";
+  return authHeader.slice(7).trim();
+}
+
 /**
- * Require an authenticated user based on the access token cookie.
+ * Require an authenticated user based on a bearer token or the access token cookie.
  * Returns either {ctx} or a NextResponse (401).
  */
-export async function requireAuth(): Promise<{ ctx: AuthContext } | { res: NextResponse }> {
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get(ACCESS_COOKIE)?.value;
+export async function requireAuth(
+  request?: Request | null
+): Promise<{ ctx: AuthContext } | { res: NextResponse }> {
+  const headerToken = readBearerToken(request);
+  let accessToken = headerToken;
 
   if (!accessToken) {
-    warn("Missing access token cookie");
+    const cookieStore = await cookies();
+    accessToken = cookieStore.get(ACCESS_COOKIE)?.value ?? "";
+  }
+
+  if (!accessToken) {
+    warn("Missing access token");
     return { res: unauthorizedResponse() };
   }
 
@@ -65,8 +78,9 @@ export async function requireAuth(): Promise<{ ctx: AuthContext } | { res: NextR
     }
 
     const user = data.user;
-    const role = (user.app_metadata as any)?.role ?? null;
-    const tenantId = (user.app_metadata as any)?.tenant_id ?? null;
+    const appMetadata = (user.app_metadata ?? {}) as Record<string, unknown>;
+    const role = typeof appMetadata.role === "string" ? appMetadata.role : null;
+    const tenantId = typeof appMetadata.tenant_id === "string" ? appMetadata.tenant_id : null;
 
     return { ctx: { accessToken, userId: user.id, tenantId, role, user } };
   } catch {

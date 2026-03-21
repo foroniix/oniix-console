@@ -12,7 +12,7 @@ function isMissingTableError(code?: string | null) {
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth();
+  const auth = await requireAuth(request);
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
 

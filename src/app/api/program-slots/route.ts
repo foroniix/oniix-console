@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { auditLog } from "../_utils/audit";
-import { windowsOverlap } from "../_utils/programming";
+import { deriveProgramStatusFromSlotStatus, windowsOverlap } from "../_utils/programming";
 import { getTenantContext, jsonError, requireTenantCapability } from "../tenant/_utils";
 import { parseJson, parseQuery } from "../_utils/validate";
 
@@ -26,6 +26,14 @@ function notFoundResponse() {
 
 function conflictResponse() {
   return NextResponse.json({ error: "Conflit horaire avec un autre slot sur cette chaine." }, { status: 409 });
+}
+
+function missingChannelResponse() {
+  return NextResponse.json({ error: "La chaine de diffusion est requise." }, { status: 400 });
+}
+
+function missingEndResponse() {
+  return NextResponse.json({ error: "L'heure de fin est requise pour planifier une diffusion." }, { status: 400 });
 }
 
 async function findSlotConflict(params: {
@@ -141,7 +149,7 @@ export async function POST(req: NextRequest) {
 
   const { data: program, error: programError } = await ctx.sb
     .from("programs")
-    .select("id, channel_id")
+    .select("id, channel_id, status, published_at")
     .eq("tenant_id", ctx.tenant_id)
     .eq("id", body.programId)
     .maybeSingle();
@@ -159,6 +167,8 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   const effectiveChannelId = body.channelId ?? program.channel_id ?? null;
   const nextStatus = body.slotStatus ?? "scheduled";
+  if (nextStatus !== "cancelled" && !effectiveChannelId) return missingChannelResponse();
+  if (nextStatus !== "cancelled" && !endsAtIso) return missingEndResponse();
 
   if (effectiveChannelId && nextStatus !== "cancelled") {
     const { error: conflictLookupError, conflictId } = await findSlotConflict({
@@ -200,6 +210,42 @@ export async function POST(req: NextRequest) {
   if (error) {
     console.error("Program slot create error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+  }
+
+  const nextProgramStatus = deriveProgramStatusFromSlotStatus(
+    program.status as "draft" | "scheduled" | "published" | "cancelled",
+    nextStatus
+  );
+  const syncProgramUpdate: Record<string, unknown> = {
+    updated_at: now,
+    updated_by: ctx.user_id,
+  };
+
+  if (nextProgramStatus !== program.status) {
+    syncProgramUpdate.status = nextProgramStatus;
+  }
+  if (nextProgramStatus === "published") {
+    syncProgramUpdate.published_at = program.published_at ?? now;
+  }
+  if (!program.channel_id && effectiveChannelId) {
+    syncProgramUpdate.channel_id = effectiveChannelId;
+  }
+
+  if (Object.keys(syncProgramUpdate).length > 2) {
+    const { error: syncProgramError } = await ctx.sb
+      .from("programs")
+      .update(syncProgramUpdate)
+      .eq("tenant_id", ctx.tenant_id)
+      .eq("id", body.programId);
+
+    if (syncProgramError) {
+      console.error("Program sync after slot create error", {
+        error: syncProgramError.message,
+        tenantId: ctx.tenant_id,
+        programId: body.programId,
+      });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
   }
 
   await auditLog({

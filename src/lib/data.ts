@@ -181,10 +181,14 @@ export type Replay = {
 export type Activity = {
   id: string;
   title: string;
-  action: "CREATE" | "UPDATE" | "END" | "START" | "DELETE";
-  targetType: "STREAM" | "VOD";
-  targetId: string;
-  userId?: string | null;
+  description?: string | null;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  actorUserId?: string | null;
+  actorName?: string | null;
+  actorAvatarUrl?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 };
 
@@ -199,6 +203,40 @@ export type AnalyticsStats = {
 // HELPERS
 // ==========================================
 
+type ApiRow = Record<string, unknown>;
+
+function asString(value: unknown, fallback = ""): string {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return fallback;
+  return String(value);
+}
+
+function asNullableString(value: unknown): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  return String(value);
+}
+
+function asBoolean(value: unknown, fallback = false): boolean {
+  if (typeof value === "boolean") return value;
+  if (value === null || value === undefined) return fallback;
+  return Boolean(value);
+}
+
+function asNumber(value: unknown, fallback = 0): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function asApiRows(value: unknown): ApiRow[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is ApiRow => typeof item === "object" && item !== null)
+    : [];
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((item) => String(item)).filter(Boolean) : [];
+}
+
 function guardId(id: unknown, ctx: string): string {
   const v = String(id ?? "").trim();
   if (!v || v === "undefined" || v === "null") {
@@ -207,7 +245,7 @@ function guardId(id: unknown, ctx: string): string {
   return v;
 }
 
-async function j(r: Response): Promise<any> {
+async function j(r: Response): Promise<unknown> {
   const ct = r.headers.get("content-type") || "";
   if (r.ok) {
     if (r.status === 204) return {};
@@ -232,39 +270,45 @@ async function j(r: Response): Promise<any> {
 // MAPPERS
 // ==========================================
 
-const mapStream = (row: any): Stream => ({
-  id: row.id,
-  channelId: row.channel_id ?? row.channelId,
-  title: row.title,
-  hlsUrl: row.hls_url ?? row.hlsUrl,
-  status: row.status,
-  scheduledAt: row.scheduled_at ?? row.scheduledAt ?? null,
-  description: row.description ?? null,
-  poster: row.poster ?? null,
-  latency: row.latency ?? "normal",
-  dvrWindowSec: row.dvr_window_sec ?? row.dvrWindowSec ?? 10800,
-  record: row.record ?? true,
-  drm: row.drm ?? false,
-  captions: (row.captions ?? []).map((c: any) => ({ id: c.id ?? c.lang, ...c })),
-  markers: (row.markers ?? []).map((m: any, i: number) => ({
-    id: m.id ?? String(i),
-    ...m,
-    at: Number(m.at),
+const mapStream = (row: ApiRow): Stream => ({
+  id: asString(row.id),
+  channelId: asString(row.channel_id ?? row.channelId),
+  title: asString(row.title),
+  hlsUrl: asString(row.hls_url ?? row.hlsUrl),
+  status: asString(row.status) as StreamStatus,
+  scheduledAt: asNullableString(row.scheduled_at ?? row.scheduledAt),
+  description: asNullableString(row.description),
+  poster: asNullableString(row.poster),
+  latency: (asNullableString(row.latency) as Stream["latency"]) ?? "normal",
+  dvrWindowSec: asNumber(row.dvr_window_sec ?? row.dvrWindowSec, 10800),
+  record: asBoolean(row.record, true),
+  drm: asBoolean(row.drm, false),
+  captions: asApiRows(row.captions).map((c) => ({
+    id: String(c.id ?? c.lang ?? ""),
+    lang: String(c.lang ?? ""),
+    url: String(c.url ?? ""),
+    kind: c.kind as Caption["kind"] | undefined,
+    label: (c.label as string | undefined) ?? undefined,
   })),
-  geo: row.geo ?? { allow: [], block: [] },
-  createdAt: row.created_at ?? row.createdAt,
-  updatedAt: row.updated_at ?? row.updatedAt,
-  channel: row.channel,
+  markers: asApiRows(row.markers).map((m, i: number) => ({
+    id: String(m.id ?? i),
+    at: Number(m.at),
+    label: String(m.label ?? ""),
+  })),
+  geo: (row.geo as Stream["geo"] | undefined) ?? { allow: [], block: [] },
+  createdAt: asNullableString(row.created_at ?? row.createdAt) ?? undefined,
+  updatedAt: asNullableString(row.updated_at ?? row.updatedAt) ?? undefined,
+  channel: (row.channel as Stream["channel"] | undefined) ?? undefined,
 });
 
-const mapChannel = (row: any): Channel => ({
-  id: row.id,
-  name: row.name,
-  category: row.category ?? "Autre",
-  slug: row.slug ?? "",
-  active: Boolean(row.is_active ?? row.active),
-  logo: row.logo ?? null,
-  originHlsUrl: row.origin_hls_url ?? row.originHlsUrl ?? null,
+const mapChannel = (row: ApiRow): Channel => ({
+  id: asString(row.id),
+  name: asString(row.name),
+  category: (asNullableString(row.category) as Category) ?? "Autre",
+  slug: asString(row.slug),
+  active: asBoolean(row.is_active ?? row.active),
+  logo: asNullableString(row.logo),
+  originHlsUrl: asNullableString(row.origin_hls_url ?? row.originHlsUrl),
 });
 
 const toBodyStream = (s: Partial<Stream>) => ({
@@ -284,70 +328,70 @@ const toBodyStream = (s: Partial<Stream>) => ({
   geo: s.geo ?? { allow: [], block: [] },
 });
 
-const mapVod = (v: any): Vod => ({
-  id: v.id,
-  channelId: v.channel_id ?? v.channelId ?? null,
-  title: v.title,
-  hlsUrl: v.hls_url ?? v.hlsUrl,
-  durationSec: v.duration_sec ?? v.durationSec ?? null,
-  thumb: v.thumb ?? null,
-  tags: v.tags ?? [],
-  sourceStreamId: v.source_stream_id ?? v.sourceStreamId ?? null,
-  createdAt: v.created_at ?? v.createdAt,
-  channel: v.channel,
+const mapVod = (v: ApiRow): Vod => ({
+  id: asString(v.id),
+  channelId: asNullableString(v.channel_id ?? v.channelId),
+  title: asString(v.title),
+  hlsUrl: asString(v.hls_url ?? v.hlsUrl),
+  durationSec: v.duration_sec === undefined && v.durationSec === undefined ? null : asNumber(v.duration_sec ?? v.durationSec),
+  thumb: asNullableString(v.thumb),
+  tags: asStringArray(v.tags),
+  sourceStreamId: asNullableString(v.source_stream_id ?? v.sourceStreamId),
+  createdAt: asString(v.created_at ?? v.createdAt),
+  channel: (v.channel as Vod["channel"] | undefined) ?? undefined,
 });
 
-const mapProgram = (p: any): Program => ({
-  id: p.id,
-  channelId: p.channel_id ?? p.channelId ?? null,
-  title: p.title,
-  synopsis: p.synopsis ?? null,
-  category: p.category ?? null,
-  poster: p.poster ?? null,
-  tags: p.tags ?? [],
-  status: p.status ?? "draft",
-  publishedAt: p.published_at ?? p.publishedAt ?? null,
-  createdAt: p.created_at ?? p.createdAt,
-  updatedAt: p.updated_at ?? p.updatedAt,
-  channel: p.channel,
+const mapProgram = (p: ApiRow): Program => ({
+  id: asString(p.id),
+  channelId: asNullableString(p.channel_id ?? p.channelId),
+  title: asString(p.title),
+  synopsis: asNullableString(p.synopsis),
+  category: asNullableString(p.category),
+  poster: asNullableString(p.poster),
+  tags: asStringArray(p.tags),
+  status: (asNullableString(p.status) as ProgramStatus) ?? "draft",
+  publishedAt: asNullableString(p.published_at ?? p.publishedAt),
+  createdAt: asNullableString(p.created_at ?? p.createdAt) ?? undefined,
+  updatedAt: asNullableString(p.updated_at ?? p.updatedAt) ?? undefined,
+  channel: (p.channel as Program["channel"] | undefined) ?? undefined,
 });
 
-const mapProgramSlot = (s: any): ProgramSlot => ({
-  id: s.id,
-  programId: s.program_id ?? s.programId,
-  channelId: s.channel_id ?? s.channelId ?? null,
-  startsAt: s.starts_at ?? s.startsAt,
-  endsAt: s.ends_at ?? s.endsAt ?? null,
-  slotStatus: s.slot_status ?? s.slotStatus ?? "scheduled",
-  visibility: s.visibility ?? "public",
-  notes: s.notes ?? null,
-  createdAt: s.created_at ?? s.createdAt,
-  updatedAt: s.updated_at ?? s.updatedAt,
-  program: s.program,
-  channel: s.channel,
+const mapProgramSlot = (s: ApiRow): ProgramSlot => ({
+  id: asString(s.id),
+  programId: asString(s.program_id ?? s.programId),
+  channelId: asNullableString(s.channel_id ?? s.channelId),
+  startsAt: asString(s.starts_at ?? s.startsAt),
+  endsAt: asNullableString(s.ends_at ?? s.endsAt),
+  slotStatus: (asNullableString(s.slot_status ?? s.slotStatus) as ProgramSlotStatus) ?? "scheduled",
+  visibility: (asNullableString(s.visibility) as ProgramSlotVisibility) ?? "public",
+  notes: asNullableString(s.notes),
+  createdAt: asNullableString(s.created_at ?? s.createdAt) ?? undefined,
+  updatedAt: asNullableString(s.updated_at ?? s.updatedAt) ?? undefined,
+  program: (s.program as ProgramSlot["program"] | undefined) ?? undefined,
+  channel: (s.channel as ProgramSlot["channel"] | undefined) ?? undefined,
 });
 
-const mapReplay = (r: any): Replay => ({
-  id: r.id,
-  streamId: r.stream_id ?? r.streamId ?? null,
-  channelId: r.channel_id ?? r.channelId ?? null,
-  title: r.title,
-  synopsis: r.synopsis ?? null,
-  hlsUrl: r.hls_url ?? r.hlsUrl ?? null,
-  poster: r.poster ?? null,
-  durationSec: r.duration_sec ?? r.durationSec ?? null,
-  replayStatus: r.replay_status ?? r.replayStatus ?? "draft",
-  availableFrom: r.available_from ?? r.availableFrom ?? null,
-  availableTo: r.available_to ?? r.availableTo ?? null,
-  sourceHlsUrl: r.source_hls_url ?? r.sourceHlsUrl ?? null,
-  clipStartAt: r.clip_start_at ?? r.clipStartAt ?? null,
-  clipEndAt: r.clip_end_at ?? r.clipEndAt ?? null,
-  processingError: r.processing_error ?? r.processingError ?? null,
-  geo: r.geo ?? { allow: [], block: [] },
-  createdAt: r.created_at ?? r.createdAt,
-  updatedAt: r.updated_at ?? r.updatedAt,
-  stream: r.stream,
-  channel: r.channel,
+const mapReplay = (r: ApiRow): Replay => ({
+  id: asString(r.id),
+  streamId: asNullableString(r.stream_id ?? r.streamId),
+  channelId: asNullableString(r.channel_id ?? r.channelId),
+  title: asString(r.title),
+  synopsis: asNullableString(r.synopsis),
+  hlsUrl: asNullableString(r.hls_url ?? r.hlsUrl),
+  poster: asNullableString(r.poster),
+  durationSec: r.duration_sec === undefined && r.durationSec === undefined ? null : asNumber(r.duration_sec ?? r.durationSec),
+  replayStatus: (asNullableString(r.replay_status ?? r.replayStatus) as ReplayStatus) ?? "draft",
+  availableFrom: asNullableString(r.available_from ?? r.availableFrom),
+  availableTo: asNullableString(r.available_to ?? r.availableTo),
+  sourceHlsUrl: asNullableString(r.source_hls_url ?? r.sourceHlsUrl),
+  clipStartAt: asNullableString(r.clip_start_at ?? r.clipStartAt),
+  clipEndAt: asNullableString(r.clip_end_at ?? r.clipEndAt),
+  processingError: asNullableString(r.processing_error ?? r.processingError),
+  geo: (r.geo as Replay["geo"] | undefined) ?? { allow: [], block: [] },
+  createdAt: asNullableString(r.created_at ?? r.createdAt) ?? undefined,
+  updatedAt: asNullableString(r.updated_at ?? r.updatedAt) ?? undefined,
+  stream: (r.stream as Replay["stream"] | undefined) ?? undefined,
+  channel: (r.channel as Replay["channel"] | undefined) ?? undefined,
 });
 
 const toBodyProgram = (p: Partial<Program>) => ({
@@ -395,7 +439,7 @@ const toBodyReplay = (r: Partial<Replay>) => ({
 // --- Channels ---
 export async function listChannels(): Promise<Channel[]> {
   const rows = await j(await fetch("/api/channels", { cache: "no-store" }));
-  return (rows as any[]).map(mapChannel);
+  return (rows as ApiRow[]).map(mapChannel);
 }
 
 export async function upsertChannel(input: Partial<Channel> & { id?: string }): Promise<Channel> {
@@ -423,7 +467,7 @@ export async function upsertChannel(input: Partial<Channel> & { id?: string }): 
       )
     : await j(await fetch(`/api/channels`, { method: "POST", headers, body }));
 
-  return mapChannel(row);
+  return mapChannel(row as ApiRow);
 }
 
 export async function toggleChannel(id: string, active: boolean): Promise<void> {
@@ -443,13 +487,13 @@ export async function listStreams(filter?: { status?: StreamStatus; channelId?: 
   if (filter?.status) qs.set("status", filter.status);
   if (filter?.channelId) qs.set("channelId", filter.channelId);
   const rows = await j(await fetch(`/api/streams?${qs}`, { cache: "no-store" }));
-  return (rows as any[]).map(mapStream);
+  return (rows as ApiRow[]).map(mapStream);
 }
 
 export async function getStream(id: string): Promise<Stream> {
   const sid = guardId(id, "getStream");
   const row = await j(await fetch(`/api/streams/${encodeURIComponent(sid)}`, { cache: "no-store" }));
-  return mapStream(row);
+  return mapStream(row as ApiRow);
 }
 
 export async function upsertStream(s: Partial<Stream> & { id?: string }): Promise<Stream> {
@@ -465,7 +509,7 @@ export async function upsertStream(s: Partial<Stream> & { id?: string }): Promis
       )
     : await j(await fetch(`/api/streams`, { method: "POST", headers, body }));
 
-  return mapStream(row);
+  return mapStream(row as ApiRow);
 }
 
 export async function setStreamStatus(id: string, status: StreamStatus) {
@@ -477,7 +521,7 @@ export async function setStreamStatus(id: string, status: StreamStatus) {
       body: JSON.stringify({ status }),
     })
   );
-  return mapStream(row);
+  return mapStream(row as ApiRow);
 }
 
 export async function removeStream(id: string, opts?: { force?: boolean }) {
@@ -600,7 +644,7 @@ export async function getChannelRealtimeStats(
 // --- VOD ---
 export async function listVod(): Promise<Vod[]> {
   const rows = await j(await fetch("/api/vod", { cache: "no-store" }));
-  return (rows as any[]).map(mapVod);
+  return (rows as ApiRow[]).map(mapVod);
 }
 export const listVods = listVod;
 
@@ -626,7 +670,7 @@ export async function upsertVod(v: Partial<Vod> & { id?: string }): Promise<Vod>
       )
     : await j(await fetch(`/api/vod`, { method: "POST", headers, body }));
 
-  return mapVod(row);
+  return mapVod(row as ApiRow);
 }
 
 // --- Programs ---
@@ -646,7 +690,7 @@ export async function listPrograms(filter?: {
   if (filter?.to) qs.set("to", filter.to);
   if (typeof filter?.limit === "number") qs.set("limit", String(filter.limit));
   const rows = await j(await fetch(`/api/programs?${qs}`, { cache: "no-store" }));
-  return (rows as any[]).map(mapProgram);
+  return (rows as ApiRow[]).map(mapProgram);
 }
 
 export async function upsertProgram(p: Partial<Program> & { id?: string }): Promise<Program> {
@@ -663,7 +707,7 @@ export async function upsertProgram(p: Partial<Program> & { id?: string }): Prom
       )
     : await j(await fetch(`/api/programs`, { method: "POST", headers, body }));
 
-  return mapProgram(row);
+  return mapProgram(row as ApiRow);
 }
 
 export async function publishProgram(id: string): Promise<Program> {
@@ -675,7 +719,7 @@ export async function publishProgram(id: string): Promise<Program> {
       body: JSON.stringify({ status: "published" }),
     })
   );
-  return mapProgram(row);
+  return mapProgram(row as ApiRow);
 }
 
 export async function removeProgram(id: string) {
@@ -702,7 +746,7 @@ export async function listProgramSlots(filter?: {
   if (filter?.to) qs.set("to", filter.to);
   if (typeof filter?.limit === "number") qs.set("limit", String(filter.limit));
   const rows = await j(await fetch(`/api/program-slots?${qs}`, { cache: "no-store" }));
-  return (rows as any[]).map(mapProgramSlot);
+  return (rows as ApiRow[]).map(mapProgramSlot);
 }
 
 export async function upsertProgramSlot(s: Partial<ProgramSlot> & { id?: string }): Promise<ProgramSlot> {
@@ -719,7 +763,7 @@ export async function upsertProgramSlot(s: Partial<ProgramSlot> & { id?: string 
       )
     : await j(await fetch(`/api/program-slots`, { method: "POST", headers, body }));
 
-  return mapProgramSlot(row);
+  return mapProgramSlot(row as ApiRow);
 }
 
 export async function publishProgramSlot(id: string): Promise<ProgramSlot> {
@@ -729,7 +773,7 @@ export async function publishProgramSlot(id: string): Promise<ProgramSlot> {
       method: "POST",
     })
   );
-  return mapProgramSlot(row);
+  return mapProgramSlot(row as ApiRow);
 }
 
 export async function removeProgramSlot(id: string) {
@@ -756,7 +800,7 @@ export async function listReplays(filter?: {
   if (filter?.to) qs.set("to", filter.to);
   if (typeof filter?.limit === "number") qs.set("limit", String(filter.limit));
   const rows = await j(await fetch(`/api/replays?${qs}`, { cache: "no-store" }));
-  return (rows as any[]).map(mapReplay);
+  return (rows as ApiRow[]).map(mapReplay);
 }
 
 export async function upsertReplay(r: Partial<Replay> & { id?: string }): Promise<Replay> {
@@ -773,7 +817,7 @@ export async function upsertReplay(r: Partial<Replay> & { id?: string }): Promis
       )
     : await j(await fetch(`/api/replays`, { method: "POST", headers, body }));
 
-  return mapReplay(row);
+  return mapReplay(row as ApiRow);
 }
 
 export async function publishReplay(id: string): Promise<Replay> {
@@ -783,7 +827,7 @@ export async function publishReplay(id: string): Promise<Replay> {
       method: "POST",
     })
   );
-  return mapReplay(row);
+  return mapReplay(row as ApiRow);
 }
 
 export async function removeReplay(id: string) {
@@ -845,32 +889,122 @@ export async function getAnalytics(period: string = "24h"): Promise<AnalyticsSta
 }
 
 // --- Activities ---
-export async function listActivities(): Promise<Activity[]> {
-  const [streams, vods] = await Promise.all([listStreams().catch(() => []), listVod().catch(() => [])]);
+type AuditLogRow = {
+  id: string;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  actor_user_id: string | null;
+  actor?: {
+    user_id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
 
-  const A1: Activity[] = streams.slice(0, 40).map((s) => ({
-    id: `s-${s.id}`,
-    title: `Stream: ${s.title}`,
-    action: s.status === "LIVE" ? "START" : s.status === "ENDED" ? "END" : "UPDATE",
-    targetType: "STREAM",
-    targetId: s.id,
-    userId: undefined,
-    createdAt: s.updatedAt || s.createdAt || new Date().toISOString(),
-  }));
+function titleCaseWords(value: string) {
+  return value
+    .split(/[\s._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
 
-  const A2: Activity[] = vods.slice(0, 40).map((v) => ({
-    id: `v-${v.id}`,
-    title: `VOD: ${v.title}`,
-    action: "CREATE",
-    targetType: "VOD",
-    targetId: v.id,
-    userId: undefined,
-    createdAt: v.createdAt || new Date().toISOString(),
-  }));
+function humanizeAction(action: string) {
+  const normalized = action.trim().toLowerCase();
+  const map: Record<string, string> = {
+    "program.create": "Création programme",
+    "program.update": "Mise à jour programme",
+    "program.publish": "Publication programme",
+    "program.delete": "Suppression programme",
+    "program_slot.create": "Planification diffusion",
+    "program_slot.update": "Mise à jour diffusion",
+    "program_slot.publish": "Publication diffusion",
+    "program_slot.delete": "Suppression diffusion",
+    "replay.create": "Création replay",
+    "replay.update": "Mise à jour replay",
+    "replay.publish": "Publication replay",
+    "replay.delete": "Suppression replay",
+    "stream.create": "Création direct",
+    "stream.update": "Mise à jour direct",
+    "stream.start": "Démarrage direct",
+    "stream.end": "Fin direct",
+    "stream.delete": "Suppression direct",
+    "channel.create": "Création chaîne",
+    "channel.update": "Mise à jour chaîne",
+    "channel.delete": "Suppression chaîne",
+    "tenant.create": "Création espace",
+    "invite.create": "Invitation membre",
+    "member.update": "Mise à jour membre",
+  };
 
-  return [...A1, ...A2]
-    .sort((a, b) => (a.createdAt === b.createdAt ? 0 : a.createdAt > b.createdAt ? -1 : 1))
-    .slice(0, 60);
+  if (map[normalized]) return map[normalized];
+  return titleCaseWords(normalized.replaceAll(".", " "));
+}
+
+function describeActivity(row: AuditLogRow) {
+  const metadata = row.metadata ?? {};
+  const metadataTitle =
+    typeof metadata.title === "string" && metadata.title.trim().length > 0
+      ? metadata.title.trim()
+      : typeof metadata.name === "string" && metadata.name.trim().length > 0
+        ? metadata.name.trim()
+        : null;
+
+  const targetLabel = row.target_type ? titleCaseWords(row.target_type) : "Console";
+  const title = metadataTitle ? `${targetLabel} · ${metadataTitle}` : targetLabel;
+
+  let description: string | null = humanizeAction(row.action);
+  if (typeof metadata.previousStatus === "string" && typeof metadata.nextStatus === "string") {
+    description = `${description} · ${metadata.previousStatus} → ${metadata.nextStatus}`;
+  } else if (typeof metadata.slotStatus === "string") {
+    description = `${description} · ${metadata.slotStatus}`;
+  }
+
+  return { title, description };
+}
+
+export async function listActivities(filter?: {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  action?: string;
+  targetType?: string;
+  from?: string;
+  to?: string;
+}): Promise<Activity[]> {
+  const qs = new URLSearchParams();
+  if (typeof filter?.page === "number") qs.set("page", String(filter.page));
+  if (typeof filter?.pageSize === "number") qs.set("pageSize", String(filter.pageSize));
+  if (filter?.q) qs.set("q", filter.q);
+  if (filter?.action) qs.set("action", filter.action);
+  if (filter?.targetType) qs.set("targetType", filter.targetType);
+  if (filter?.from) qs.set("from", filter.from);
+  if (filter?.to) qs.set("to", filter.to);
+
+  const response = (await j(await fetch(`/api/tenant/audit-logs?${qs.toString()}`, { cache: "no-store" }))) as
+    | { logs?: AuditLogRow[] }
+    | null;
+  const rows = Array.isArray(response?.logs) ? response.logs : [];
+
+  return rows.map((row) => {
+    const { title, description } = describeActivity(row);
+    return {
+      id: row.id,
+      title,
+      description,
+      action: row.action,
+      targetType: row.target_type ?? "console",
+      targetId: row.target_id ?? null,
+      actorUserId: row.actor_user_id ?? null,
+      actorName: row.actor?.full_name ?? null,
+      actorAvatarUrl: row.actor?.avatar_url ?? null,
+      metadata: row.metadata ?? null,
+      createdAt: row.created_at,
+    };
+  });
 }
 
 // --- Utils ---
@@ -878,12 +1012,18 @@ export async function listHealthSamples(streamId: string): Promise<HealthSample[
   const sid = guardId(streamId, "listHealthSamples");
   const rows = await j(await fetch(`/api/streams/${encodeURIComponent(sid)}/health`, { cache: "no-store" }));
 
-  return (rows as any[]).map((r, i) => ({
-    id: r.id ?? String(i),
-    ts: r.ts ?? r.at ?? new Date().toISOString(),
-    reachable: r.reachable ?? (r.ok ?? false),
-    bitrateKbps: r.bitrateKbps ?? r.bitrate_kbps,
-    downloadMs: r.downloadMs ?? r.download_ms,
-    err: r.err,
+  return (rows as ApiRow[]).map((r, i) => ({
+    id: asString(r.id ?? i),
+    ts: asString(r.ts ?? r.at ?? new Date().toISOString()),
+    reachable: asBoolean(r.reachable ?? r.ok, false),
+    bitrateKbps:
+      r.bitrateKbps === undefined && r.bitrate_kbps === undefined
+        ? undefined
+        : asNumber(r.bitrateKbps ?? r.bitrate_kbps),
+    downloadMs:
+      r.downloadMs === undefined && r.download_ms === undefined
+        ? undefined
+        : asNumber(r.downloadMs ?? r.download_ms),
+    err: asNullableString(r.err) ?? undefined,
   }));
 }

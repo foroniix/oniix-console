@@ -41,6 +41,16 @@ export function canTransitionReplayStatus(current: ReplayStatus, next: ReplaySta
   return canTransition(REPLAY_TRANSITIONS, current, next);
 }
 
+export function deriveProgramStatusFromSlotStatus(
+  current: ProgramStatus,
+  nextSlotStatus: ProgramSlotStatus
+): ProgramStatus {
+  if (nextSlotStatus === "published") return "published";
+  if (nextSlotStatus === "scheduled" && current === "draft") return "scheduled";
+  if (nextSlotStatus === "cancelled" && current === "cancelled") return "cancelled";
+  return current;
+}
+
 type TimeWindow = {
   startsAt: string;
   endsAt: string | null;

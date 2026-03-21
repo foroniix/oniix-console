@@ -266,8 +266,7 @@ export async function GET(req: NextRequest) {
             }
           : undefined,
       };
-    })
-    .filter((slot) => slot.program?.status === "published");
+    });
 
   const channelsForGrid = channels.map((channel) => ({
     id: channel.id,

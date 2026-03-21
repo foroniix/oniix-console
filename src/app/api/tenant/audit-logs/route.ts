@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
+
 import { getTenantContext, jsonError, requireTenantCapability } from "../_utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const MAX_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
 const ACTOR_SELECT_ATTEMPTS = [
   {
     select: "id,actor_user_id,action,target_type,target_id,metadata,created_at",
@@ -26,8 +27,16 @@ function isMissingColumnError(message: string) {
     m.includes("does not exist") ||
     m.includes("could not find") ||
     m.includes("column") ||
-    m.includes("schema cache")
+    m.includes("schema cache") ||
+    m.includes("relation")
   );
+}
+
+function toIsoDate(value: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
 }
 
 export async function GET(req: NextRequest) {
@@ -36,17 +45,23 @@ export async function GET(req: NextRequest) {
 
   if (!ctx.tenant_id) return jsonError("Acces refuse.", 403);
 
-  const check = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user.id, "manage_workspace");
+  const check = await requireTenantCapability(ctx.sb, ctx.tenant_id, ctx.user_id, "manage_workspace");
   if (!check.ok) return jsonError(check.error, check.error === "Acces refuse." ? 403 : 400);
 
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, Number(searchParams.get("page") || "1"));
   const pageSize = Math.min(
     MAX_PAGE_SIZE,
-    Math.max(5, Number(searchParams.get("pageSize") || "20"))
+    Math.max(10, Number(searchParams.get("pageSize") || "50"))
   );
   const q = (searchParams.get("q") || "").trim();
   const action = (searchParams.get("action") || "").trim();
+  const targetType = (searchParams.get("targetType") || "").trim();
+  const fromIso = toIsoDate(searchParams.get("from"));
+  const toIso = toIsoDate(searchParams.get("to"));
+
+  if (searchParams.get("from") && !fromIso) return jsonError("Date de debut invalide.", 400);
+  if (searchParams.get("to") && !toIso) return jsonError("Date de fin invalide.", 400);
 
   try {
     const from = (page - 1) * pageSize;
@@ -65,9 +80,14 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: false });
 
       if (action) query = query.eq("action", action);
+      if (targetType) query = query.eq("target_type", targetType);
+      if (fromIso) query = query.gte("created_at", fromIso);
+      if (toIso) query = query.lte("created_at", toIso);
       if (q) {
         const safeQ = q.replaceAll("%", "").replaceAll("_", "");
-        query = query.or(`action.ilike.%${safeQ}%,target_type.ilike.%${safeQ}%`);
+        query = query.or(
+          `action.ilike.%${safeQ}%,target_type.ilike.%${safeQ}%,target_id.ilike.%${safeQ}%`
+        );
       }
 
       const result = await query.range(from, to);
@@ -93,8 +113,45 @@ export async function GET(req: NextRequest) {
       actor_user_id: (row.actor_user_id ?? row[actorKey] ?? null) as string | null,
     }));
 
+    const actorIds = [...new Set(logs.map((row) => row.actor_user_id).filter(Boolean))] as string[];
+    const actorMap = new Map<string, { user_id: string; full_name: string | null; avatar_url: string | null }>();
+
+    if (actorIds.length > 0) {
+      const { data: profiles, error: profilesError } = await ctx.sb
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .eq("tenant_id", ctx.tenant_id)
+        .in("user_id", actorIds);
+
+      if (profilesError) {
+        if (!isMissingColumnError(profilesError.message)) {
+          console.error("Audit actor profiles load error", { error: profilesError.message });
+        }
+      } else {
+        for (const profile of profiles ?? []) {
+          actorMap.set(String(profile.user_id), {
+            user_id: String(profile.user_id),
+            full_name: (profile.full_name as string | null) ?? null,
+            avatar_url: (profile.avatar_url as string | null) ?? null,
+          });
+        }
+      }
+    }
+
     return NextResponse.json(
-      { ok: true, logs, page, pageSize, total: count },
+      {
+        ok: true,
+        logs: logs.map((row) => {
+          const actorUserId = row.actor_user_id as string | null;
+          return {
+            ...row,
+            actor: actorUserId ? actorMap.get(actorUserId) ?? { user_id: actorUserId, full_name: null, avatar_url: null } : null,
+          };
+        }),
+        page,
+        pageSize,
+        total: count,
+      },
       { status: 200 }
     );
   } catch (error: unknown) {

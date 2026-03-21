@@ -1,5 +1,5 @@
-import { Plus } from "lucide-react";
-import type { Channel, Program } from "@/lib/data";
+import { CalendarPlus2, Plus } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Channel, Program } from "@/lib/data";
 import { formatDateTime } from "../mappers";
 import { canTransitionProgramStatus } from "../transitions";
 import { NONE_VALUE, type ProgramFormState } from "../types";
@@ -29,6 +30,7 @@ type ProgramSectionProps = {
   onEdit: (program: Program) => void;
   onPublish: (id: string) => void;
   onDelete: (id: string) => void;
+  onSchedule: (program: Program) => void;
 };
 
 export function ProgramSection(props: ProgramSectionProps) {
@@ -46,14 +48,22 @@ export function ProgramSection(props: ProgramSectionProps) {
     onEdit,
     onPublish,
     onDelete,
-  } =
-    props;
+    onSchedule,
+  } = props;
 
   return (
     <div className="space-y-4">
       <div className="console-panel-muted p-3 sm:p-4">
+        <div className="mb-4 flex flex-col gap-1">
+          <h2 className="text-base font-semibold text-white">Catalogue programmes</h2>
+          <p className="text-sm text-slate-400">
+            Un programme décrit le contenu éditorial. Pour apparaître dans la grille TV, il doit ensuite être planifié
+            dans un slot de diffusion.
+          </p>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-6">
-          <div className="sm:col-span-2 grid gap-2">
+          <div className="grid gap-2 sm:col-span-2">
             <Label>Titre programme</Label>
             <Input
               value={form.title}
@@ -64,12 +74,12 @@ export function ProgramSection(props: ProgramSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaîne</Label>
+            <Label>Chaîne par défaut</Label>
             <Select value={form.channelId} onValueChange={(channelId) => onPatch({ channelId })}>
               <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
+              <SelectContent className="border-[#223249] bg-[#0d1726] text-white">
                 <SelectItem value={NONE_VALUE}>Aucune</SelectItem>
                 {channels.map((channel) => (
                   <SelectItem key={channel.id} value={channel.id}>
@@ -81,7 +91,7 @@ export function ProgramSection(props: ProgramSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Statut</Label>
+            <Label>Statut catalogue</Label>
             <Select
               value={form.status}
               onValueChange={(status) => onPatch({ status: status as ProgramFormState["status"] })}
@@ -89,7 +99,7 @@ export function ProgramSection(props: ProgramSectionProps) {
               <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
+              <SelectContent className="border-[#223249] bg-[#0d1726] text-white">
                 {statusOptions.map((status) => (
                   <SelectItem key={status} value={status}>
                     {status}
@@ -99,7 +109,7 @@ export function ProgramSection(props: ProgramSectionProps) {
             </Select>
           </div>
 
-          <div className="sm:col-span-2 grid gap-2">
+          <div className="grid gap-2 sm:col-span-2">
             <Label>Catégorie</Label>
             <Input
               value={form.category}
@@ -109,7 +119,7 @@ export function ProgramSection(props: ProgramSectionProps) {
             />
           </div>
 
-          <div className="sm:col-span-2 grid gap-2">
+          <div className="grid gap-2 sm:col-span-2">
             <Label>Poster URL</Label>
             <Input
               value={form.poster}
@@ -119,8 +129,8 @@ export function ProgramSection(props: ProgramSectionProps) {
             />
           </div>
 
-          <div className="sm:col-span-2 grid gap-2">
-            <Label>Tags (virgules)</Label>
+          <div className="grid gap-2 sm:col-span-2">
+            <Label>Tags</Label>
             <Input
               value={form.tags}
               onChange={(e) => onPatch({ tags: e.target.value })}
@@ -129,7 +139,7 @@ export function ProgramSection(props: ProgramSectionProps) {
             />
           </div>
 
-          <div className="sm:col-span-6 grid gap-2">
+          <div className="grid gap-2 sm:col-span-6">
             <Label>Synopsis</Label>
             <Input
               value={form.synopsis}
@@ -144,16 +154,16 @@ export function ProgramSection(props: ProgramSectionProps) {
           <Button
             onClick={onSave}
             disabled={saving || !form.title.trim()}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white"
+            className="bg-indigo-600 text-white hover:bg-indigo-500"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            {saving ? "Enregistrement..." : form.id ? "Mettre à jour le programme" : "Ajouter le programme"}
+            <Plus className="mr-2 h-4 w-4" />
+            {saving ? "Enregistrement..." : form.id ? "Mettre à jour le programme" : "Créer le programme"}
           </Button>
           {form.id ? (
             <Button
               variant="outline"
               onClick={onReset}
-              className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+              className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
             >
               Annuler l’édition
             </Button>
@@ -161,45 +171,54 @@ export function ProgramSection(props: ProgramSectionProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-[22px] border border-slate-200/80 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
+      <div className="overflow-x-auto rounded-[22px] border border-[#223249] bg-[rgba(10,18,30,0.62)]">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50/90 text-slate-500 dark:bg-white/[0.03] dark:text-slate-400">
+          <thead className="bg-[rgba(255,255,255,0.03)] text-slate-400">
             <tr>
-              <th className="text-left px-3 py-2">Titre</th>
-              <th className="text-left px-3 py-2">Chaîne</th>
-              <th className="text-left px-3 py-2">Statut</th>
-              <th className="text-left px-3 py-2">Publié</th>
-              <th className="text-right px-3 py-2">Actions</th>
+              <th className="px-3 py-2 text-left">Titre</th>
+              <th className="px-3 py-2 text-left">Chaîne</th>
+              <th className="px-3 py-2 text-left">Statut</th>
+              <th className="px-3 py-2 text-left">Publié</th>
+              <th className="px-3 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={5}>
+                <td className="px-3 py-3 text-slate-400" colSpan={5}>
                   Chargement...
                 </td>
               </tr>
             ) : programs.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-slate-500 dark:text-slate-400" colSpan={5}>
+                <td className="px-3 py-3 text-slate-400" colSpan={5}>
                   Aucun programme
                 </td>
               </tr>
             ) : (
               programs.map((program) => (
-                <tr key={program.id} className="border-t border-slate-200/80 dark:border-white/10">
-                  <td className="px-3 py-2">{program.title}</td>
-                  <td className="px-3 py-2">{program.channel?.name || "-"}</td>
+                <tr key={program.id} className="border-t border-[#223249]">
+                  <td className="px-3 py-2 text-white">{program.title}</td>
+                  <td className="px-3 py-2 text-slate-300">{program.channel?.name || "-"}</td>
                   <td className="px-3 py-2">
                     <Badge>{program.status}</Badge>
                   </td>
-                  <td className="px-3 py-2">{formatDateTime(program.publishedAt)}</td>
-                  <td className="px-3 py-2 text-right space-x-2">
+                  <td className="px-3 py-2 text-slate-300">{formatDateTime(program.publishedAt)}</td>
+                  <td className="space-x-2 px-3 py-2 text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onSchedule(program)}
+                      className="border-sky-400/20 bg-sky-500/10 text-sky-100 hover:bg-sky-500/20"
+                    >
+                      <CalendarPlus2 className="mr-2 h-3.5 w-3.5" />
+                      Planifier
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => onEdit(program)}
-                      className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+                      className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
                     >
                       Éditer
                     </Button>
@@ -209,7 +228,7 @@ export function ProgramSection(props: ProgramSectionProps) {
                         size="sm"
                         onClick={() => onPublish(program.id)}
                         disabled={busyAction === `program:${program.id}:publish`}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                        className="bg-emerald-600 text-white hover:bg-emerald-500"
                       >
                         Publier
                       </Button>

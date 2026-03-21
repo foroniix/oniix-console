@@ -159,10 +159,7 @@ async function deleteNotification(
   if (error && !isMissingTableError(error.code)) throw error;
 }
 
-async function countAllRows(
-  admin: ReturnType<typeof supabaseAdmin>,
-  table: string
-) {
+async function countAllRows(admin: ReturnType<typeof supabaseAdmin>, table: string) {
   const { count, error } = await admin.from(table).select("id", { count: "exact", head: true });
   if (error) {
     if (isMissingTableError(error.code)) return null;
@@ -288,7 +285,7 @@ export async function syncSystemNotifications(ctx: AuthContext) {
       kind: "tenant_channel_origin_missing",
       severity: "warning",
       title: "Chaînes sans origine HLS",
-      body: `${missingOrigin} chaîne(s) de votre espace n'ont pas encore d’origine HLS et ne seront pas lisibles dans l’application.`,
+      body: `${missingOrigin} chaîne(s) de votre espace n'ont pas encore d'origine HLS et ne seront pas lisibles dans l'application.`,
       actionLabel: "Ouvrir les chaînes",
       actionUrl: "/channels",
       dedupeKey: "tenant:origin-missing",
@@ -330,7 +327,7 @@ export async function syncSystemNotifications(ctx: AuthContext) {
       kind: "tenant_ingest_missing",
       severity: "info",
       title: "Ingest mobile à finaliser",
-      body: "La clé d’ingest mobile n’est pas encore configurée pour cet espace. Les analytics applicatives resteront incomplètes.",
+      body: "La clé d'ingest mobile n'est pas encore configurée pour cet espace. Les analytics applicatives resteront incomplètes.",
       actionLabel: "Ouvrir les paramètres",
       actionUrl: "/settings",
       dedupeKey: "tenant:ingest-missing",

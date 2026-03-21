@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { auditLog } from "../../_utils/audit";
-import { canTransitionProgramStatus, isSlotActive } from "../../_utils/programming";
+import {
+  canTransitionProgramStatus,
+  canTransitionSlotStatus,
+  isSlotActive,
+  windowsOverlap,
+} from "../../_utils/programming";
 import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson } from "../../_utils/validate";
 
@@ -36,6 +42,61 @@ function activeSlotsConflictResponse() {
     { error: "Impossible de supprimer un programme publie avec des slots actifs." },
     { status: 409 }
   );
+}
+
+function missingPublishedSlotChannelResponse() {
+  return NextResponse.json(
+    { error: "Tous les slots du programme doivent etre rattaches a une chaine avant publication." },
+    { status: 409 }
+  );
+}
+
+function missingPublishedSlotEndResponse() {
+  return NextResponse.json(
+    { error: "Tous les slots du programme doivent avoir une heure de fin avant publication." },
+    { status: 409 }
+  );
+}
+
+function slotPublishConflictResponse() {
+  return NextResponse.json(
+    { error: "Impossible de publier ce programme car un slot entre en conflit sur sa chaine." },
+    { status: 409 }
+  );
+}
+
+async function findSlotConflict(params: {
+  sb: SupabaseClient;
+  tenantId: string;
+  channelId: string;
+  startsAt: string;
+  endsAt: string | null;
+  excludeId: string;
+}) {
+  const { sb, tenantId, channelId, startsAt, endsAt, excludeId } = params;
+
+  let q = sb
+    .from("program_slots")
+    .select("id, starts_at, ends_at")
+    .eq("tenant_id", tenantId)
+    .eq("channel_id", channelId)
+    .neq("slot_status", "cancelled")
+    .neq("id", excludeId);
+
+  if (endsAt) q = q.lt("starts_at", endsAt);
+  q = q.or(`ends_at.is.null,ends_at.gt.${startsAt}`);
+
+  const { data, error } = await q;
+  if (error) return { error, conflictId: null as string | null };
+
+  const conflict = (data ?? []).find((slot) =>
+    windowsOverlap(
+      { startsAt, endsAt },
+      { startsAt: slot.starts_at as string, endsAt: (slot.ends_at as string | null) ?? null }
+    )
+  );
+
+  return { error: null, conflictId: conflict?.id ?? null };
 }
 
 export async function PATCH(
@@ -97,6 +158,64 @@ export async function PATCH(
   }
 
   const now = new Date().toISOString();
+  const publishingProgram = body.status === "published" && current.status !== "published";
+
+  let slotsToPublish: Array<{
+    id: string;
+    slot_status: "scheduled" | "published" | "cancelled";
+    starts_at: string;
+    ends_at: string | null;
+    channel_id: string | null;
+  }> = [];
+
+  if (publishingProgram) {
+    const { data: slotRows, error: slotRowsError } = await ctx.sb
+      .from("program_slots")
+      .select("id, slot_status, starts_at, ends_at, channel_id")
+      .eq("tenant_id", ctx.tenant_id)
+      .eq("program_id", id)
+      .in("slot_status", ["scheduled", "published"]);
+
+    if (slotRowsError) {
+      console.error("Program slots lookup before publish error", {
+        error: slotRowsError.message,
+        tenantId: ctx.tenant_id,
+        id,
+      });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
+
+    slotsToPublish = ((slotRows ?? []) as typeof slotsToPublish).filter((slot) =>
+      canTransitionSlotStatus(slot.slot_status, "published")
+    );
+
+    for (const slot of slotsToPublish) {
+      if (!slot.channel_id) return missingPublishedSlotChannelResponse();
+      if (!slot.ends_at) return missingPublishedSlotEndResponse();
+
+      const { error: conflictLookupError, conflictId } = await findSlotConflict({
+        sb: ctx.sb,
+        tenantId: ctx.tenant_id,
+        channelId: slot.channel_id,
+        startsAt: slot.starts_at,
+        endsAt: slot.ends_at,
+        excludeId: slot.id,
+      });
+
+      if (conflictLookupError) {
+        console.error("Program slot conflict lookup before publish error", {
+          error: conflictLookupError.message,
+          tenantId: ctx.tenant_id,
+          id,
+          slotId: slot.id,
+        });
+        return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+      }
+
+      if (conflictId) return slotPublishConflictResponse();
+    }
+  }
+
   const updateData: Record<string, unknown> = {
     updated_at: now,
     updated_by: ctx.user_id,
@@ -147,6 +266,47 @@ export async function PATCH(
       changedFields: Object.keys(updateData),
     },
   });
+
+  if (publishingProgram && slotsToPublish.length > 0) {
+    const slotIds = slotsToPublish.map((slot) => slot.id);
+    const { data: publishedSlots, error: publishedSlotsError } = await ctx.sb
+      .from("program_slots")
+      .update({
+        slot_status: "published",
+        updated_at: now,
+        updated_by: ctx.user_id,
+      })
+      .eq("tenant_id", ctx.tenant_id)
+      .eq("program_id", id)
+      .in("id", slotIds)
+      .select("id");
+
+    if (publishedSlotsError) {
+      console.error("Program slot publish sync error", {
+        error: publishedSlotsError.message,
+        tenantId: ctx.tenant_id,
+        id,
+      });
+      return NextResponse.json({ error: "Une erreur est survenue." }, { status: 500 });
+    }
+
+    await Promise.all(
+      (publishedSlots ?? []).map((slot) =>
+        auditLog({
+          sb: ctx.sb,
+          tenantId: ctx.tenant_id,
+          actorUserId: ctx.user_id,
+          action: "program_slot.publish",
+          targetType: "program_slot",
+          targetId: String(slot.id),
+          metadata: {
+            source: "program_publish",
+            programId: id,
+          },
+        })
+      )
+    );
+  }
 
   return NextResponse.json(data);
 }

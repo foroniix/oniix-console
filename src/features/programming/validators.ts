@@ -11,8 +11,14 @@ export function validateSlotForm(form: SlotFormState): string | null {
   if (!form.programId.trim()) {
     return "Le programme est requis pour un slot.";
   }
+  if (!form.channelId.trim() || form.channelId === "__none__") {
+    return "La chaine de diffusion est requise.";
+  }
   if (!form.startsAt.trim()) {
     return "La date de debut est requise.";
+  }
+  if (!form.endsAt.trim()) {
+    return "La date de fin est requise.";
   }
   if (form.endsAt.trim()) {
     const startMs = new Date(form.startsAt).getTime();

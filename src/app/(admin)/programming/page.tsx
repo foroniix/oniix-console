@@ -20,7 +20,7 @@ export default function ProgrammingPage() {
     <PageShell>
       <PageHeader
         title="Programmation"
-        subtitle="Planifiez vos programmes, slots de diffusion et replays."
+        subtitle="Gérez votre catalogue éditorial, planifiez les diffusions TV et publiez les replays."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Programmation" },
@@ -30,7 +30,7 @@ export default function ProgrammingPage() {
           <Button
             variant="outline"
             onClick={() => void vm.loadAll(true)}
-            className="h-9 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+            className="h-9 border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${vm.refreshing ? "animate-spin" : ""}`} />
             Actualiser
@@ -39,7 +39,7 @@ export default function ProgrammingPage() {
       />
 
       {vm.loadError ? (
-        <div className="rounded-2xl border border-rose-300/70 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300">
+        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
           {vm.loadError}
         </div>
       ) : null}
@@ -48,8 +48,8 @@ export default function ProgrammingPage() {
         <div
           className={`rounded-xl border px-4 py-3 text-sm ${
             vm.feedback.kind === "error"
-              ? "border-rose-300/70 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-300"
-              : "border-emerald-300/70 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300"
+              ? "border-rose-400/20 bg-rose-500/10 text-rose-200"
+              : "border-emerald-400/20 bg-emerald-500/10 text-emerald-200"
           }`}
         >
           <div className="flex items-center justify-between gap-3">
@@ -68,7 +68,7 @@ export default function ProgrammingPage() {
           <TabsList>
             <TabsTrigger value="grid">Grille</TabsTrigger>
             <TabsTrigger value="programs">Programmes</TabsTrigger>
-            <TabsTrigger value="slots">À suivre</TabsTrigger>
+            <TabsTrigger value="slots">Diffusions</TabsTrigger>
             <TabsTrigger value="replays">Replays</TabsTrigger>
           </TabsList>
 
@@ -94,6 +94,7 @@ export default function ProgrammingPage() {
               onSave={vm.saveProgram}
               onReset={vm.resetProgramForm}
               onEdit={vm.startEditProgram}
+              onSchedule={vm.scheduleProgram}
               onPublish={vm.publishProgramById}
               onDelete={vm.deleteProgramById}
             />

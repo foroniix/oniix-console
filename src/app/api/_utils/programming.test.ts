@@ -3,6 +3,7 @@ import {
   canTransitionProgramStatus,
   canTransitionReplayStatus,
   canTransitionSlotStatus,
+  deriveProgramStatusFromSlotStatus,
   isSlotActive,
   windowsOverlap,
 } from "./programming";
@@ -25,6 +26,13 @@ describe("programming status transitions", () => {
   it("rejects invalid replay transitions", () => {
     expect(canTransitionReplayStatus("published", "ready")).toBe(false);
     expect(canTransitionReplayStatus("archived", "published")).toBe(false);
+  });
+
+  it("promotes the program status when a slot is scheduled or published", () => {
+    expect(deriveProgramStatusFromSlotStatus("draft", "scheduled")).toBe("scheduled");
+    expect(deriveProgramStatusFromSlotStatus("draft", "published")).toBe("published");
+    expect(deriveProgramStatusFromSlotStatus("scheduled", "published")).toBe("published");
+    expect(deriveProgramStatusFromSlotStatus("published", "scheduled")).toBe("published");
   });
 });
 

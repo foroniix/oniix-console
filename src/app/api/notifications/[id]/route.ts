@@ -10,7 +10,7 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAuth();
+  const auth = await requireAuth(request);
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
 
@@ -42,6 +42,9 @@ export async function PATCH(
       error: error instanceof Error ? error.message : "unknown",
       userId: ctx.userId,
     });
-    return NextResponse.json({ ok: false, error: "Impossible de mettre à jour la notification." }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Impossible de mettre a jour la notification." },
+      { status: 500 }
+    );
   }
 }

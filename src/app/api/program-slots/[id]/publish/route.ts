@@ -88,7 +88,7 @@ export async function POST(
 
   const { data: currentProgram, error: programLookupError } = await ctx.sb
     .from("programs")
-    .select("id, status")
+    .select("id, status, channel_id, published_at")
     .eq("tenant_id", ctx.tenant_id)
     .eq("id", current.program_id)
     .maybeSingle();
@@ -155,7 +155,8 @@ export async function POST(
     .from("programs")
     .update({
       status: "published",
-      published_at: now,
+      published_at: currentProgram.published_at ?? now,
+      channel_id: currentProgram.channel_id ?? current.channel_id,
       updated_at: now,
       updated_by: ctx.user_id,
     })

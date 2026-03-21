@@ -290,10 +290,18 @@ export function useProgramming() {
       });
 
       setPrograms((prev) => upsertById(prev, saved));
-      setSlotForm((prev) => (prev.programId ? prev : { ...prev, programId: saved.id }));
+      setSlotForm((prev) => ({
+        ...prev,
+        programId: saved.id,
+        channelId: saved.channelId || prev.channelId || NONE_VALUE,
+      }));
       resetProgramForm();
 
-      setSuccessFeedback(programForm.id ? "Programme mis a jour." : "Programme cree.");
+      setSuccessFeedback(
+        programForm.id
+          ? "Programme mis a jour."
+          : "Programme cree. Planifiez maintenant sa diffusion dans la grille."
+      );
     } catch (err) {
       setErrorFeedback("Impossible d'enregistrer le programme.", err);
     } finally {
@@ -408,6 +416,24 @@ export function useProgramming() {
       tags: (program.tags || []).join(", "),
     });
     setTab("programs");
+  }, []);
+
+  const scheduleProgram = useCallback((program: Program) => {
+    setSlotForm({
+      id: null,
+      programId: program.id,
+      channelId: program.channelId || NONE_VALUE,
+      startsAt: "",
+      endsAt: "",
+      status: "scheduled",
+      visibility: "public",
+      notes: "",
+    });
+    setFeedback({
+      kind: "success",
+      message: "Programme charge dans le planificateur. Renseignez la chaine, le debut et la fin de diffusion.",
+    });
+    setTab("slots");
   }, []);
 
   const startEditSlot = useCallback((slot: ProgramSlot) => {
@@ -581,6 +607,7 @@ export function useProgramming() {
     saveSlot,
     saveReplay,
     startEditProgram,
+    scheduleProgram,
     startEditSlot,
     startEditReplay,
     publishProgramById,

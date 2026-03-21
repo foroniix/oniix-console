@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { requireAuth } from "../../_utils/auth";
 import { supabaseUser } from "../../_utils/supabase";
@@ -6,8 +6,8 @@ import { supabaseUser } from "../../_utils/supabase";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function POST() {
-  const auth = await requireAuth();
+export async function POST(request: NextRequest) {
+  const auth = await requireAuth(request);
   if ("res" in auth) return auth.res;
   const { ctx } = auth;
 
