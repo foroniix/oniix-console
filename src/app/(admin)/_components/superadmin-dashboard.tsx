@@ -124,7 +124,7 @@ export default function SuperadminDashboard() {
       }
       setData(json);
     } catch {
-      setError("Erreur reseau sur la vue plateforme.");
+      setError("Erreur réseau sur la vue plateforme.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -162,14 +162,14 @@ export default function SuperadminDashboard() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">Pilotage groupe Oniix</h1>
             <Badge className="border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
-              Multi-editeur
+              Multi-éditeur
             </Badge>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Vision consolidee des editeurs, de la diffusion live, de l&apos;adoption et de la qualite d&apos;exploitation.
+            Vision consolidée des éditeurs, de la diffusion live, de l&apos;adoption et de la qualité d&apos;exploitation.
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Derniere synchro : {data?.generated_at ? dateTimeFormat(data.generated_at) : "--"}
+            Dernière synchro : {data?.generated_at ? dateTimeFormat(data.generated_at) : "--"}
           </p>
         </div>
 
@@ -180,7 +180,7 @@ export default function SuperadminDashboard() {
           </Button>
           <Button asChild>
             <Link href="/tenants">
-              Gerer les editeurs
+              Gérer les éditeurs
               <ArrowUpRight className="ml-2 size-4" />
             </Link>
           </Button>
@@ -196,9 +196,9 @@ export default function SuperadminDashboard() {
       {warnings.length > 0 ? (
         <Card className="border-amber-500/25 bg-amber-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-200">Points de remediation</CardTitle>
+            <CardTitle className="text-sm text-amber-200">Points de remédiation</CardTitle>
             <CardDescription className="text-amber-200/80">
-              Certaines briques d&apos;exploitation restent incompletes a l&apos;echelle groupe.
+              Certaines briques d&apos;exploitation restent incomplètes à l&apos;échelle groupe.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-1 text-xs text-amber-100">
@@ -212,19 +212,19 @@ export default function SuperadminDashboard() {
       {kpis && (kpis.channels_missing_origin > 0 || kpis.channels_missing_tenant > 0) ? (
         <Card className="border-amber-500/25 bg-amber-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-amber-200">Remediation catalogue requise</CardTitle>
+            <CardTitle className="text-sm text-amber-200">Remédiation catalogue requise</CardTitle>
             <CardDescription className="text-amber-200/80">
-              La gateway Oniix restera partiellement indisponible tant que ces champs ne sont pas alignes.
+              La gateway Oniix restera partiellement indisponible tant que ces champs ne sont pas alignés.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1 text-sm text-amber-100">
-              <p>{numberFormat(kpis.channels_missing_origin)} chaine(s) sans URL HLS d&apos;origine.</p>
-              <p>{numberFormat(kpis.channels_missing_tenant)} chaine(s) sans rattachement editeur.</p>
+              <p>{numberFormat(kpis.channels_missing_origin)} chaîne(s) sans URL HLS d&apos;origine.</p>
+              <p>{numberFormat(kpis.channels_missing_tenant)} chaîne(s) sans rattachement éditeur.</p>
             </div>
             <Button asChild variant="outline" className="border-amber-400/20 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20">
               <Link href="/system/channel-backfill">
-                Ouvrir la remediation
+                Ouvrir la remédiation
                 <ArrowUpRight className="ml-2 size-4" />
               </Link>
             </Button>
@@ -234,27 +234,27 @@ export default function SuperadminDashboard() {
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          title="Editeurs"
+          title="Éditeurs"
           value={loading && !data ? "..." : numberFormat(kpis?.tenants_total ?? 0)}
           subtitle={`${numberFormat(kpis?.tenants_new_7d ?? 0)} nouveaux / 7 jours`}
           icon={Building2}
         />
         <MetricCard
-          title="Editeurs actifs (24 h)"
+          title="Éditeurs actifs (24 h)"
           value={loading && !data ? "..." : numberFormat(kpis?.tenants_active_24h ?? 0)}
-          subtitle="Espaces ayant reellement produit du trafic"
+          subtitle="Espaces ayant réellement produit du trafic"
           icon={BadgeCheck}
         />
         <MetricCard
           title="Utilisateurs plateforme"
           value={loading && !data ? "..." : numberFormat(kpis?.users_total ?? 0)}
-          subtitle="Comptes consolides sur l'ensemble du groupe"
+          subtitle="Comptes consolidés sur l'ensemble du groupe"
           icon={Users}
         />
         <MetricCard
           title="Signaux analytics 24 h"
           value={loading && !data ? "..." : numberFormat(kpis?.events_24h ?? 0)}
-          subtitle={`${numberFormat(kpis?.live_sessions ?? 0)} sessions live dans la fenetre glissante`}
+          subtitle={`${numberFormat(kpis?.live_sessions ?? 0)} sessions live dans la fenêtre glissante`}
           icon={Activity}
         />
         <MetricCard
@@ -270,11 +270,11 @@ export default function SuperadminDashboard() {
         <MetricCard
           title="Couverture ingest"
           value={loading && !data ? "..." : `${ingestCoverage}%`}
-          subtitle={`${numberFormat(kpis?.ingest_configured_tenants ?? 0)} editeurs configures`}
+          subtitle={`${numberFormat(kpis?.ingest_configured_tenants ?? 0)} éditeurs configurés`}
           icon={ShieldCheck}
         />
         <MetricCard
-          title="Chaines OTT pretes"
+          title="Chaînes OTT prêtes"
           value={loading && !data ? "..." : `${channelsCoverage}%`}
           subtitle={`${numberFormat(readyChannels)} / ${numberFormat(kpis?.channels_total ?? 0)} avec origine`}
           icon={RadioTower}
@@ -282,7 +282,7 @@ export default function SuperadminDashboard() {
         <MetricCard
           title="Sessions en direct"
           value={loading && !data ? "..." : numberFormat(kpis?.live_sessions ?? 0)}
-          subtitle="Photographie operateur sur fenetre glissante"
+          subtitle="Photographie opérateur sur fenêtre glissante"
           icon={Waves}
         />
       </section>
@@ -290,7 +290,7 @@ export default function SuperadminDashboard() {
       <section className="grid gap-5 xl:grid-cols-7">
         <Card className="xl:col-span-4">
           <CardHeader>
-            <CardTitle>Top editeurs par activite</CardTitle>
+            <CardTitle>Top éditeurs par activité</CardTitle>
             <CardDescription>Classement groupe par volume de signaux sur 24 h.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -303,8 +303,8 @@ export default function SuperadminDashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Editeur</TableHead>
-                    <TableHead className="text-right">Evenements 24h</TableHead>
+                    <TableHead>Éditeur</TableHead>
+                    <TableHead className="text-right">Événements 24h</TableHead>
                     <TableHead className="text-right">Part</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -320,7 +320,7 @@ export default function SuperadminDashboard() {
               </Table>
             ) : (
               <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-6 text-sm text-zinc-500">
-                Aucune activite analytics exploitable pour le moment.
+                Aucune activité analytics exploitable pour le moment.
               </div>
             )}
           </CardContent>
@@ -329,8 +329,8 @@ export default function SuperadminDashboard() {
         <div className="space-y-5 xl:col-span-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Mises en service recentes</CardTitle>
-              <CardDescription>Derniers editeurs actives sur la plateforme.</CardDescription>
+              <CardTitle>Mises en service récentes</CardTitle>
+              <CardDescription>Derniers éditeurs activés sur la plateforme.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {loading && !data ? (
@@ -345,12 +345,12 @@ export default function SuperadminDashboard() {
                     className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3"
                   >
                     <p className="text-sm font-semibold text-white">{tenant.name}</p>
-                    <p className="mt-1 text-xs text-zinc-500">Cree le {dateTimeFormat(tenant.created_at)}</p>
+                    <p className="mt-1 text-xs text-zinc-500">Créé le {dateTimeFormat(tenant.created_at)}</p>
                   </div>
                 ))
               ) : (
                 <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
-                  Aucun editeur recent.
+                  Aucun éditeur récent.
                 </div>
               )}
             </CardContent>
@@ -364,19 +364,19 @@ export default function SuperadminDashboard() {
             <CardContent className="grid gap-2">
               <Button asChild variant="outline" className="justify-between">
                 <Link href="/tenants">
-                  Portefeuille editeurs
+                  Portefeuille éditeurs
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" className="justify-between">
                 <Link href="/users">
-                  Equipe plateforme
+                  Équipe plateforme
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>
               <Button asChild variant="outline" className="justify-between">
                 <Link href="/system">
-                  Exploitation systeme
+                  Exploitation système
                   <ArrowUpRight className="size-4" />
                 </Link>
               </Button>

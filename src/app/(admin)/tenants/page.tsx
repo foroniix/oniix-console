@@ -49,7 +49,7 @@ const CHANNEL_CATEGORIES = [
 
 const ONBOARDING_STEP_LABELS = {
   owner: "administrateur",
-  channel: "chaine",
+  channel: "chaîne",
   source: "source",
   stream: "direct",
   ingest: "ingest",
@@ -119,9 +119,9 @@ function TenantStatusBadge({ status }: { status: TenantStatus }) {
     return <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-200">Actif</Badge>;
   }
   if (status === "ready") {
-    return <Badge className="border-sky-500/25 bg-sky-500/10 text-sky-200">Pret</Badge>;
+    return <Badge className="border-sky-500/25 bg-sky-500/10 text-sky-200">Prêt</Badge>;
   }
-  return <Badge variant="outline">A completer</Badge>;
+  return <Badge variant="outline">À compléter</Badge>;
 }
 
 export default function TenantsPage() {
@@ -157,13 +157,13 @@ export default function TenantsPage() {
       const json = (await res.json().catch(() => null)) as TenantsResponse | { ok?: false; error?: string } | null;
 
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setLoadError((json && "error" in json && json.error) || "Impossible de charger les editeurs.");
+        setLoadError((json && "error" in json && json.error) || "Impossible de charger les éditeurs.");
         return;
       }
 
       setItems(json.tenants ?? []);
     } catch {
-      setLoadError("Erreur reseau sur la liste des editeurs.");
+      setLoadError("Erreur réseau sur la liste des éditeurs.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -236,7 +236,7 @@ export default function TenantsPage() {
         | null;
 
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setCreateError((json && "error" in json && json.error) || "Impossible de creer l editeur.");
+        setCreateError((json && "error" in json && json.error) || "Impossible de créer l’éditeur.");
         return;
       }
 
@@ -252,7 +252,7 @@ export default function TenantsPage() {
       setOpenCreate(false);
       await load(true, search);
     } catch {
-      setCreateError("Erreur reseau sur la creation de l editeur.");
+      setCreateError("Erreur réseau sur la création de l’éditeur.");
     } finally {
       setCreating(false);
     }
@@ -261,12 +261,12 @@ export default function TenantsPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Portefeuille editeurs"
+        title="Portefeuille éditeurs"
         subtitle="Provisionnement des organisations, bootstrap des premiers assets et niveau de mise en service par tenant."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Superadmin" },
-          { label: "Editeurs" },
+          { label: "Éditeurs" },
         ]}
         icon={<Building2 className="size-5" />}
         actions={
@@ -282,7 +282,7 @@ export default function TenantsPage() {
               }}
             >
               <Plus className="size-4" />
-              Nouvel editeur
+              Nouvel éditeur
             </Button>
           </>
         }
@@ -290,9 +290,9 @@ export default function TenantsPage() {
 
       <KpiRow>
         <KpiCard label="Actifs" value={numberFormat(totals.active)} hint={`${numberFormat(items.length)} organisation(s)`} icon={<Building2 className="size-4" />} tone="success" loading={loading} />
-        <KpiCard label="Onboarding" value={`${numberFormat(totals.ready)} / ${numberFormat(items.length)}`} hint={`${numberFormat(items.length - totals.origins)} source(s) a raccorder`} icon={<Shield className="size-4" />} tone={items.length - totals.origins > 0 ? "warning" : "info"} loading={loading} />
-        <KpiCard label="Membres" value={numberFormat(totals.members)} hint={`${numberFormat(totals.channels)} chaine(s)`} icon={<Users className="size-4" />} loading={loading} />
-        <KpiCard label="Directs live" value={`${numberFormat(totals.liveStreams)} / ${numberFormat(totals.streams)}`} hint={`${numberFormat(totals.events24h)} evenement(s) sur 24 h`} icon={<Activity className="size-4" />} tone="info" loading={loading} />
+        <KpiCard label="Onboarding" value={`${numberFormat(totals.ready)} / ${numberFormat(items.length)}`} hint={`${numberFormat(items.length - totals.origins)} source(s) à raccorder`} icon={<Shield className="size-4" />} tone={items.length - totals.origins > 0 ? "warning" : "info"} loading={loading} />
+        <KpiCard label="Membres" value={numberFormat(totals.members)} hint={`${numberFormat(totals.channels)} chaîne(s)`} icon={<Users className="size-4" />} loading={loading} />
+        <KpiCard label="Directs live" value={`${numberFormat(totals.liveStreams)} / ${numberFormat(totals.streams)}`} hint={`${numberFormat(totals.events24h)} événement(s) sur 24 h`} icon={<Activity className="size-4" />} tone="info" loading={loading} />
       </KpiRow>
 
       {loadError ? (
@@ -320,7 +320,7 @@ export default function TenantsPage() {
             <div className="rounded-[20px] border border-emerald-300/12 bg-black/10 p-4 text-sm">{createdSummary.invited_owner?.email ?? "--"}</div>
             <div className="rounded-[20px] border border-emerald-300/12 bg-black/10 p-4 text-sm">{createdSummary.bootstrap.channel?.name ?? "--"}</div>
             <div className="rounded-[20px] border border-emerald-300/12 bg-black/10 p-4 text-sm">{createdSummary.bootstrap.stream?.title ?? "--"}</div>
-            <div className="rounded-[20px] border border-emerald-300/12 bg-black/10 p-4 text-sm">{createdSummary.bootstrap.ingest_key ? "Ingest provisionne" : "--"}</div>
+            <div className="rounded-[20px] border border-emerald-300/12 bg-black/10 p-4 text-sm">{createdSummary.bootstrap.ingest_key ? "Ingest provisionné" : "--"}</div>
           </CardContent>
           {createdSummary.warnings.length > 0 ? (
             <CardContent className="pt-0">
@@ -335,34 +335,34 @@ export default function TenantsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Recherche portefeuille</CardTitle>
-          <CardDescription>Filtrage serveur par nom d editeur pour isoler rapidement un compte ou un lot.</CardDescription>
+          <CardDescription>Filtrage serveur par nom d’éditeur pour isoler rapidement un compte ou un lot.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <form onSubmit={onSubmitSearch} className="flex w-full max-w-3xl flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-              <Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Rechercher un editeur" className="pl-11" />
+              <Input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Rechercher un éditeur" className="pl-11" />
             </div>
             <Button type="submit" variant="outline">Filtrer</Button>
             {search ? <Button type="button" variant="ghost" onClick={clearSearch}>Effacer</Button> : null}
           </form>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{numberFormat(items.length)} editeur(s)</Badge>
-            <Badge variant="outline">{numberFormat(totals.channels)} chaine(s)</Badge>
+            <Badge variant="secondary">{numberFormat(items.length)} éditeur(s)</Badge>
+            <Badge variant="outline">{numberFormat(totals.channels)} chaîne(s)</Badge>
             <Badge variant="outline">{numberFormat(totals.streams)} direct(s)</Badge>
           </div>
         </CardContent>
       </Card>
 
       <DataTableShell
-        title="Portefeuille multi-editeur"
+        title="Portefeuille multi-éditeur"
         description="Lecture portefeuille, owner principal et niveau de mise en service par organisation."
         loading={loading}
         error={items.length === 0 ? loadError || undefined : undefined}
         onRetry={() => void load(true, search)}
         isEmpty={!loading && items.length === 0}
-        emptyTitle={search ? "Aucun editeur" : "Aucun editeur provisionne"}
-        emptyDescription={search ? "Aucun resultat ne correspond au filtre actuel." : "Aucun espace n est encore disponible."}
+        emptyTitle={search ? "Aucun éditeur" : "Aucun éditeur provisionné"}
+        emptyDescription={search ? "Aucun résultat ne correspond au filtre actuel." : "Aucun espace n’est encore disponible."}
         emptyAction={
           <Button
             onClick={() => {
@@ -371,13 +371,13 @@ export default function TenantsPage() {
             }}
           >
             <Plus className="size-4" />
-            Nouvel editeur
+            Nouvel éditeur
           </Button>
         }
         footer={
           loadError && items.length === 0 ? null : (
             <div className="text-xs uppercase tracking-[0.14em] text-slate-500">
-              {numberFormat(totals.members)} membres | {numberFormat(totals.liveStreams)} directs live | {numberFormat(totals.events24h)} evenements 24 h
+              {numberFormat(totals.members)} membres | {numberFormat(totals.liveStreams)} directs live | {numberFormat(totals.events24h)} événements 24 h
             </div>
           )
         }
@@ -385,15 +385,15 @@ export default function TenantsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Editeur</TableHead>
+              <TableHead>Éditeur</TableHead>
               <TableHead>Responsable</TableHead>
               <TableHead>Mise en service</TableHead>
               <TableHead className="text-right">Membres</TableHead>
-              <TableHead className="text-right">Chaines</TableHead>
+              <TableHead className="text-right">Chaînes</TableHead>
               <TableHead className="text-right">Directs</TableHead>
-              <TableHead className="text-right">Evenements 24 h</TableHead>
+              <TableHead className="text-right">Événements 24 h</TableHead>
               <TableHead className="text-right">Statut</TableHead>
-              <TableHead className="text-right">Creation</TableHead>
+              <TableHead className="text-right">Création</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -410,8 +410,8 @@ export default function TenantsPage() {
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="secondary">{tenant.onboarding_completion}/{tenant.onboarding_total}</Badge>
-                      {tenant.origin_configured ? <Badge className="border-sky-500/25 bg-sky-500/10 text-sky-200">Source OK</Badge> : <Badge variant="outline">Source a raccorder</Badge>}
-                      {tenant.ingest_configured ? <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-200">Ingest OK</Badge> : <Badge variant="outline">Ingest a provisionner</Badge>}
+                      {tenant.origin_configured ? <Badge className="border-sky-500/25 bg-sky-500/10 text-sky-200">Source OK</Badge> : <Badge variant="outline">Source à raccorder</Badge>}
+                      {tenant.ingest_configured ? <Badge className="border-emerald-500/25 bg-emerald-500/10 text-emerald-200">Ingest OK</Badge> : <Badge variant="outline">Ingest à provisionner</Badge>}
                     </div>
                     <p className="text-xs leading-5 text-slate-400">{formatMissingSteps(tenant.missing_steps)}</p>
                   </div>
@@ -437,15 +437,15 @@ export default function TenantsPage() {
       >
         <DialogContent className="sm:max-w-[820px]">
           <DialogHeader>
-            <DialogTitle>Ouvrir un nouvel editeur</DialogTitle>
-            <DialogDescription>Creation du tenant, du responsable principal et bootstrap optionnel des assets de diffusion.</DialogDescription>
+            <DialogTitle>Ouvrir un nouvel éditeur</DialogTitle>
+            <DialogDescription>Création du tenant, du responsable principal et bootstrap optionnel des assets de diffusion.</DialogDescription>
           </DialogHeader>
           <form onSubmit={onCreateTenant} className="space-y-6">
             <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Nom de l editeur</Label>
+                    <Label>Nom de l’éditeur</Label>
                     <Input value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Ex: Vision Africa Media" required />
                   </div>
                   <div className="space-y-2">
@@ -456,13 +456,13 @@ export default function TenantsPage() {
                 <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4 space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>Premiere chaine</Label>
+                      <Label>Première chaîne</Label>
                       <Input value={createChannelName} onChange={(event) => setCreateChannelName(event.target.value)} placeholder="Ex: Vision Africa TV" />
                     </div>
                     <div className="space-y-2">
-                      <Label>Categorie</Label>
+                      <Label>Catégorie</Label>
                       <Select value={createChannelCategory} onValueChange={(value) => setCreateChannelCategory(value as (typeof CHANNEL_CATEGORIES)[number])}>
-                        <SelectTrigger className="w-full"><SelectValue placeholder="Choisir une categorie" /></SelectTrigger>
+                        <SelectTrigger className="w-full"><SelectValue placeholder="Choisir une catégorie" /></SelectTrigger>
                         <SelectContent>{CHANNEL_CATEGORIES.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
@@ -476,11 +476,11 @@ export default function TenantsPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between rounded-[20px] border border-white/8 bg-black/10 px-4 py-3">
-                    <div><Label className="text-sm text-white">Creer un premier direct</Label><p className="mt-1 text-xs text-slate-400">Flux initial rattache a la premiere chaine.</p></div>
+                    <div><Label className="text-sm text-white">Créer un premier direct</Label><p className="mt-1 text-xs text-slate-400">Flux initial rattaché à la première chaîne.</p></div>
                     <Switch checked={createInitialStream} onCheckedChange={setCreateInitialStream} />
                   </div>
                   <div className="flex items-center justify-between rounded-[20px] border border-white/8 bg-black/10 px-4 py-3">
-                    <div><Label className="text-sm text-white">Provisionner la cle ingest</Label><p className="mt-1 text-xs text-slate-400">Prepare analytics runtime et endpoints relies.</p></div>
+                    <div><Label className="text-sm text-white">Provisionner la clé ingest</Label><p className="mt-1 text-xs text-slate-400">Prépare analytics runtime et endpoints reliés.</p></div>
                     <Switch checked={createProvisionIngest} onCheckedChange={setCreateProvisionIngest} />
                   </div>
                 </div>
@@ -489,16 +489,16 @@ export default function TenantsPage() {
                 <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Projection</p>
                 <div className="mt-4 space-y-3 text-sm text-slate-300">
                   <div className="rounded-[18px] border border-white/8 bg-black/10 p-3">{createName.trim() || "--"}</div>
-                  <div className="rounded-[18px] border border-white/8 bg-black/10 p-3">{createOwnerEmail.trim() || "Responsable a affecter"}</div>
+                  <div className="rounded-[18px] border border-white/8 bg-black/10 p-3">{createOwnerEmail.trim() || "Responsable à affecter"}</div>
                   <div className="rounded-[18px] border border-white/8 bg-black/10 p-3">{createChannelName.trim() || createName.trim() || "--"}</div>
-                  <div className="rounded-[18px] border border-white/8 bg-black/10 p-3">{createInitialStream ? "Direct initial" : "Sans direct"} | {createProvisionIngest ? "Ingest provisionne" : "Ingest differe"}</div>
+                  <div className="rounded-[18px] border border-white/8 bg-black/10 p-3">{createInitialStream ? "Direct initial" : "Sans direct"} | {createProvisionIngest ? "Ingest provisionné" : "Ingest différé"}</div>
                 </div>
               </div>
             </div>
             {createError ? <div className="rounded-[20px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{createError}</div> : null}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpenCreate(false)}>Annuler</Button>
-              <Button type="submit" disabled={!createName.trim() || creating}>{creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}Creer l editeur</Button>
+              <Button type="submit" disabled={!createName.trim() || creating}>{creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}Créer l’éditeur</Button>
             </DialogFooter>
           </form>
         </DialogContent>

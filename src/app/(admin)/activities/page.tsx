@@ -134,7 +134,7 @@ function ActivityRow({ activity }: { activity: Activity }) {
               <Badge className={cn("border", getActionTone(activity.action))}>{formatActionLabel(activity.action)}</Badge>
             </div>
             <p className="mt-1 text-sm text-slate-300">
-              {activity.description || "Operation enregistree dans le journal d audit."}
+              {activity.description || "Opération enregistrée dans le journal d’audit."}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
               <span className="inline-flex items-center gap-1.5">
@@ -142,7 +142,7 @@ function ActivityRow({ activity }: { activity: Activity }) {
                 {activity.targetType}
               </span>
               {activity.targetId ? <span>ID {activity.targetId}</span> : null}
-              <span>Acteur {activity.actorName || activity.actorUserId || "Systeme"}</span>
+              <span>Acteur {activity.actorName || activity.actorUserId || "Système"}</span>
             </div>
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function ActivitiesPage() {
     } catch (loadError) {
       console.error(loadError);
       setActivities([]);
-      setError("Impossible de charger le journal d audit.");
+      setError("Impossible de charger le journal d’audit.");
     } finally {
       setLoading(false);
     }
@@ -232,9 +232,9 @@ export default function ActivitiesPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Activites"
-        subtitle="Journal d audit des operations menees dans la console, avec acteurs, cibles et horodatage."
-        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Activites" }]}
+        title="Activités"
+        subtitle="Journal d’audit des opérations menées dans la console, avec acteurs, cibles et horodatage."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Activités" }]}
         icon={<ActivityIcon className="size-5" />}
         actions={
           <Button variant="outline" onClick={() => void load()}>
@@ -245,9 +245,9 @@ export default function ActivitiesPage() {
       />
 
       <KpiRow>
-        <KpiCard label="Operations visibles" value={filtered.length} hint="Journal filtre dans la vue courante." icon={<ActivityIcon className="size-4" />} loading={loading} />
-        <KpiCard label="Aujourd hui" value={todayCount} hint="Actions enregistrees depuis minuit." tone="info" icon={<CalendarClock className="size-4" />} loading={loading} />
-        <KpiCard label="Objets touches" value={distinctTargets} hint="Cibles distinctes presentes dans l historique." tone="warning" icon={<ShieldCheck className="size-4" />} loading={loading} />
+        <KpiCard label="Opérations visibles" value={filtered.length} hint="Journal filtré dans la vue courante." icon={<ActivityIcon className="size-4" />} loading={loading} />
+        <KpiCard label="Aujourd’hui" value={todayCount} hint="Actions enregistrées depuis minuit." tone="info" icon={<CalendarClock className="size-4" />} loading={loading} />
+        <KpiCard label="Objets touchés" value={distinctTargets} hint="Cibles distinctes présentes dans l’historique." tone="warning" icon={<ShieldCheck className="size-4" />} loading={loading} />
         <KpiCard label="Filtres actifs" value={`${targetFilter !== ALL_VALUE || actionFilter !== ALL_VALUE || search ? "Oui" : "Non"}`} hint="Recherche, type de cible et action." icon={<Filter className="size-4" />} loading={loading} />
       </KpiRow>
 
@@ -311,17 +311,17 @@ export default function ActivitiesPage() {
       </FilterBar>
 
       <DataTableShell
-        title="Journal d audit"
-        description="Vue consolidee des operations applicatives detectees dans la console."
+        title="Journal d’audit"
+        description="Vue consolidée des opérations applicatives détectées dans la console."
         loading={loading}
         error={error}
         onRetry={() => void load()}
         isEmpty={!loading && !error && filtered.length === 0}
-        emptyTitle="Aucune activite"
-        emptyDescription="Aucune entree ne correspond aux filtres selectionnes."
+        emptyTitle="Aucune activité"
+        emptyDescription="Aucune entrée ne correspond aux filtres sélectionnés."
       >
         <div className="border-b border-white/8 px-5 py-3 text-xs text-slate-500">
-          Vue basee sur les logs d audit applicatifs, sans reconstruction partielle depuis les streams.
+          Vue basée sur les logs d’audit applicatifs, sans reconstruction partielle depuis les streams.
         </div>
         <div>
           {filtered.map((activity) => (

@@ -25,7 +25,7 @@ interface StreamsTableProps {
 }
 
 function getChannelLabel(stream: Stream, channels: Channel[]) {
-  return channels.find((channel) => channel.id === stream.channelId)?.name ?? "Aucune chaine";
+  return channels.find((channel) => channel.id === stream.channelId)?.name ?? "Aucune chaîne";
 }
 
 export default function StreamsTable({ streams, channels, onEdit, onDelete, onToggleStatus }: StreamsTableProps) {
@@ -36,7 +36,7 @@ export default function StreamsTable({ streams, channels, onEdit, onDelete, onTo
           <TableHead className="w-[108px]">ID</TableHead>
           <TableHead>Flux</TableHead>
           <TableHead className="w-[160px]">Statut</TableHead>
-          <TableHead className="w-[220px]">Chaine</TableHead>
+          <TableHead className="w-[220px]">Chaîne</TableHead>
           <TableHead className="w-[72px] text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -85,7 +85,7 @@ export default function StreamsTable({ streams, channels, onEdit, onDelete, onTo
                     <DropdownMenuItem asChild>
                       <Link href={`/streams/${stream.id}`}>
                         <ExternalLink className="size-4" />
-                        Voir le detail
+                        Voir le détail
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(stream)}>

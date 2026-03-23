@@ -80,10 +80,10 @@ function statusBadge(invite: Invite) {
   const status = (invite.status || "").toLowerCase();
   const expired = isExpired(invite.expires_at);
 
-  if (expired) return <Badge variant="destructive">Expiree</Badge>;
-  if (status.includes("accepted")) return <Badge variant="secondary">Acceptee</Badge>;
+  if (expired) return <Badge variant="destructive">Expirée</Badge>;
+  if (status.includes("accepted")) return <Badge variant="secondary">Acceptée</Badge>;
   if (status.includes("pending")) return <Badge>En attente</Badge>;
-  if (status.includes("revoked") || status.includes("canceled")) return <Badge variant="outline">Revoquee</Badge>;
+  if (status.includes("revoked") || status.includes("canceled")) return <Badge variant="outline">Révoquée</Badge>;
   return <Badge variant="outline">{invite.status || "-"}</Badge>;
 }
 
@@ -129,17 +129,17 @@ export default function UsersPage() {
       const invitesJson = await invitesRes.json().catch(() => null);
 
       if (!membersRes.ok || !membersJson?.ok) {
-        throw new Error(membersJson?.error || "Erreur chargement membres");
+        throw new Error(membersJson?.error || "Erreur de chargement des membres");
       }
 
       if (!invitesRes.ok || !invitesJson?.ok) {
-        throw new Error(invitesJson?.error || "Erreur chargement invites");
+        throw new Error(invitesJson?.error || "Erreur de chargement des invitations");
       }
 
       setMembers(membersJson.members ?? []);
       setInvites(invitesJson.invites ?? []);
     } catch (nextError) {
-      setError(getErrorMessage(nextError, "Impossible de charger les acces."));
+      setError(getErrorMessage(nextError, "Impossible de charger les accès."));
     } finally {
       setLoading(false);
     }
@@ -233,17 +233,17 @@ export default function UsersPage() {
       });
 
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "Erreur creation invitation");
+      if (!res.ok || !json.ok) throw new Error(json.error || "Erreur de création de l’invitation");
 
       const url = json.invite_url || inviteLink(json.code || "");
-      toast.success("Invitation creee");
-      if (url) await copy(url, "Lien copie");
+      toast.success("Invitation créée");
+      if (url) await copy(url, "Lien copié");
 
       setEmail("");
       setActiveTab("invites");
       await load();
     } catch (nextError) {
-      setError(getErrorMessage(nextError, "Erreur invitation"));
+      setError(getErrorMessage(nextError, "Erreur d’invitation"));
     } finally {
       setBusyInvite(false);
     }
@@ -261,12 +261,12 @@ export default function UsersPage() {
     try {
       const res = await fetch(`/api/tenant/members/${encodeURIComponent(userId)}`, { method: "DELETE" });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.ok) throw new Error(json.error || "Erreur suppression");
+      if (!res.ok || !json.ok) throw new Error(json.error || "Erreur de suppression");
 
-      toast.success("Membre supprime");
+      toast.success("Membre supprimé");
       await load();
     } catch (nextError) {
-      setError(getErrorMessage(nextError, "Erreur suppression"));
+      setError(getErrorMessage(nextError, "Erreur de suppression"));
     } finally {
       setBusyDeleteMember(null);
     }
@@ -281,7 +281,7 @@ export default function UsersPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error("Action indisponible.");
 
-      toast.success("Invitation revoquee");
+      toast.success("Invitation révoquée");
       await load();
     } catch (nextError) {
       setError(getErrorMessage(nextError, "Erreur"));
@@ -299,8 +299,8 @@ export default function UsersPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error("Action indisponible.");
 
-      toast.success("Invitation renvoyee");
-      if (json.invite_url) await copy(json.invite_url, "Lien copie");
+      toast.success("Invitation renvoyée");
+      if (json.invite_url) await copy(json.invite_url, "Lien copié");
       await load();
     } catch (nextError) {
       setError(getErrorMessage(nextError, "Erreur"));
@@ -315,17 +315,17 @@ export default function UsersPage() {
     return (
       <PageShell>
         <PageHeader
-          title="Equipe et acces"
-          subtitle="Invitations, roles et gouvernance operateur."
+          title="Équipe et accès"
+          subtitle="Invitations, rôles et gouvernance opérateur."
           breadcrumbs={[
             { label: "Oniix Console", href: "/dashboard" },
-            { label: "Equipe" },
+            { label: "Équipe" },
           ]}
           icon={<Shield className="size-5" />}
         />
         <div className="console-panel flex min-h-[320px] items-center justify-center text-slate-400">
           <Loader2 className="mr-2 size-5 animate-spin" />
-          Chargement des acces...
+          Chargement des accès...
         </div>
       </PageShell>
     );
@@ -334,18 +334,18 @@ export default function UsersPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Equipe et acces"
-        subtitle="Invitez, revisez et securisez les acces operateur depuis un poste unique."
+        title="Équipe et accès"
+        subtitle="Invitez, révisez et sécurisez les accès opérateur depuis un poste unique."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
-          { label: "Equipe" },
+          { label: "Équipe" },
         ]}
         icon={<Shield className="size-5" />}
         actions={
           <>
             <Button variant="outline" onClick={() => void load()}>
               <RefreshCw className="size-4" />
-              Rafraichir
+              Rafraîchir
             </Button>
             <Button onClick={() => setActiveTab("create")}>
               <UserPlus className="size-4" />
@@ -358,7 +358,7 @@ export default function UsersPage() {
       <KpiRow>
         <KpiCard label="Membres" value={stats.members} icon={<Shield className="size-4" />} hint={`${stats.admins} administrateur(s)`} loading={false} />
         <KpiCard label="Invitations" value={stats.invites} icon={<Mail className="size-4" />} hint={`${stats.pending} en attente`} tone="info" />
-        <KpiCard label="Expirees" value={stats.expired} hint="Liens a revoquer ou renvoyer" tone={stats.expired > 0 ? "warning" : "neutral"} />
+        <KpiCard label="Expirées" value={stats.expired} hint="Liens à révoquer ou renvoyer" tone={stats.expired > 0 ? "warning" : "neutral"} />
         <KpiCard label="Gouvernance" value="Actif" hint="Suppression, re-envoi et suivi des statuts" tone="success" />
       </KpiRow>
 
@@ -370,8 +370,8 @@ export default function UsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Pilotage des acces</CardTitle>
-          <CardDescription>Membres actifs, invitations et creation de liens depuis la meme surface.</CardDescription>
+          <CardTitle>Pilotage des accès</CardTitle>
+          <CardDescription>Membres actifs, invitations et création de liens depuis la même surface.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AccessTab)} className="space-y-5">
@@ -391,18 +391,18 @@ export default function UsersPage() {
                       setQMembers(event.target.value);
                       setMembersPage(1);
                     }}
-                    placeholder="Rechercher un membre par email ou role"
+                    placeholder="Rechercher un membre par e-mail ou rôle"
                     className="pl-11"
                   />
                 </div>
                 <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                  {filteredMembers.length} resultat(s) - page {membersPage}/{membersPages}
+                  {filteredMembers.length} résultat(s) · page {membersPage}/{membersPages}
                 </div>
               </div>
 
               <DataTableShell
                 title="Membres actifs"
-                description="Acces operateur et roles associes a votre espace."
+                description="Accès opérateur et rôles associés à votre espace."
                 isEmpty={membersSlice.length === 0}
                 emptyTitle="Aucun membre"
                 emptyDescription="Aucun compte ne correspond au filtre actuel."
@@ -411,8 +411,8 @@ export default function UsersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Utilisateur</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Cree</TableHead>
+                      <TableHead>Rôle</TableHead>
+                      <TableHead>Créé</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -450,7 +450,7 @@ export default function UsersPage() {
 
               <div className="flex items-center justify-between">
                 <Button variant="outline" size="sm" onClick={() => setMembersPage((page) => Math.max(1, page - 1))} disabled={membersPage <= 1}>
-                  Precedent
+                  Précédent
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setMembersPage((page) => Math.min(membersPages, page + 1))} disabled={membersPage >= membersPages}>
                   Suivant
@@ -473,13 +473,13 @@ export default function UsersPage() {
                   />
                 </div>
                 <div className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                  {filteredInvites.length} resultat(s) - page {invitesPage}/{invitesPages}
+                  {filteredInvites.length} résultat(s) · page {invitesPage}/{invitesPages}
                 </div>
               </div>
 
               <DataTableShell
                 title="Invitations"
-                description="Liens d acces, statuts et actions de relance."
+                description="Liens d’accès, statuts et actions de relance."
                 isEmpty={invitesSlice.length === 0}
                 emptyTitle="Aucune invitation"
                 emptyDescription="Aucune invitation ne correspond au filtre actuel."
@@ -488,9 +488,9 @@ export default function UsersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
+                      <TableHead>Rôle</TableHead>
                       <TableHead>Statut</TableHead>
-                      <TableHead>Creee</TableHead>
+                      <TableHead>Créée</TableHead>
                       <TableHead>Expire</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -514,7 +514,7 @@ export default function UsersPage() {
                           <TableCell className={expired ? "text-amber-200" : undefined}>{fmtDate(invite.expires_at)}</TableCell>
                           <TableCell className="text-right">
                             <div className="inline-flex items-center gap-2">
-                              <Button variant="outline" size="sm" onClick={() => void copy(url, "Lien copie")}>
+                              <Button variant="outline" size="sm" onClick={() => void copy(url, "Lien copié")}>
                                 <Link2 className="size-4" />
                                 Copier
                               </Button>
@@ -526,7 +526,7 @@ export default function UsersPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-52">
-                                  <DropdownMenuItem onClick={() => void copy(url, "Lien copie")}>
+                                  <DropdownMenuItem onClick={() => void copy(url, "Lien copié")}>
                                     <Link2 className="size-4" />
                                     Copier le lien
                                   </DropdownMenuItem>
@@ -552,7 +552,7 @@ export default function UsersPage() {
 
               <div className="flex items-center justify-between">
                 <Button variant="outline" size="sm" onClick={() => setInvitesPage((page) => Math.max(1, page - 1))} disabled={invitesPage <= 1}>
-                  Precedent
+                  Précédent
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setInvitesPage((page) => Math.min(invitesPages, page + 1))} disabled={invitesPage >= invitesPages}>
                   Suivant
@@ -565,7 +565,7 @@ export default function UsersPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Inviter un membre</CardTitle>
-                    <CardDescription>Generez une invitation securisee puis partagez le lien d acces.</CardDescription>
+                    <CardDescription>Générez une invitation sécurisée puis partagez le lien d’accès.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -578,46 +578,46 @@ export default function UsersPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Role</label>
+                      <label className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Rôle</label>
                       <Select value={role} onValueChange={(value) => setRole(value as "viewer" | "editor" | "admin")}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Choisir un niveau d acces" />
+                          <SelectValue placeholder="Choisir un niveau d’accès" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="viewer">Lecture</SelectItem>
-                          <SelectItem value="editor">Edition</SelectItem>
+                          <SelectItem value="editor">Édition</SelectItem>
                           <SelectItem value="admin">Administrateur</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs leading-5 text-slate-400">
-                        Principe recommande: privilegier lecture ou edition, et reserver administration aux responsables.
+                        Principe recommandé : privilégier lecture ou édition, et réserver l’administration aux responsables.
                       </p>
                     </div>
 
                     <Button onClick={() => void createInvite()} disabled={!canCreate}>
                       {busyInvite ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
-                      Generer l invitation
+                      Générer l’invitation
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Regles d exploitation</CardTitle>
-                    <CardDescription>Une equipe maitrisee vaut mieux qu un perimetre trop large.</CardDescription>
+                    <CardTitle>Règles d’exploitation</CardTitle>
+                    <CardDescription>Une équipe maîtrisée vaut mieux qu’un périmètre trop large.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm leading-6 text-slate-300">
                     <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
-                      Attribuez un role minimal compatible avec la mission.
+                      Attribuez un rôle minimal compatible avec la mission.
                     </div>
                     <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
-                      Revoquez les invitations obsoletes au fil de l exploitation.
+                      Révoquez les invitations obsolètes au fil de l’exploitation.
                     </div>
                     <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
-                      Revisez les comptes sensibles a chaque changement d equipe.
+                      Révisez les comptes sensibles à chaque changement d’équipe.
                     </div>
                     <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
-                      Gardez un historique simple des acces partages avec les editeurs.
+                      Gardez un historique simple des accès partagés avec les éditeurs.
                     </div>
                   </CardContent>
                 </Card>
@@ -631,7 +631,7 @@ export default function UsersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Supprimer ce membre ?</DialogTitle>
-            <DialogDescription>Cette action retire immediatement l acces a l organisation.</DialogDescription>
+            <DialogDescription>Cette action retire immédiatement l’accès à l’organisation.</DialogDescription>
           </DialogHeader>
 
           {confirmMember ? (

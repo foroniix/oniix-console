@@ -62,7 +62,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
       setName(initial.name ?? "");
       setType(initial.type ?? "DISPLAY");
       setPriority(Number(initial.priority ?? 100));
-      setStatus((initial.status ?? "active") as any);
+      setStatus((initial.status ?? "active") as "active" | "paused" | "archived");
 
       setStartsAt(toLocalInputValue(initial.starts_at));
       setEndsAt(toLocalInputValue(initial.ends_at));
@@ -87,8 +87,9 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
     try {
       const obj = JSON.parse(targetingText || "{}");
       return { ok: true as const, value: obj };
-    } catch (e: any) {
-      return { ok: false as const, error: e?.message || "JSON invalide" };
+    } catch (e: unknown) {
+      const message = e instanceof Error && e.message ? e.message : "JSON invalide";
+      return { ok: false as const, error: message };
     }
   }, [targetingText]);
 
@@ -100,11 +101,11 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
       return;
     }
     if (!targetingJson.ok) {
-      setError(`Targeting invalide: ${targetingJson.error}`);
+      setError(`Targeting invalide : ${targetingJson.error}`);
       return;
     }
     if (endsAt && startsAt && new Date(endsAt) < new Date(startsAt)) {
-      setError("La date de fin doit etre apres la date de debut.");
+      setError("La date de fin doit être après la date de début.");
       return;
     }
 
@@ -130,11 +131,11 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
       });
 
       const json = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(json?.error || "Impossible de sauvegarder");
+      if (!res.ok) throw new Error(json?.error || "Impossible de sauvegarder.");
 
       onSaved();
-    } catch (e: any) {
-      setError(e?.message || "Erreur");
+    } catch (e: unknown) {
+      setError(e instanceof Error && e.message ? e.message : "Erreur");
     } finally {
       setSaving(false);
     }
@@ -158,7 +159,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="bg-zinc-950/60 border-white/10"
-                    placeholder="Ex: Promo Chaine Sport"
+                    placeholder="Ex : Promo Chaîne Sport"
                   />
                 </div>
 
@@ -179,7 +180,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
 
               <div className="grid md:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Priorite</label>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Priorité</label>
                   <Input
                     type="number"
                     value={priority}
@@ -193,7 +194,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
                   <label className="text-[10px] uppercase tracking-widest text-zinc-500">Statut</label>
                   <select
                     value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
+                    onChange={(e) => setStatus(e.target.value as "active" | "paused" | "archived")}
                     className="h-10 rounded-md bg-zinc-950/60 border border-white/10 px-3 text-sm"
                   >
                     <option value="active">active</option>
@@ -205,7 +206,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
                 <div className="space-y-1">
                   <label className="text-[10px] uppercase tracking-widest text-zinc-500">Raccourci</label>
                   <div className="h-10 rounded-md bg-white/5 border border-white/10 px-3 flex items-center text-xs text-zinc-400">
-                    {isEdit ? "Edition" : "Creation"}
+                    {isEdit ? "Édition" : "Création"}
                   </div>
                 </div>
               </div>
@@ -219,7 +220,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
 
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Debut</label>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500">Début</label>
                   <Input
                     type="datetime-local"
                     value={startsAt}
@@ -239,7 +240,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
               </div>
 
               <div className="text-[11px] text-zinc-500">
-                Si aucune date n&apos;est fournie, la campagne est &quot;toujours active&quot; (si status=active).
+                Si aucune date n&apos;est fournie, la campagne reste &quot;toujours active&quot; si son statut est `active`.
               </div>
             </CardContent>
           </Card>
@@ -263,7 +264,7 @@ export default function CampaignFormDialog({ open, onOpenChange, title, initial,
 
               {!targetingJson.ok ? (
                 <div className="text-[11px] text-rose-300">
-                  JSON invalide: {targetingJson.error}
+                  JSON invalide : {targetingJson.error}
                 </div>
               ) : (
                 <div className="text-[11px] text-emerald-300">JSON valide</div>

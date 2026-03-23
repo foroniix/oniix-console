@@ -124,13 +124,13 @@ export default function SystemPage() {
       const json = (await response.json().catch(() => null)) as OverviewResponse | { error?: string } | null;
 
       if (!response.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible de charger la sante plateforme.");
+        setError((json && "error" in json && json.error) || "Impossible de charger la santé plateforme.");
         return;
       }
 
       setData(json);
     } catch {
-      setError("Erreur reseau sur la sante plateforme.");
+      setError("Erreur réseau sur la santé plateforme.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -167,9 +167,9 @@ export default function SystemPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Exploitation systeme"
-        subtitle="Surveillez la couverture, la charge et les alertes de la plateforme depuis un point de controle unique."
-        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Systeme" }]}
+        title="Exploitation système"
+        subtitle="Surveillez la couverture, la charge et les alertes de la plateforme depuis un point de contrôle unique."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Système" }]}
         icon={<ShieldCheck className="size-5" />}
         actions={
           <Button variant="outline" onClick={() => void load(true)}>
@@ -193,9 +193,9 @@ export default function SystemPage() {
 
       <KpiRow>
         <KpiCard
-          label="Editeurs actifs 24h"
+          label="Éditeurs actifs 24h"
           value={numberFormat(data?.kpis.tenants_active_24h ?? 0)}
-          hint={`${activityCoverage}% du parc a emet du trafic recent.`}
+          hint={`${activityCoverage}% du parc a émis du trafic récent.`}
           tone="success"
           icon={<Building2 className="size-4" />}
           loading={loading}
@@ -211,14 +211,14 @@ export default function SystemPage() {
         <KpiCard
           label="Sessions live"
           value={numberFormat(data?.kpis.live_sessions ?? 0)}
-          hint="Charge instantanee observee sur la plateforme."
+          hint="Charge instantanée observée sur la plateforme."
           icon={<Waves className="size-4" />}
           loading={loading}
         />
         <KpiCard
-          label="Evenements 24h"
+          label="Événements 24h"
           value={numberFormat(data?.kpis.events_24h ?? 0)}
-          hint={`Derniere synchro ${dateTimeFormat(data?.generated_at)}`}
+          hint={`Dernière synchro ${dateTimeFormat(data?.generated_at)}`}
           tone="warning"
           icon={<Activity className="size-4" />}
           loading={loading}
@@ -229,7 +229,7 @@ export default function SystemPage() {
         <Card>
           <CardContent className="flex min-h-[280px] items-center justify-center gap-2 text-sm text-slate-400">
             <Loader2 className="size-4 animate-spin" />
-            Chargement du cockpit systeme...
+            Chargement du cockpit système...
           </CardContent>
         </Card>
       ) : (
@@ -237,23 +237,23 @@ export default function SystemPage() {
           <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
             <Card>
               <CardHeader>
-                <CardTitle>Couverture operationnelle</CardTitle>
+                <CardTitle>Couverture opérationnelle</CardTitle>
                 <CardDescription>
-                  Trois lectures pour verifier si le parc est correctement relie a l&apos;ingest, actif et exploitable.
+                  Trois lectures pour vérifier si le parc est correctement relié à l&apos;ingest, actif et exploitable.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
                 <CoverageBlock
                   label="Couverture ingest"
-                  description="Editeurs relies a la collecte live."
+                  description="Éditeurs reliés à la collecte live."
                   value={ingestCoverage}
                   numerator={data?.kpis.ingest_configured_tenants ?? 0}
                   denominator={data?.kpis.tenants_total ?? 0}
                   icon={<ShieldCheck className="size-4" />}
                 />
                 <CoverageBlock
-                  label="Activite editeurs"
-                  description="Part des editeurs actifs sur les dernieres 24 heures."
+                  label="Activité éditeurs"
+                  description="Part des éditeurs actifs sur les dernières 24 heures."
                   value={activityCoverage}
                   numerator={data?.kpis.tenants_active_24h ?? 0}
                   denominator={data?.kpis.tenants_total ?? 0}
@@ -272,8 +272,8 @@ export default function SystemPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Pulse temps reel</CardTitle>
-                <CardDescription>Mesures de charge et de trafic suivies par les operations.</CardDescription>
+                <CardTitle>Pulse temps réel</CardTitle>
+                <CardDescription>Mesures de charge et de trafic suivies par les opérations.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <MetricRow
@@ -284,17 +284,17 @@ export default function SystemPage() {
                 <MetricRow
                   label="Flux ouverts"
                   value={numberFormat(data?.kpis.streams_live ?? 0)}
-                  hint="Flux passes en direct a cet instant."
+                  hint="Flux passés en direct à cet instant."
                 />
                 <MetricRow
-                  label="Evenements analytics"
+                  label="Événements analytics"
                   value={numberFormat(data?.kpis.events_24h ?? 0)}
-                  hint="Volume agrege sur les dernieres 24 heures."
+                  hint="Volume agrégé sur les dernières 24 heures."
                 />
                 <MetricRow
-                  label="Parc editeurs"
+                  label="Parc éditeurs"
                   value={numberFormat(data?.kpis.tenants_total ?? 0)}
-                  hint="Base de reference pour la couverture operationnelle."
+                  hint="Base de référence pour la couverture opérationnelle."
                 />
               </CardContent>
             </Card>
@@ -307,7 +307,7 @@ export default function SystemPage() {
                 Checkpoints d&apos;exploitation
               </CardTitle>
               <CardDescription>
-                Alertes structurelles et prerequis critiques detectes lors de la derniere remontee.
+                Alertes structurelles et prérequis critiques détectés lors de la dernière remontée.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -318,7 +318,7 @@ export default function SystemPage() {
                   </span>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-emerald-50">Aucune alerte majeure</p>
-                    <p className="text-sm text-emerald-100/75">Les prerequis critiques suivis par le cockpit sont au vert.</p>
+                    <p className="text-sm text-emerald-100/75">Les prérequis critiques suivis par le cockpit sont au vert.</p>
                   </div>
                 </div>
               ) : (

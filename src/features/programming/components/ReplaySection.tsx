@@ -79,7 +79,7 @@ export function ReplaySection(props: ReplaySectionProps) {
       <div className="console-panel-muted p-3 sm:p-4">
         <div className="grid gap-3 sm:grid-cols-6">
           <div className="sm:col-span-2 grid gap-2">
-            <Label>Titre replay</Label>
+            <Label>Titre du replay</Label>
             <Input
               value={form.title}
               onChange={(e) => onPatch({ title: e.target.value })}
@@ -132,7 +132,7 @@ export function ReplaySection(props: ReplaySectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaine</Label>
+            <Label>Chaîne</Label>
             <Select value={form.channelId} onValueChange={(channelId) => onPatch({ channelId })}>
               <SelectTrigger className="console-field">
                 <SelectValue />
@@ -159,7 +159,7 @@ export function ReplaySection(props: ReplaySectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Duree (sec)</Label>
+            <Label>Durée (sec)</Label>
             <Input
               type="number"
               min={0}
@@ -170,7 +170,7 @@ export function ReplaySection(props: ReplaySectionProps) {
           </div>
 
           <div className="sm:col-span-2 grid gap-2">
-            <Label>Disponible a partir de</Label>
+            <Label>Disponible à partir de</Label>
             <Input
               type="datetime-local"
               value={form.availableFrom}
@@ -180,7 +180,7 @@ export function ReplaySection(props: ReplaySectionProps) {
           </div>
 
           <div className="sm:col-span-2 grid gap-2">
-            <Label>Disponible jusqu&apos;a</Label>
+            <Label>Disponible jusqu&apos;à</Label>
             <Input
               type="datetime-local"
               value={form.availableTo}
@@ -194,7 +194,7 @@ export function ReplaySection(props: ReplaySectionProps) {
             <Input
               value={form.synopsis}
               onChange={(e) => onPatch({ synopsis: e.target.value })}
-              placeholder="Resume du replay"
+              placeholder="Résumé du replay"
               className="console-field"
             />
           </div>
@@ -207,7 +207,7 @@ export function ReplaySection(props: ReplaySectionProps) {
             className="bg-indigo-600 hover:bg-indigo-500 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
-            {saving ? "Enregistrement..." : form.id ? "Mettre a jour le replay" : "Ajouter le replay"}
+            {saving ? "Enregistrement..." : form.id ? "Mettre à jour le replay" : "Ajouter le replay"}
           </Button>
           <Button
             variant="outline"
@@ -223,7 +223,7 @@ export function ReplaySection(props: ReplaySectionProps) {
               onClick={onReset}
               className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
             >
-              Annuler l&apos;edition
+              Annuler l&apos;édition
             </Button>
           ) : null}
         </div>
@@ -235,9 +235,9 @@ export function ReplaySection(props: ReplaySectionProps) {
             <tr>
               <th className="text-left px-3 py-2">Replay</th>
               <th className="text-left px-3 py-2">Source</th>
-              <th className="text-left px-3 py-2">Chaine</th>
-              <th className="text-left px-3 py-2">HLS / Fenetre</th>
-              <th className="text-left px-3 py-2">Disponibilite</th>
+              <th className="text-left px-3 py-2">Chaîne</th>
+              <th className="text-left px-3 py-2">HLS / Fenêtre</th>
+              <th className="text-left px-3 py-2">Disponibilité</th>
               <th className="text-left px-3 py-2">Statut / Diagnostic</th>
               <th className="text-right px-3 py-2">Actions</th>
             </tr>
@@ -283,7 +283,7 @@ export function ReplaySection(props: ReplaySectionProps) {
                       {replay.processingError ? (
                         <div className="text-[11px] text-rose-300">{shorten(replay.processingError, 110)}</div>
                       ) : replay.replayStatus === "processing" ? (
-                        <div className="text-[11px] text-amber-600 dark:text-amber-300">Generation en cours...</div>
+                        <div className="text-[11px] text-amber-600 dark:text-amber-300">Génération en cours...</div>
                       ) : null}
                     </div>
                   </td>
@@ -294,7 +294,7 @@ export function ReplaySection(props: ReplaySectionProps) {
                       onClick={() => onEdit(replay)}
                       className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
                     >
-                      Editer
+                      Éditer
                     </Button>
                     {canTransitionReplayStatus(replay.replayStatus, "published") &&
                     replay.replayStatus !== "published" ? (

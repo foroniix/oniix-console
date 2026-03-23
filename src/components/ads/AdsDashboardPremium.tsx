@@ -61,10 +61,10 @@ function eventLabel(event: string) {
   const key = event.toUpperCase();
   if (key === "IMPRESSION") return "Impression";
   if (key === "CLICK") return "Clic";
-  if (key === "START") return "Debut";
+  if (key === "START") return "Début";
   if (key === "COMPLETE") return "Fin";
-  if (key === "SKIP") return "Ignore";
-  return "Activite";
+  if (key === "SKIP") return "Ignoré";
+  return "Activité";
 }
 
 function mapChannelRow(row: unknown): ChannelRow | null {
@@ -225,15 +225,15 @@ export default function AdsDashboardPremium() {
   const displayScopeLabel = useMemo(() => {
     if (selectedStreamId) {
       const stream = streams.find((item) => item.id === selectedStreamId);
-      return stream?.title ? `Diffusion / ${stream.title}` : "Diffusion selectionnee";
+      return stream?.title ? `Diffusion / ${stream.title}` : "Diffusion sélectionnée";
     }
 
     if (selectedChannelId) {
       const channel = channels.find((item) => item.id === selectedChannelId);
-      return channel?.name ? `Chaine / ${channel.name}` : "Chaine selectionnee";
+      return channel?.name ? `Chaîne / ${channel.name}` : "Chaîne sélectionnée";
     }
 
-    return "Organisation / toutes les chaines";
+    return "Organisation / toutes les chaînes";
   }, [channels, selectedChannelId, selectedStreamId, streams]);
 
   const baseImpressions = summary && "ok" in summary && summary.ok ? summary.kpi.impressions : 0;
@@ -271,20 +271,20 @@ export default function AdsDashboardPremium() {
 
       <section className="console-panel flex flex-wrap items-center gap-3 px-5 py-4">
         <Badge className="border-rose-500/20 bg-rose-500/10 text-rose-200">
-          Fenetre live {fmt(counters.impressions)} impressions / {fmt(counters.clicks)} clics
+          Fenêtre live {fmt(counters.impressions)} impressions / {fmt(counters.clicks)} clics
         </Badge>
         <Badge variant="secondary">{displayScopeLabel}</Badge>
-        <Badge variant="outline">{loadingFilters ? "Chargement des filtres" : "Filtres synchronises"}</Badge>
+        <Badge variant="outline">{loadingFilters ? "Chargement des filtres" : "Filtres synchronisés"}</Badge>
       </section>
 
       <FilterBar>
         <div className="min-w-[220px]">
           <Select value={channelSelectValue} onValueChange={(value) => setSelectedChannelId(value === "__all__" ? "" : value)}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Toutes les chaines" />
+              <SelectValue placeholder="Toutes les chaînes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">Toutes les chaines</SelectItem>
+              <SelectItem value="__all__">Toutes les chaînes</SelectItem>
               {channels.map((channel) => (
                 <SelectItem key={channel.id} value={channel.id}>
                   {channel.name}
@@ -328,14 +328,14 @@ export default function AdsDashboardPremium() {
         <KpiCard
           label="Impressions"
           value={fmt(totalImpressions)}
-          hint={`Fenetre live ${fmt(counters.impressions)}`}
+          hint={`Fenêtre live ${fmt(counters.impressions)}`}
           icon={<Eye className="size-4" />}
           loading={loading}
         />
         <KpiCard
           label="Clics"
           value={fmt(totalClicks)}
-          hint={`Fenetre live ${fmt(counters.clicks)}`}
+          hint={`Fenêtre live ${fmt(counters.clicks)}`}
           tone="info"
           icon={<MousePointerClick className="size-4" />}
           loading={loading}
@@ -351,7 +351,7 @@ export default function AdsDashboardPremium() {
         <KpiCard
           label="Audience live"
           value={selectedStreamId ? fmt(liveViewers) : "-"}
-          hint={selectedStreamId ? (liveStatus === "live" ? "Audience sur 35 secondes" : "Synchronisation...") : "Selectionnez une diffusion"}
+          hint={selectedStreamId ? (liveStatus === "live" ? "Audience sur 35 secondes" : "Synchronisation...") : "Sélectionnez une diffusion"}
           tone="success"
           icon={<Radio className="size-4" />}
           loading={loading}
@@ -405,7 +405,7 @@ export default function AdsDashboardPremium() {
               </div>
             ) : (
               <div className="flex h-[320px] items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] text-sm text-slate-400">
-                Donnees indisponibles.
+                Données indisponibles.
               </div>
             )}
           </CardContent>
@@ -432,7 +432,7 @@ export default function AdsDashboardPremium() {
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-white">{campaign.name}</div>
                       <div className="mt-1 text-xs text-slate-500">
-                        Type {campaign.type} / Priorite {campaign.priority}
+                        Type {campaign.type} / Priorité {campaign.priority}
                       </div>
                     </div>
                     <div className="text-xs font-semibold text-slate-300">{campaign.ctr.toFixed(2)}%</div>
@@ -454,15 +454,15 @@ export default function AdsDashboardPremium() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
-          <CardTitle>Activite recente</CardTitle>
+          <CardTitle>Activité récente</CardTitle>
           <div className="text-xs text-slate-500">
-            {counters.lastEventAt ? `Dernier evenement ${new Date(counters.lastEventAt).toLocaleTimeString("fr-FR")}` : "--"}
+            {counters.lastEventAt ? `Dernier événement ${new Date(counters.lastEventAt).toLocaleTimeString("fr-FR")}` : "--"}
           </div>
         </CardHeader>
         <CardContent>
           {events.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-slate-400">
-              Aucune activite recente.
+              Aucune activité récente.
             </div>
           ) : (
             <div className="space-y-2">

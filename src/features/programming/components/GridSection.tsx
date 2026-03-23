@@ -150,7 +150,7 @@ export function GridSection(props: GridSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaine</Label>
+            <Label>Chaîne</Label>
             <Select value={channelFilter} onValueChange={setChannelFilter}>
               <SelectTrigger className="console-field">
                 <SelectValue />
@@ -173,15 +173,15 @@ export function GridSection(props: GridSectionProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
-                <SelectItem value="active">Planifies + publies</SelectItem>
-                <SelectItem value="published">Publies uniquement</SelectItem>
+                <SelectItem value="active">Planifiés + publiés</SelectItem>
+                <SelectItem value="published">Publiés uniquement</SelectItem>
                 <SelectItem value="all">Tous les statuts</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid gap-2">
-            <Label>Visibilite</Label>
+            <Label>Visibilité</Label>
             <Select
               value={visibilityFilter}
               onValueChange={(value) => setVisibilityFilter(value as typeof visibilityFilter)}
@@ -192,7 +192,7 @@ export function GridSection(props: GridSectionProps) {
               <SelectContent className="border-slate-200 bg-white text-slate-950 dark:border-white/10 dark:bg-[#0f1724] dark:text-white">
                 <SelectItem value="all">Toutes</SelectItem>
                 <SelectItem value="public">Public</SelectItem>
-                <SelectItem value="private">Prive</SelectItem>
+                <SelectItem value="private">Privé</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -201,7 +201,7 @@ export function GridSection(props: GridSectionProps) {
         <div className="mt-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <CalendarDays className="h-3.5 w-3.5" />
-            Fenetre: {formatDateTime(windowModel.startIso)} - {formatDateTime(windowModel.endIso)}
+            Fenêtre : {formatDateTime(windowModel.startIso)} - {formatDateTime(windowModel.endIso)}
           </div>
           <Button
             type="button"
@@ -219,12 +219,12 @@ export function GridSection(props: GridSectionProps) {
         {loading ? (
           <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">Chargement de la grille...</div>
         ) : lanes.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">Aucun slot dans cette fenetre.</div>
+          <div className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">Aucun slot dans cette fenêtre.</div>
         ) : (
           <div className="min-w-[980px]" style={{ width: LABEL_WIDTH + timelineWidth }}>
             <div className="flex border-b border-slate-200/80 bg-slate-50/90 dark:border-white/10 dark:bg-white/[0.03]">
               <div className="shrink-0 px-3 py-2 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400" style={{ width: LABEL_WIDTH }}>
-                Chaine
+                Chaîne
               </div>
               <div className="relative shrink-0 h-10" style={{ width: timelineWidth }}>
                 {ticks.map((tick) => (

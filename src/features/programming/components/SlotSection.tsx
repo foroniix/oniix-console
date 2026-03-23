@@ -60,7 +60,7 @@ export function SlotSection(props: SlotSectionProps) {
         <div className="mb-4 flex flex-col gap-1">
           <h2 className="text-base font-semibold text-white">Planificateur de diffusion</h2>
           <p className="text-sm text-slate-400">
-            Une diffusion TV doit toujours etre rattachee a une chaine avec un debut et une fin. La grille publique et
+            Une diffusion TV doit toujours être rattachée à une chaîne avec un début et une fin. La grille publique et
             l&apos;EPG mobile s&apos;appuient sur ces slots.
           </p>
         </div>
@@ -92,7 +92,7 @@ export function SlotSection(props: SlotSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Debut</Label>
+            <Label>Début</Label>
             <Input
               type="datetime-local"
               value={form.startsAt}
@@ -112,13 +112,13 @@ export function SlotSection(props: SlotSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Chaine</Label>
+            <Label>Chaîne</Label>
             <Select value={form.channelId} onValueChange={(channelId) => onPatch({ channelId })}>
               <SelectTrigger className="console-field">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="border-[#223249] bg-[#0d1726] text-white">
-                <SelectItem value={NONE_VALUE}>Choisir une chaine</SelectItem>
+                <SelectItem value={NONE_VALUE}>Choisir une chaîne</SelectItem>
                 {channels.map((channel) => (
                   <SelectItem key={channel.id} value={channel.id}>
                     {channel.name}
@@ -148,7 +148,7 @@ export function SlotSection(props: SlotSectionProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label>Visibilite</Label>
+            <Label>Visibilité</Label>
             <Select
               value={form.visibility}
               onValueChange={(visibility) =>
@@ -173,7 +173,7 @@ export function SlotSection(props: SlotSectionProps) {
             <Input
               value={form.notes}
               onChange={(e) => onPatch({ notes: e.target.value })}
-              placeholder="Informations utiles pour l'equipe antenne"
+              placeholder="Informations utiles pour l&apos;équipe antenne"
               className="console-field"
             />
           </div>
@@ -193,7 +193,7 @@ export function SlotSection(props: SlotSectionProps) {
             className="bg-indigo-600 text-white hover:bg-indigo-500"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {saving ? "Enregistrement..." : form.id ? "Mettre a jour la diffusion" : "Planifier la diffusion"}
+            {saving ? "Enregistrement..." : form.id ? "Mettre à jour la diffusion" : "Planifier la diffusion"}
           </Button>
           {form.id ? (
             <Button
@@ -201,7 +201,7 @@ export function SlotSection(props: SlotSectionProps) {
               onClick={onReset}
               className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
             >
-              Annuler l&apos;edition
+              Annuler l&apos;édition
             </Button>
           ) : null}
         </div>
@@ -212,8 +212,8 @@ export function SlotSection(props: SlotSectionProps) {
           <thead className="bg-[rgba(255,255,255,0.03)] text-slate-400">
             <tr>
               <th className="px-3 py-2 text-left">Programme</th>
-              <th className="px-3 py-2 text-left">Chaine</th>
-              <th className="px-3 py-2 text-left">Debut</th>
+              <th className="px-3 py-2 text-left">Chaîne</th>
+              <th className="px-3 py-2 text-left">Début</th>
               <th className="px-3 py-2 text-left">Fin</th>
               <th className="px-3 py-2 text-left">Statut</th>
               <th className="px-3 py-2 text-right">Actions</th>
@@ -229,7 +229,7 @@ export function SlotSection(props: SlotSectionProps) {
             ) : slots.length === 0 ? (
               <tr>
                 <td className="px-3 py-3 text-slate-400" colSpan={6}>
-                  Aucune diffusion planifiee
+                  Aucune diffusion planifiée
                 </td>
               </tr>
             ) : (
@@ -249,7 +249,7 @@ export function SlotSection(props: SlotSectionProps) {
                       onClick={() => onEdit(slot)}
                       className="border-[#223249] bg-[rgba(255,255,255,0.03)] text-slate-100 hover:bg-white/6"
                     >
-                      Editer
+                      Éditer
                     </Button>
                     {canTransitionSlotStatus(slot.slotStatus, "published") &&
                     slot.slotStatus !== "published" ? (

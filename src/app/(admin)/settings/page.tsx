@@ -18,6 +18,7 @@ import {
 import { KpiCard, KpiRow } from "@/components/console/kpi";
 import { PageHeader } from "@/components/console/page-header";
 import { PageShell } from "@/components/console/page-shell";
+import { SponsorshipPilotCard } from "@/components/settings/sponsorship-pilot-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -107,7 +108,7 @@ export default function SettingsPage() {
         setIngest(iJson.ingest);
       }
     } catch {
-      setErr("Impossible de charger les parametres.");
+      setErr("Impossible de charger les paramètres.");
     } finally {
       setLoading(false);
     }
@@ -130,9 +131,9 @@ export default function SettingsPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setTenant(json.tenant);
-      setMsg("Organisation mise a jour.");
+      setMsg("Organisation mise à jour.");
     } catch (error) {
-      setErr(getErrorMessage(error, "Erreur de mise a jour de l organisation."));
+      setErr(getErrorMessage(error, "Erreur de mise à jour de l’organisation."));
     } finally {
       setSavingTenant(false);
     }
@@ -151,9 +152,9 @@ export default function SettingsPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setNewPassword("");
-      setMsg("Mot de passe mis a jour.");
+      setMsg("Mot de passe mis à jour.");
     } catch (error) {
-      setErr(getErrorMessage(error, "Erreur de mise a jour du mot de passe."));
+      setErr(getErrorMessage(error, "Erreur de mise à jour du mot de passe."));
     } finally {
       setSavingPwd(false);
     }
@@ -174,9 +175,9 @@ export default function SettingsPage() {
       if (!res.ok || !json.ok) throw new Error(json.error || "Erreur");
       setIngest(json.ingest);
       setNewIngestKey(json.key || "");
-      setMsg("Cle ingest regeneree. Copiez-la maintenant.");
+      setMsg("Clé ingest régénérée. Copiez-la maintenant.");
     } catch (error) {
-      setErr(getErrorMessage(error, "Erreur de rotation de la cle ingest."));
+      setErr(getErrorMessage(error, "Erreur de rotation de la clé ingest."));
     } finally {
       setRotatingIngest(false);
     }
@@ -186,22 +187,22 @@ export default function SettingsPage() {
     if (!newIngestKey) return;
     try {
       await navigator.clipboard.writeText(newIngestKey);
-      setMsg("Cle ingest copiee.");
+      setMsg("Clé ingest copiée.");
     } catch {
-      setErr("Impossible de copier la cle.");
+      setErr("Impossible de copier la clé.");
     }
   };
 
   const ingestStatusLabel = useMemo(() => {
-    if (ingest?.configured) return "Configure";
+    if (ingest?.configured) return "Configuré";
     if (ingest?.requiresMigration) return "Migration requise";
-    return "Non configure";
+    return "Non configuré";
   }, [ingest]);
 
   const ingestSourceLabel = useMemo(() => {
     if (!ingest) return "-";
-    if (ingest.source === "db") return "Base de donnees";
-    if (ingest.source === "env") return "Variable d environnement";
+    if (ingest.source === "db") return "Base de données";
+    if (ingest.source === "env") return "Variable d’environnement";
     return "Aucune";
   }, [ingest]);
 
@@ -212,15 +213,15 @@ export default function SettingsPage() {
     return (
       <PageShell>
         <PageHeader
-          title="Securite et parametres"
-          subtitle="Chargement du poste operateur, de l espace actif et des secrets applicatifs."
-          breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Parametres" }]}
+          title="Sécurité et paramètres"
+          subtitle="Chargement du poste opérateur, de l’espace actif et des secrets applicatifs."
+          breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Paramètres" }]}
           icon={<Shield className="size-5" />}
         />
         <Card>
           <CardContent className="flex min-h-[260px] items-center justify-center gap-2 text-sm text-slate-400">
             <Loader2 className="size-4 animate-spin" />
-            Chargement...
+            Chargement en cours...
           </CardContent>
         </Card>
       </PageShell>
@@ -230,9 +231,9 @@ export default function SettingsPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Securite et parametres"
-        subtitle="Compte operateur, espace actif et secrets applicatifs dans une vue de gouvernance unique."
-        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Parametres" }]}
+        title="Sécurité et paramètres"
+        subtitle="Compte opérateur, espace actif et secrets applicatifs dans une vue de gouvernance unique."
+        breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Paramètres" }]}
         icon={<Shield className="size-5" />}
         actions={
           <Button variant="outline" onClick={() => void load()}>
@@ -261,7 +262,7 @@ export default function SettingsPage() {
           </span>
           <div className="space-y-1">
             <p className={cn("text-sm font-semibold", err ? "text-rose-100" : "text-emerald-50")}>
-              {err ? "Action interrompue" : "Action confirmee"}
+              {err ? "Action interrompue" : "Action confirmée"}
             </p>
             <p className={cn("text-sm", err ? "text-rose-100/75" : "text-emerald-100/75")}>{err || msg}</p>
           </div>
@@ -272,13 +273,13 @@ export default function SettingsPage() {
         <KpiCard
           label="Compte"
           value={user?.email ?? "-"}
-          hint={`Role ${user?.role ? roleLabel(user.role) : "-"}`}
+          hint={`Rôle ${user?.role ? roleLabel(user.role) : "-"}`}
           icon={<User2 className="size-4" />}
         />
         <KpiCard
           label="Espace actif"
           value={tenant?.name ?? "-"}
-          hint={`Creation ${createdAtLabel}`}
+          hint={`Création ${createdAtLabel}`}
           icon={<Building2 className="size-4" />}
           tone="info"
         />
@@ -290,7 +291,7 @@ export default function SettingsPage() {
           tone={ingest?.configured ? "success" : ingest?.requiresMigration ? "warning" : "neutral"}
         />
         <KpiCard
-          label="Derniere rotation"
+          label="Dernière rotation"
           value={ingestRotatedLabel}
           hint="Lecture du secret applicatif courant."
           icon={<RefreshCw className="size-4" />}
@@ -302,13 +303,13 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User2 className="size-4" />
-              Compte operateur
+              Compte opérateur
             </CardTitle>
-            <CardDescription>Identite de connexion actuellement utilisee pour piloter la console.</CardDescription>
+            <CardDescription>Identité de connexion actuellement utilisée pour piloter la console.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <InfoRow label="Email" value={user?.email ?? "-"} />
-            <InfoRow label="Role" value={user?.role ? roleLabel(user.role) : "-"} />
+            <InfoRow label="Rôle" value={user?.role ? roleLabel(user.role) : "-"} />
             <InfoRow label="Tenant" value={user?.tenant_id ?? "-"} mono />
           </CardContent>
         </Card>
@@ -319,15 +320,15 @@ export default function SettingsPage() {
               <Building2 className="size-4" />
               Espace actif
             </CardTitle>
-            <CardDescription>Identite visible dans la navigation, les exports et les surfaces partagees.</CardDescription>
+            <CardDescription>Identité visible dans la navigation, les exports et les surfaces partagées.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs uppercase tracking-[0.16em] text-slate-500">Nom de l espace</label>
-              <Input value={tenantName} onChange={(event) => setTenantName(event.target.value)} placeholder="Nom de l espace" />
-              <p className="text-xs text-slate-500">Ce nom structure les vues operateur et les sorties de reporting.</p>
+              <label className="text-xs uppercase tracking-[0.16em] text-slate-500">Nom de l’espace</label>
+              <Input value={tenantName} onChange={(event) => setTenantName(event.target.value)} placeholder="Nom de l’espace" />
+              <p className="text-xs text-slate-500">Ce nom structure les vues opérateur et les sorties de reporting.</p>
             </div>
-            <InfoRow label="Cree le" value={createdAtLabel} />
+            <InfoRow label="Créé le" value={createdAtLabel} />
             <div className="flex justify-end">
               <Button onClick={saveTenant} disabled={savingTenant || !tenantName.trim()}>
                 {savingTenant ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
@@ -341,9 +342,9 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Smartphone className="size-4" />
-              Cle ingest applicative
+              Clé ingest applicative
             </CardTitle>
-            <CardDescription>Secret utilise par les applications et connecteurs pour remonter les signaux runtime.</CardDescription>
+            <CardDescription>Secret utilisé par les applications et connecteurs pour remonter les signaux runtime.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 lg:grid-cols-3">
@@ -354,7 +355,7 @@ export default function SettingsPage() {
 
             {ingest?.requiresMigration ? (
               <div className="rounded-[22px] border border-amber-400/18 bg-amber-500/10 px-4 py-4 text-sm text-amber-100">
-                Migration requise: appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis la console.
+                Migration requise : appliquez `docs/migrations/tenant_ingest_keys.sql` pour activer la rotation depuis la console.
               </div>
             ) : null}
 
@@ -362,8 +363,8 @@ export default function SettingsPage() {
               <div className="rounded-[24px] border border-emerald-400/18 bg-emerald-500/10 p-4">
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-semibold text-emerald-50">Nouvelle cle securisee</p>
-                    <p className="text-sm text-emerald-100/75">Elle n est affichee qu une seule fois.</p>
+                    <p className="text-sm font-semibold text-emerald-50">Nouvelle clé sécurisée</p>
+                    <p className="text-sm text-emerald-100/75">Elle n’est affichée qu’une seule fois.</p>
                   </div>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Input value={newIngestKey} readOnly className="font-mono text-xs" />
@@ -383,19 +384,21 @@ export default function SettingsPage() {
                 disabled={rotatingIngest || Boolean(ingest && !ingest.canRotate)}
               >
                 {rotatingIngest ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-                Faire tourner la cle
+                Faire tourner la clé
               </Button>
             </div>
           </CardContent>
         </Card>
 
+        <SponsorshipPilotCard />
+
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KeyRound className="size-4" />
-              Securite d acces
+              Sécurité d’accès
             </CardTitle>
-            <CardDescription>Durcissez le poste operateur avec un mot de passe recent et une hygiene minimale de gestion.</CardDescription>
+            <CardDescription>Durcissez le poste opérateur avec un mot de passe récent et une hygiène minimale de gestion.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="space-y-2">
@@ -404,12 +407,12 @@ export default function SettingsPage() {
                 type="password"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
-                placeholder="Minimum 8 caracteres"
+                placeholder="Minimum 8 caractères"
               />
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-500">Minimum 8 caracteres.</span>
+                <span className="text-slate-500">Minimum 8 caractères.</span>
                 <span className={pwdOk ? "text-emerald-300" : "text-slate-500"}>
-                  {pwdOk ? "Pret" : `${Math.max(0, 8 - newPassword.length)} restant(s)`}
+                  {pwdOk ? "Prêt" : `${Math.max(0, 8 - newPassword.length)} restant(s)`}
                 </span>
               </div>
               <div className="flex justify-end pt-2">
@@ -422,11 +425,11 @@ export default function SettingsPage() {
 
             <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-white">Hygiene d acces</p>
+                <p className="text-sm font-semibold text-white">Hygiène d’accès</p>
                 <ul className="space-y-2 text-sm text-slate-400">
-                  <li>Evitez les mots de passe reutilises entre plusieurs outils.</li>
-                  <li>Mixez lettres, chiffres et symboles sur les comptes operateurs.</li>
-                  <li>Stockez les secrets dans un gestionnaire dedie et non dans les navigateurs partages.</li>
+                  <li>Évitez les mots de passe réutilisés entre plusieurs outils.</li>
+                  <li>Mixez lettres, chiffres et symboles sur les comptes opérateurs.</li>
+                  <li>Stockez les secrets dans un gestionnaire dédié et non dans les navigateurs partagés.</li>
                 </ul>
               </div>
             </div>

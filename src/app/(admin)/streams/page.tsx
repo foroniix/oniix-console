@@ -22,7 +22,7 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
   { value: "ALL", label: "Tous" },
   { value: "LIVE", label: "En direct" },
   { value: "OFFLINE", label: "Hors ligne" },
-  { value: "ENDED", label: "Termine" },
+  { value: "ENDED", label: "Terminé" },
 ];
 
 function fmtTime(value: Date | null) {
@@ -59,7 +59,7 @@ export default function StreamsPage() {
       setChannels(channelRows);
       setLastUpdated(new Date());
     } catch (error) {
-      setLoadError(getErrorMessage(error, "Impossible de charger les flux. Verifiez la connexion puis reessayez."));
+      setLoadError(getErrorMessage(error, "Impossible de charger les flux. Vérifiez la connexion puis réessayez."));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -99,7 +99,7 @@ export default function StreamsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer ce flux ? Cette action est irreversible.")) return;
+    if (!confirm("Supprimer ce flux ? Cette action est irréversible.")) return;
     try {
       await removeStream(id);
       await loadData(true);
@@ -147,8 +147,8 @@ export default function StreamsPage() {
       <KpiRow>
         <KpiCard label="Flux total" value={stats.total} icon={<Tv2 className="size-4" />} loading={loading} />
         <KpiCard label="Flux live" value={stats.live} tone="success" icon={<RadioTower className="size-4" />} loading={loading} />
-        <KpiCard label="Alertes" value={stats.alerts} tone={stats.alerts > 0 ? "warning" : "neutral"} icon={<TriangleAlert className="size-4" />} hint={stats.alerts > 0 ? "Au moins un flux demande une action operateur." : "Aucune alerte active."} loading={loading} />
-        <KpiCard label="Derniere synchro" value={stats.updatedAt} tone="info" hint="Lecture manuelle pour garder la console reactive." loading={loading} />
+        <KpiCard label="Alertes" value={stats.alerts} tone={stats.alerts > 0 ? "warning" : "neutral"} icon={<TriangleAlert className="size-4" />} hint={stats.alerts > 0 ? "Au moins un flux demande une action opérateur." : "Aucune alerte active."} loading={loading} />
+        <KpiCard label="Dernière synchro" value={stats.updatedAt} tone="info" hint="Lecture manuelle pour garder la console réactive." loading={loading} />
       </KpiRow>
 
       <FilterBar onReset={resetFilters} resetDisabled={!query && statusFilter === "ALL" && channelFilter === "ALL"}>
@@ -158,10 +158,10 @@ export default function StreamsPage() {
 
         <Select value={channelFilter} onValueChange={setChannelFilter}>
           <SelectTrigger className="w-full sm:w-[240px]">
-            <SelectValue placeholder="Toutes les chaines" />
+            <SelectValue placeholder="Toutes les chaînes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Toutes les chaines</SelectItem>
+            <SelectItem value="ALL">Toutes les chaînes</SelectItem>
             {channels.map((channel) => (
               <SelectItem key={channel.id} value={String(channel.id)}>
                 {channel.name}
@@ -187,17 +187,17 @@ export default function StreamsPage() {
 
       <DataTableShell
         title="Liste des flux"
-        description={`${filteredStreams.length} resultat(s) sur ${streams.length} flux.`}
+        description={`${filteredStreams.length} résultat(s) sur ${streams.length} flux.`}
         loading={loading}
         error={loadError}
         onRetry={() => void loadData(false)}
         isEmpty={!loading && !loadError && filteredStreams.length === 0}
-        emptyTitle="Aucun flux trouve"
+        emptyTitle="Aucun flux trouvé"
         emptyDescription="Ajustez les filtres ou ouvrez votre premier direct HLS."
         emptyAction={
           <Button onClick={handleCreateNew}>
             <Plus className="size-4" />
-            Creer votre premier direct
+            Créer votre premier direct
           </Button>
         }
       >

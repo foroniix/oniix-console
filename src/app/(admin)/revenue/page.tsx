@@ -73,7 +73,7 @@ export default function RevenuePage() {
     } catch (error) {
       console.error(error);
       setData(null);
-      setErrorMsg("Erreur reseau pendant le chargement des revenus.");
+      setErrorMsg("Erreur réseau pendant le chargement des revenus.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -103,7 +103,7 @@ export default function RevenuePage() {
       })),
       breakdown: Array.isArray(data?.breakdown)
         ? data.breakdown.map((entry) => ({
-            label: String(entry?.label ?? "Sans libelle"),
+            label: String(entry?.label ?? "Sans libellé"),
             value: safeNumber(entry?.value),
           }))
         : [],
@@ -114,7 +114,7 @@ export default function RevenuePage() {
     <PageShell>
       <PageHeader
         title="Revenus"
-        subtitle="Suivez la traction commerciale, la volumetrie transactionnelle et la valeur moyenne generee par votre console."
+        subtitle="Suivez la traction commerciale, la volumétrie transactionnelle et la valeur moyenne générée par votre console."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Revenus" }]}
         icon={<Banknote className="size-5" />}
         actions={
@@ -150,7 +150,7 @@ export default function RevenuePage() {
         <KpiCard
           label="Revenu total"
           value={formatCurrency(normalized.totals.totalRevenue, normalized.currency)}
-          hint="Cumul consolide sur la fenetre selectionnee."
+          hint="Cumul consolidé sur la fenêtre sélectionnée."
           icon={<Banknote className="size-4" />}
           loading={loading && !data}
           tone="success"
@@ -158,7 +158,7 @@ export default function RevenuePage() {
         <KpiCard
           label="Transactions"
           value={formatInteger(normalized.totals.totalTransactions)}
-          hint="Volume total d operations monetisees."
+          hint="Volume total d’opérations monétisées."
           icon={<CreditCard className="size-4" />}
           loading={loading && !data}
           tone="info"
@@ -191,9 +191,9 @@ export default function RevenuePage() {
         <section className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
           <Card>
             <CardHeader>
-              <CardTitle>Evolution du revenu</CardTitle>
+              <CardTitle>Évolution du revenu</CardTitle>
               <CardDescription>
-                Tendance periodique des revenus sur la fenetre courante.
+                Tendance périodique des revenus sur la fenêtre courante.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -228,7 +228,7 @@ export default function RevenuePage() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex h-full items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] text-sm text-slate-400">
-                    Aucun revenu a afficher sur la periode selectionnee.
+                    Aucun revenu à afficher sur la période sélectionnée.
                   </div>
                 )}
               </div>
@@ -239,7 +239,7 @@ export default function RevenuePage() {
             <CardHeader>
               <CardTitle>Ventilation</CardTitle>
               <CardDescription>
-                Lectures complementaires issues de l API revenu.
+                Lectures complémentaires issues de l’API revenu.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -253,7 +253,7 @@ export default function RevenuePage() {
               ) : (
                 <>
                   <div className="flex items-center justify-between rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                    <p className="text-sm text-slate-300">Transactions monetisees</p>
+                    <p className="text-sm text-slate-300">Transactions monétisées</p>
                     <p className="text-sm font-semibold text-white">{formatInteger(normalized.totals.totalTransactions)}</p>
                   </div>
                   <div className="flex items-center justify-between rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3">

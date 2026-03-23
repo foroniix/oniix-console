@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Pencil, PauseCircle, PlayCircle, Archive, Trash2, MoreVertical } from "lucide-react";
+import { Pencil, PauseCircle, PlayCircle, Archive, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +16,7 @@ export type Campaign = {
   type: string; // DISPLAY | PREROLL | ...
   priority: number;
   status: "active" | "paused" | "archived";
-  targeting: any;
+  targeting: unknown;
   starts_at: string | null;
   ends_at: string | null;
   created_at: string;
@@ -47,13 +47,13 @@ export default function CampaignRowCard({
   const [busy, setBusy] = useState(false);
 
   const scheduleLabel = useMemo(() => {
-    if (!campaign.starts_at && !campaign.ends_at) return "Toujours actif (si status=active)";
-    return `${campaign.starts_at ? `Debut: ${fmtDate(campaign.starts_at)}` : "Debut: -"} - ${
+    if (!campaign.starts_at && !campaign.ends_at) return "Toujours active tant que le statut reste actif";
+    return `${campaign.starts_at ? `Début : ${fmtDate(campaign.starts_at)}` : "Début : -"} - ${
       campaign.ends_at ? `Fin: ${fmtDate(campaign.ends_at)}` : "Fin: -"
     }`;
   }, [campaign.starts_at, campaign.ends_at]);
 
-  const patch = async (body: any) => {
+  const patch = async (body: Record<string, unknown>) => {
     setBusy(true);
     try {
       const res = await fetch(`/api/ads/campaigns/${encodeURIComponent(campaign.id)}`, {
@@ -62,7 +62,7 @@ export default function CampaignRowCard({
         body: JSON.stringify(body),
       });
       const json = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(json?.error || "Update failed");
+      if (!res.ok) throw new Error(json?.error || "Mise à jour impossible");
       onChanged();
     } finally {
       setBusy(false);
@@ -70,14 +70,14 @@ export default function CampaignRowCard({
   };
 
   const del = async () => {
-    const ok = confirm("Supprimer cette campagne ? (les creatives liees seront supprimees)");
+    const ok = confirm("Supprimer cette campagne ? Les créations publicitaires liées seront aussi supprimées.");
     if (!ok) return;
 
     setBusy(true);
     try {
       const res = await fetch(`/api/ads/campaigns/${encodeURIComponent(campaign.id)}`, { method: "DELETE" });
       const json = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(json?.error || "Delete failed");
+      if (!res.ok) throw new Error(json?.error || "Suppression impossible");
       onChanged();
     } finally {
       setBusy(false);
@@ -97,7 +97,7 @@ export default function CampaignRowCard({
                 </div>
                 <div className="text-sm font-semibold text-white truncate">{campaign.name}</div>
                 <div className="text-[10px] text-zinc-500 border border-white/10 rounded-md px-2 py-1">
-                  {campaign.type} - prio {campaign.priority}
+                  {campaign.type} - priorité {campaign.priority}
                 </div>
               </div>
 

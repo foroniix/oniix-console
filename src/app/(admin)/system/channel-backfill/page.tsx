@@ -80,8 +80,8 @@ type DraftState = {
 };
 
 const FILTER_OPTIONS: Array<{ value: FilterMode; label: string }> = [
-  { value: "incomplete", label: "Incompletes" },
-  { value: "missingTenant", label: "Sans editeur" },
+  { value: "incomplete", label: "Incomplètes" },
+  { value: "missingTenant", label: "Sans éditeur" },
   { value: "missingOrigin", label: "Sans origine" },
   { value: "all", label: "Toutes" },
 ];
@@ -162,14 +162,14 @@ export default function ChannelBackfillPage() {
         const res = await fetch("/api/superadmin/channel-backfill", { cache: "no-store" });
         const json = (await res.json().catch(() => null)) as BackfillResponse | { ok?: false; error?: string } | null;
         if (!res.ok || !json || !("ok" in json) || !json.ok) {
-          setError((json && "error" in json && json.error) || "Impossible de charger la remediation des chaines.");
+          setError((json && "error" in json && json.error) || "Impossible de charger la remédiation des chaînes.");
           return;
         }
 
         setData(json);
         syncDrafts(json.channels);
       } catch {
-        setError("Erreur reseau sur la remediation des chaines.");
+        setError("Erreur réseau sur la remédiation des chaînes.");
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -214,7 +214,7 @@ export default function ChannelBackfillPage() {
 
       const json = (await res.json().catch(() => null)) as SaveResponse | null;
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible de sauvegarder la chaine.");
+        setError((json && "error" in json && json.error) || "Impossible de sauvegarder la chaîne.");
         return;
       }
 
@@ -236,9 +236,9 @@ export default function ChannelBackfillPage() {
         return { ...current, channels, stats };
       });
 
-      setNotice("Les changements ont ete sauvegardes.");
+      setNotice("Les changements ont été sauvegardés.");
     } catch {
-      setError("Erreur reseau pendant la sauvegarde.");
+      setError("Erreur réseau pendant la sauvegarde.");
     } finally {
       setSavingId(null);
     }
@@ -253,16 +253,16 @@ export default function ChannelBackfillPage() {
       const res = await fetch("/api/superadmin/channel-backfill", { method: "POST" });
       const json = (await res.json().catch(() => null)) as AutofillResponse | null;
       if (!res.ok || !json || !("ok" in json) || !json.ok) {
-        setError((json && "error" in json && json.error) || "Impossible d executer le preremplissage.");
+        setError((json && "error" in json && json.error) || "Impossible d’exécuter le préremplissage.");
         return;
       }
 
       setNotice(
-        `${json.updated} chaine(s) mises a jour automatiquement (${json.updated_origin} origine(s), ${json.updated_tenant} rattachement(s) editeur).`
+        `${json.updated} chaîne(s) mises à jour automatiquement (${json.updated_origin} origine(s), ${json.updated_tenant} rattachement(s) éditeur).`
       );
       await load(true);
     } catch {
-      setError("Erreur reseau pendant le preremplissage.");
+      setError("Erreur réseau pendant le préremplissage.");
     } finally {
       setAutofilling(false);
     }
@@ -274,12 +274,12 @@ export default function ChannelBackfillPage() {
   return (
     <PageShell>
       <PageHeader
-        title="Remediation des chaines"
-        subtitle="Rattachez les chaines orphelines et injectez les origines HLS manquantes avant exposition OTT."
+        title="Remédiation des chaînes"
+        subtitle="Rattachez les chaînes orphelines et injectez les origines HLS manquantes avant exposition OTT."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
-          { label: "Systeme", href: "/system" },
-          { label: "Remediation des chaines" },
+          { label: "Système", href: "/system" },
+          { label: "Remédiation des chaînes" },
         ]}
         icon={<ShieldCheck className="size-5" />}
         actions={
@@ -290,11 +290,11 @@ export default function ChannelBackfillPage() {
             </Button>
             <Button variant="outline" onClick={() => void onAutofill()} disabled={autofilling}>
               {autofilling ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-              Preremplir
+              Préremplir
             </Button>
             <Button asChild>
               <Link href="/channels">
-                Ouvrir les chaines
+                Ouvrir les chaînes
                 <ArrowUpRight className="size-4" />
               </Link>
             </Button>
@@ -308,7 +308,7 @@ export default function ChannelBackfillPage() {
             <AlertTriangle className="size-4" />
           </span>
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-rose-100">Operation en echec</p>
+            <p className="text-sm font-semibold text-rose-100">Opération en échec</p>
             <p className="text-sm text-rose-100/75">{error}</p>
           </div>
         </section>
@@ -320,7 +320,7 @@ export default function ChannelBackfillPage() {
             <CheckCircle2 className="size-4" />
           </span>
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-emerald-50">Operation terminee</p>
+            <p className="text-sm font-semibold text-emerald-50">Opération terminée</p>
             <p className="text-sm text-emerald-100/75">{notice}</p>
           </div>
         </section>
@@ -328,24 +328,24 @@ export default function ChannelBackfillPage() {
 
       <KpiRow>
         <KpiCard
-          label="Chaines totales"
+          label="Chaînes totales"
           value={numberFormat(data?.stats.total ?? 0)}
-          hint="Base complete detectee dans le parc."
+          hint="Base complète détectée dans le parc."
           icon={<Waypoints className="size-4" />}
           loading={loading && !data}
         />
         <KpiCard
-          label="Chaines incompletes"
+          label="Chaînes incomplètes"
           value={numberFormat(data?.stats.incomplete ?? 0)}
-          hint="Au moins un prerequis manque pour l exposition OTT."
+          hint="Au moins un prérequis manque pour l’exposition OTT."
           tone="warning"
           icon={<AlertTriangle className="size-4" />}
           loading={loading && !data}
         />
         <KpiCard
-          label="Sans editeur"
+          label="Sans éditeur"
           value={numberFormat(data?.stats.missingTenant ?? 0)}
-          hint="Chaines non rattachees a un tenant."
+          hint="Chaînes non rattachées à un tenant."
           tone="error"
           icon={<ShieldCheck className="size-4" />}
           loading={loading && !data}
@@ -362,13 +362,13 @@ export default function ChannelBackfillPage() {
 
       <DataTableShell
         title="Corrections globales"
-        description={`${numberFormat(filteredChannels.length)} chaine(s) visibles sur ${numberFormat(data?.stats.total ?? 0)}.`}
+        description={`${numberFormat(filteredChannels.length)} chaîne(s) visibles sur ${numberFormat(data?.stats.total ?? 0)}.`}
         loading={loading && !data}
         error={tableError}
         onRetry={() => void load(false)}
         isEmpty={!loading && !tableError && filteredChannels.length === 0}
-        emptyTitle="Aucune chaine a traiter"
-        emptyDescription="Le filtre actif ne remonte plus de chaine a corriger."
+        emptyTitle="Aucune chaîne à traiter"
+        emptyDescription="Le filtre actif ne remonte plus de chaîne à corriger."
       >
         <FilterBar onReset={resetFilter} resetDisabled={filter === "incomplete"}>
           <div className="inline-flex flex-wrap items-center gap-2">
@@ -389,7 +389,7 @@ export default function ChannelBackfillPage() {
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-[rgba(10,16,24,0.96)] backdrop-blur">
             <TableRow className="hover:bg-transparent">
-              <TableHead>Chaine</TableHead>
+              <TableHead>Chaîne</TableHead>
               <TableHead>Tenant</TableHead>
               <TableHead>Origine HLS</TableHead>
               <TableHead>Etat</TableHead>
@@ -431,10 +431,10 @@ export default function ChannelBackfillPage() {
                         }
                       >
                         <SelectTrigger className="w-[220px]">
-                          <SelectValue placeholder="Choisir un editeur" />
+                          <SelectValue placeholder="Choisir un éditeur" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__none__">Aucun editeur</SelectItem>
+                          <SelectItem value="__none__">Aucun éditeur</SelectItem>
                           {(data?.tenants ?? []).map((tenant) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
                               {tenant.name}
@@ -442,7 +442,7 @@ export default function ChannelBackfillPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-slate-500">Actuel: {channel.tenant_name ?? "Non affecte"}</p>
+                      <p className="text-xs text-slate-500">Actuel : {channel.tenant_name ?? "Non affecté"}</p>
                     </div>
                   </TableCell>
 
@@ -463,7 +463,7 @@ export default function ChannelBackfillPage() {
                         className="min-w-[340px] font-mono text-xs"
                       />
                       <p className="text-xs text-slate-500">
-                        {channel.origin_hls_url ? "Origine configuree." : "Origine manquante."}
+                        {channel.origin_hls_url ? "Origine configurée." : "Origine manquante."}
                       </p>
                     </div>
                   </TableCell>
@@ -472,8 +472,8 @@ export default function ChannelBackfillPage() {
                     <div className="flex flex-col items-start gap-2">
                       <IssueBadge
                         active={channel.issues.missingTenant}
-                        okLabel="Editeur OK"
-                        issueLabel="Sans editeur"
+                        okLabel="Éditeur OK"
+                        issueLabel="Sans éditeur"
                       />
                       <IssueBadge
                         active={channel.issues.missingOrigin}

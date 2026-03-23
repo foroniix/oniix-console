@@ -111,9 +111,9 @@ export default function StreamDialog({ open, onOpenChange, streamToEdit, channel
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Mettre a jour le flux" : "Creer un nouveau flux"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Mettre à jour le flux" : "Créer un nouveau flux"}</DialogTitle>
           <DialogDescription>
-            Renseignez la source, le canal de diffusion et le statut operateur pour garder la supervision propre.
+            Renseignez la source, le canal de diffusion et le statut opérateur pour garder la supervision propre.
           </DialogDescription>
         </DialogHeader>
 
@@ -134,7 +134,7 @@ export default function StreamDialog({ open, onOpenChange, streamToEdit, channel
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="stream-channel">Chaine associee</Label>
+              <Label htmlFor="stream-channel">Chaîne associée</Label>
               <Select
                 value={formData.channelId}
                 onValueChange={(value) => {
@@ -143,10 +143,10 @@ export default function StreamDialog({ open, onOpenChange, streamToEdit, channel
                 }}
               >
                 <SelectTrigger id="stream-channel" className="w-full">
-                  <SelectValue placeholder="Selectionner une chaine" />
+                  <SelectValue placeholder="Sélectionner une chaîne" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NONE">Aucune chaine</SelectItem>
+                  <SelectItem value="NONE">Aucune chaîne</SelectItem>
                   {channelOptions.map((channel) => (
                     <SelectItem key={channel.id} value={channel.id}>
                       {channel.name}
@@ -171,7 +171,7 @@ export default function StreamDialog({ open, onOpenChange, streamToEdit, channel
                 <SelectContent>
                   <SelectItem value="OFFLINE">Hors ligne</SelectItem>
                   <SelectItem value="LIVE">En direct</SelectItem>
-                  <SelectItem value="ENDED">Termine</SelectItem>
+                  <SelectItem value="ENDED">Terminé</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -191,10 +191,10 @@ export default function StreamDialog({ open, onOpenChange, streamToEdit, channel
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="stream-description">Note operateur</Label>
+              <Label htmlFor="stream-description">Note opérateur</Label>
               <Textarea
                 id="stream-description"
-                placeholder="Contexte technique, fenetre de diffusion, contact d'escalade..."
+                placeholder="Contexte technique, fenêtre de diffusion, contact d'escalade..."
                 value={formData.description}
                 onChange={(event) => {
                   setFormData((current) => ({ ...current, description: event.target.value }));
@@ -217,7 +217,7 @@ export default function StreamDialog({ open, onOpenChange, streamToEdit, channel
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? <Loader2 className="size-4 animate-spin" /> : null}
-              {isEditing ? "Enregistrer" : "Creer le flux"}
+              {isEditing ? "Enregistrer" : "Créer le flux"}
             </Button>
           </DialogFooter>
         </form>

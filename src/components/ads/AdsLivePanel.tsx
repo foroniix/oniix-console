@@ -17,7 +17,7 @@ function eventLabel(event: string) {
   if (key.includes("click")) return "Clic";
   if (key.includes("impression")) return "Impression";
   if (key.includes("view")) return "Vue";
-  return "Activite";
+  return "Activité";
 }
 
 export default function AdsLivePanel(props: { streamId?: string | null }) {
@@ -69,7 +69,7 @@ export default function AdsLivePanel(props: { streamId?: string | null }) {
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-white">{fmt(totalImpressions)}</div>
             <div className="mt-1 text-[11px] text-zinc-500">
-              Fenetre live : {fmt(counters.impressions)}
+              Fenêtre live : {fmt(counters.impressions)}
               {counters.lastEventAt ? ` - ${new Date(counters.lastEventAt).toLocaleTimeString("fr-FR")}` : ""}
             </div>
           </CardContent>
@@ -84,7 +84,7 @@ export default function AdsLivePanel(props: { streamId?: string | null }) {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tight text-white">{fmt(totalClicks)}</div>
-            <div className="mt-1 text-[11px] text-zinc-500">Fenetre live : {fmt(counters.clicks)}</div>
+            <div className="mt-1 text-[11px] text-zinc-500">Fenêtre live : {fmt(counters.clicks)}</div>
           </CardContent>
         </Card>
 
@@ -106,7 +106,7 @@ export default function AdsLivePanel(props: { streamId?: string | null }) {
 
       <Card className="border-white/5 bg-zinc-900/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500">Activite recente</CardTitle>
+          <CardTitle className="text-[11px] uppercase tracking-widest text-zinc-500">Activité récente</CardTitle>
         </CardHeader>
         <CardContent>
           {loading && !kpi ? (
@@ -117,7 +117,7 @@ export default function AdsLivePanel(props: { streamId?: string | null }) {
 
           <div className="space-y-2">
             {events.length === 0 ? (
-              <div className="py-6 text-center text-sm text-zinc-600">Aucune activite recente pour le moment.</div>
+              <div className="py-6 text-center text-sm text-zinc-600">Aucune activité récente pour le moment.</div>
             ) : (
               events.map((event) => (
                 <div

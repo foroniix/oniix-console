@@ -4,9 +4,19 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function isElement<P = unknown>(node: unknown): node is React.ReactElement<P> {
+function isElement<P extends object = Record<string, unknown>>(
+  node: unknown
+): node is React.ReactElement<P> {
   return React.isValidElement(node);
 }
+
+type TabsListChildProps = {
+  children?: React.ReactNode;
+};
+
+type TabsTriggerChildProps = {
+  value?: string;
+};
 
 type TabsContextValue = {
   id: string;
@@ -45,13 +55,20 @@ export function Tabs({ defaultValue, value, onValueChange, className, children }
       const rootChildren = React.Children.toArray(children);
 
       for (const child of rootChildren) {
-        if (!isElement(child) || (child.type as { displayName?: string }).displayName !== "TabsList") continue;
+        if (
+          !isElement<TabsListChildProps>(child) ||
+          (child.type as { displayName?: string }).displayName !== "TabsList"
+        ) {
+          continue;
+        }
 
-        const listChildren = React.Children.toArray(child.props.children).filter(isElement);
+        const listChildren = React.Children.toArray(child.props.children).filter((listChild) =>
+          isElement<TabsTriggerChildProps>(listChild)
+        );
         const trigger = listChildren.find(
           (listChild) => (listChild.type as { displayName?: string }).displayName === "TabsTrigger"
         );
-        const nextValue = trigger?.props?.value;
+        const nextValue = trigger?.props.value;
         if (nextValue) return String(nextValue);
       }
 
