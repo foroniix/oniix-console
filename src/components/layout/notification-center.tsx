@@ -300,7 +300,7 @@ export default function NotificationCenter() {
 
         <div className="px-5 py-4 text-xs text-slate-500">
           <p className="font-medium text-white">Besoin d&apos;aide ?</p>
-          <p className="mt-1">Le support Oniix reste disponible pour les incidents, acces et demandes d&apos;onboarding.</p>
+          <p className="mt-1">Le support Oniix reste disponible pour les incidents, accès et demandes d&apos;onboarding.</p>
           <SupportMailLink className="mt-3 inline-flex text-sm font-medium text-[var(--brand-primary)] hover:text-white">
             support@oniix.space
           </SupportMailLink>

@@ -47,7 +47,7 @@ export default function AcceptInviteClient() {
     <AuthFrame
       eyebrow="Invitation"
       title="Rejoignez un espace existant."
-      subtitle="Connectez-vous avec l'email invite puis validez votre code pour activer l'acces."
+      subtitle="Connectez-vous avec l'email invité puis validez votre code pour activer l'accès."
       footer={<p className="text-sm text-slate-400">Apres validation, vous serez redirige vers votre console.</p>}
     >
       <div className="space-y-5">

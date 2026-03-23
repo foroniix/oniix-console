@@ -19,7 +19,7 @@ export function FilterBar({ children, onReset, resetDisabled = false, className 
       {onReset ? (
         <Button type="button" variant="outline" onClick={onReset} disabled={resetDisabled}>
           <RotateCcw className="size-4" />
-          Reinitialiser
+          Réinitialiser
         </Button>
       ) : null}
     </section>

@@ -33,12 +33,12 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/dashboard",
         label: "Pilotage",
-        description: "Vue d'ensemble des operations",
+        description: "Vue d'ensemble des opérations",
         icon: LayoutDashboard,
       },
       {
         href: "/channels",
-        label: "Chaines TV",
+        label: "Chaînes TV",
         description: "Catalogue et distribution",
         icon: Tv2,
       },
@@ -61,7 +61,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/ads",
-        label: "Monetisation",
+        label: "Monétisation",
         description: "Inventaire et campagnes",
         icon: Megaphone,
       },
@@ -78,14 +78,14 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/users",
-        label: "Equipe",
-        description: "Acces, roles et invites",
+        label: "Équipe",
+        description: "Accès, rôles et invites",
         icon: Users,
       },
       {
         href: "/activities",
         label: "Journal",
-        description: "Audit operationnel",
+        description: "Audit opérationnel",
         icon: Activity,
       },
     ],
@@ -95,8 +95,8 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/settings",
-        label: "Parametres",
-        description: "Workspace et securite",
+        label: "Paramètres",
+        description: "Workspace et sécurité",
         icon: Settings,
       },
     ],
@@ -107,13 +107,13 @@ const ALL_ROUTES = NAV_SECTIONS.flatMap((section) => section.items);
 const AUX_ROUTES: NavItem[] = [
   {
     href: "/tenants",
-    label: "Editeurs",
-    description: "Portefeuille multi-editeur",
+    label: "Éditeurs",
+    description: "Portefeuille multi-éditeur",
     icon: Database,
   },
   {
     href: "/system",
-    label: "Systeme",
+    label: "Système",
     description: "Outils plateforme",
     icon: Shield,
   },

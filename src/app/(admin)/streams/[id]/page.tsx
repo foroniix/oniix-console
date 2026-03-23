@@ -661,7 +661,7 @@ export default function StreamDetailPage() {
     <PageShell>
       <PageHeader
         title={stream.title}
-        subtitle="Supervision du direct, qualite de diffusion, configuration securisee et journal d'exploitation."
+        subtitle="Supervision du direct, qualité de diffusion, configuration sécurisée et journal d'exploitation."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Directs", href: "/streams" }, { label: "Regie du flux" }]}
         actions={
           <>
@@ -695,7 +695,7 @@ export default function StreamDetailPage() {
       <div className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-slate-400">
         Actualisation auto : <span className="font-medium text-slate-100">{autoRefreshEnabled ? "ACTIVE" : "PAUSEE"}</span>
         {" | "}
-        Derniere synchro diagnostics : <span className="font-medium text-slate-100">{dateLabel(lastRefreshAt)}</span>
+        Dernière synchro diagnostics : <span className="font-medium text-slate-100">{dateLabel(lastRefreshAt)}</span>
       </div>
 
       <KpiRow>
@@ -733,7 +733,7 @@ export default function StreamDetailPage() {
                 />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3">
-                <span className="text-xs text-slate-400">Derniere activite : {dateLabel(stream.updatedAt)}</span>
+                <span className="text-xs text-slate-400">Dernière activité : {dateLabel(stream.updatedAt)}</span>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => setMuted((v) => !v)} >
                     {muted ? <VolumeX className="mr-2 size-4" /> : <Volume2 className="mr-2 size-4" />}
@@ -755,7 +755,7 @@ export default function StreamDetailPage() {
 
           <div className="space-y-4">
             <div className="console-panel p-4">
-              <h3 className="text-sm font-semibold">Actions operateur</h3>
+              <h3 className="text-sm font-semibold">Actions opérateur</h3>
               <div className="mt-3 space-y-2">
                 <Button onClick={onSetLive} disabled={stream.status === "LIVE"} className="w-full justify-start"><Play className="mr-2 size-4" />Passer en direct</Button>
                 <Button onClick={onStop} disabled={stream.status !== "LIVE"} variant="outline" className="w-full justify-start"><Square className="mr-2 size-4" />Arreter le flux</Button>
@@ -805,7 +805,7 @@ export default function StreamDetailPage() {
               </div>
             </div>
             <div className="console-panel p-4">
-              <h3 className="text-sm font-semibold">Derniere validation HLS</h3>
+              <h3 className="text-sm font-semibold">Dernière validation HLS</h3>
               {validation ? (
                 <div className="mt-3 space-y-2 text-sm text-slate-400">
                   <StatusBadge status={validation.summary === "OK" ? "HEALTHY" : validation.summary === "WARN" ? "DEGRADED" : "DOWN"} />
@@ -817,7 +817,7 @@ export default function StreamDetailPage() {
               )}
               <div className="mt-3 rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
                 <p>Erreurs player 1h: <span className="font-medium text-slate-100">{analytics?.summary.errors1h ?? 0}</span></p>
-                <p>Bitrate reel 1 h: <span className="font-medium text-slate-100">{analytics?.summary.bitrateAvg1h ?? 0} kbps</span></p>
+                <p>Bitrate réel 1 h: <span className="font-medium text-slate-100">{analytics?.summary.bitrateAvg1h ?? 0} kbps</span></p>
               </div>
             </div>
           </div>
@@ -839,7 +839,7 @@ export default function StreamDetailPage() {
             </div>
           </div>
 
-          <DataTableShell title="Controles automatiques" description="Manifest, variants, playlist et segments." loading={validating} isEmpty={!validation || validation.checks.length === 0} emptyTitle="Aucun controle" emptyDescription="Lancez une validation HLS.">
+          <DataTableShell title="Contrôles automatiques" description="Manifest, variants, playlist et segments." loading={validating} isEmpty={!validation || validation.checks.length === 0} emptyTitle="Aucun contrôle" emptyDescription="Lancez une validation HLS.">
             <Table>
               <TableHeader><TableRow><TableHead>Controle</TableHead><TableHead>Statut</TableHead><TableHead>Details</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -885,7 +885,7 @@ export default function StreamDetailPage() {
               <div className="space-y-2 pt-6">
                 <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>DVR</Label><Switch checked={config.dvrEnabled} onCheckedChange={(checked) => patchConfig({ dvrEnabled: checked, dvrWindowSec: checked ? Math.max(config.dvrWindowSec, 3600) : 0 })} /></div>
                 <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Faible latence</Label><Switch checked={config.latency !== "normal"} onCheckedChange={(checked) => patchConfig({ latency: checked ? "low" : "normal" })} /></div>
-                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Retour arriere</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => patchConfig({ timeshift: checked })} /></div>
+                <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>Retour arrière</Label><Switch checked={config.timeshift} onCheckedChange={(checked) => patchConfig({ timeshift: checked })} /></div>
                 <div className="flex items-center justify-between rounded-[18px] border border-white/8 bg-white/[0.03] px-3 py-2"><Label>DRM</Label><Switch checked={config.drmEnabled} onCheckedChange={(checked) => patchConfig({ drmEnabled: checked })} /></div>
               </div>
             </div>
@@ -929,7 +929,7 @@ export default function StreamDetailPage() {
             <Input value={geoProbe} onChange={(e) => setGeoProbe(e.target.value)} placeholder="FR"  />
             {geoResult ? <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3"><StatusBadge status={geoResult.status} /><p className="mt-2 text-sm text-slate-400">{geoResult.text}</p></div> : null}
             <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
-              Checklist de mise en service : manifest accessible, DRM OK, geoblocage verifie, EPG publie.
+              Checklist de mise en service : manifest accessible, DRM OK, géoblocage vérifié, EPG publié.
             </div>
             <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
               Etat d&apos;edition : <span className="font-medium text-slate-100">{configDirty ? "Modifications non sauvegardees" : "A jour"}</span>
@@ -938,7 +938,7 @@ export default function StreamDetailPage() {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
-          <DataTableShell title="Serie 24 h" description="Audience, bitrate et erreurs" loading={analyticsLoading} isEmpty={!analyticsLoading && series.length === 0} emptyTitle="Pas de metriques" emptyDescription="Aucune mesure sur 24 h.">
+          <DataTableShell title="Série 24 h" description="Audience, bitrate et erreurs" loading={analyticsLoading} isEmpty={!analyticsLoading && series.length === 0} emptyTitle="Pas de métriques" emptyDescription="Aucune mesure sur 24 h.">
             <Table>
               <TableHeader><TableRow><TableHead>Horodatage</TableHead><TableHead>Audience</TableHead><TableHead>Bitrate</TableHead><TableHead>Erreurs</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -956,7 +956,7 @@ export default function StreamDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4">
-          <DataTableShell title="Journal d'audit" description="Qui a change quoi sur ce flux" isEmpty={audits.length === 0} emptyTitle="Aucun evenement" emptyDescription="L'audit est alimente a chaque action sensible.">
+          <DataTableShell title="Journal d'audit" description="Qui a changé quoi sur ce flux" isEmpty={audits.length === 0} emptyTitle="Aucun événement" emptyDescription="L'audit est alimenté à chaque action sensible.">
             <Table>
               <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acteur</TableHead><TableHead>Action</TableHead><TableHead>Details</TableHead></TableRow></TableHeader>
               <TableBody>
@@ -976,4 +976,3 @@ export default function StreamDetailPage() {
     </PageShell>
   );
 }
-

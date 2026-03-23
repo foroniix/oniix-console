@@ -17,14 +17,14 @@ type AuthFrameProps = {
 };
 
 const TRUST_POINTS = [
-  "Sessions securisees et cookies httpOnly",
-  "Tenancy et roles appliques cote backend",
-  "Invitations, workspaces et support consolides",
+  "Sessions sécurisées et cookies httpOnly",
+  "Tenancy et rôles appliqués côté backend",
+  "Invitations, workspaces et support consolidés",
 ];
 
 const CONTROL_POINTS = [
-  { label: "Acces", value: "Espaces et roles" },
-  { label: "Pilotage", value: "Chaines et directs" },
+  { label: "Accès", value: "Espaces et rôles" },
+  { label: "Pilotage", value: "Chaînes et directs" },
   { label: "Analytics", value: "Web et mobile" },
 ];
 
@@ -44,7 +44,7 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               <div className="flex items-center justify-between gap-4">
                 <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08]">
                   <ArrowLeft className="size-4" />
-                  Retour accueil
+                  Retour à l&apos;accueil
                 </Link>
 
                 <SupportMailLink className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08]">
@@ -78,7 +78,7 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
                       Oniix Console
                     </span>
                     <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] text-emerald-200">
-                      Acces securise
+                      Accès sécurisé
                     </span>
                   </div>
                 </div>
@@ -119,7 +119,7 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-6 text-sm text-slate-400">
                 <div className="inline-flex items-center gap-2">
                   <ShieldCheck className="size-4 text-[var(--brand-primary)]" />
-                  Acces operateur et support plateforme
+                  Accès opérateur et support plateforme
                 </div>
                 <SupportMailLink className="font-medium text-slate-200 hover:text-[var(--brand-primary)]">
                   {SUPPORT_EMAIL}

@@ -112,12 +112,12 @@ function SidebarFooter() {
             {SUPPORT_EMAIL}
             <ArrowUpRight className="size-4" />
           </SupportMailLink>
-          <p className="mt-2 text-xs leading-5 text-slate-400">Incidents, acces, onboarding et besoins operationnels.</p>
+          <p className="mt-2 text-xs leading-5 text-slate-400">Incidents, accès, onboarding et besoins opérationnels.</p>
         </div>
 
         <Button variant="outline" onClick={handleLogout} className="mt-4 w-full justify-start text-slate-200 hover:text-white">
           <LogOut className="size-4" />
-          Deconnexion
+          Déconnexion
         </Button>
       </div>
     </div>
@@ -131,10 +131,10 @@ export default function Sidebar() {
         <Link href="/dashboard" className="block">
           <span className="console-chip">Control room</span>
           <div className="mt-4">
-            <OniixLogo size="md" subtitle="Operations, programmation et revenus" />
+            <OniixLogo size="md" subtitle="Opérations, programmation et revenus" />
           </div>
           <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">
-            Un seul poste pour piloter les chaines, les directs, les audiences et les acces.
+            Un seul poste pour piloter les chaînes, les directs, les audiences et les accès.
           </p>
         </Link>
       </div>

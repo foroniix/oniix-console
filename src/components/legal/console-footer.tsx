@@ -22,13 +22,13 @@ export function ConsoleFooter({ compact = false, className }: ConsoleFooterProps
     >
       <div className={cn("flex flex-col gap-3 md:flex-row md:items-center md:justify-between", compact && "gap-2.5")}>
         <div className="space-y-1">
-          <p className="font-medium text-white">(c) {year} Oniix Console. Pilotage OTT multi-editeur.</p>
-          <p className="text-slate-400">Securite des acces, gouvernance des espaces et support plateforme.</p>
+          <p className="font-medium text-white">(c) {year} Oniix Console. Pilotage OTT multi-éditeur.</p>
+          <p className="text-slate-400">Sécurité des accès, gouvernance des espaces et support plateforme.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 md:justify-end">
           <Link href="/privacy" className="transition hover:text-white">
-            Confidentialite
+            Confidentialité
           </Link>
           <Link href="/cookies" className="transition hover:text-white">
             Cookies

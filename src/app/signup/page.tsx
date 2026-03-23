@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const PASSWORD_RULES = [
-  { id: "length", label: "12 caracteres minimum", test: (value: string) => value.length >= 12 },
+  { id: "length", label: "12 caractères minimum", test: (value: string) => value.length >= 12 },
   { id: "lower", label: "une minuscule", test: (value: string) => /[a-z]/.test(value) },
   { id: "upper", label: "une majuscule", test: (value: string) => /[A-Z]/.test(value) },
   { id: "number", label: "un chiffre", test: (value: string) => /\d/.test(value) },
-  { id: "symbol", label: "un caractere special", test: (value: string) => /[^A-Za-z0-9]/.test(value) },
+  { id: "symbol", label: "un caractère spécial", test: (value: string) => /[^A-Za-z0-9]/.test(value) },
 ];
 
 function Field({
@@ -70,7 +70,7 @@ export default function SignupPage() {
     }
 
     if (checks.some((rule) => !rule.valid)) {
-      setError("Le mot de passe ne respecte pas le niveau de securite requis.");
+      setError("Le mot de passe ne respecte pas le niveau de sécurité requis.");
       return;
     }
 
@@ -108,7 +108,7 @@ export default function SignupPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Erreur d'inscription. Reessayez.");
+      setError("Erreur d'inscription. Réessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +118,7 @@ export default function SignupPage() {
     <AuthFrame
       eyebrow="Creation d'espace"
       title="Lancez votre espace Oniix."
-      subtitle="Configurez votre organisation, securisez les acces et demarrez avec une base propre pour l'exploitation OTT."
+      subtitle="Configurez votre organisation, sécurisez les accès et démarrez avec une base propre pour l'exploitation OTT."
       footer={
         <div className="flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
@@ -151,7 +151,7 @@ export default function SignupPage() {
               type="text"
               value={orgName}
               onChange={(event) => setOrgName(event.target.value)}
-              placeholder="Nom de votre chaine ou groupe"
+              placeholder="Nom de votre chaîne ou groupe"
               required
               className="pl-11"
             />
@@ -194,7 +194,7 @@ export default function SignupPage() {
         </div>
 
         <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-          <div className="text-sm font-semibold text-white">Niveau de securite requis</div>
+          <div className="text-sm font-semibold text-white">Niveau de sécurité requis</div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {checks.map((rule) => (
               <div key={rule.id} className="inline-flex items-center gap-2 text-sm text-slate-300">
@@ -220,7 +220,7 @@ export default function SignupPage() {
             onChange={(event) => setAcceptedTerms(event.target.checked)}
             className="mt-0.5 size-4 rounded border-white/15 bg-transparent text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
           />
-          <span>J&apos;accepte les conditions d&apos;utilisation et la creation securisee de mon espace Oniix.</span>
+          <span>J&apos;accepte les conditions d&apos;utilisation et la création sécurisée de mon espace Oniix.</span>
         </label>
 
         {error ? (

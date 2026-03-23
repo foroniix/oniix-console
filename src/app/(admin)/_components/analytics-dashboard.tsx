@@ -185,10 +185,10 @@ function formatSyncClock(iso: string | null | undefined) {
 
 function formatRelativeDuration(iso: string | null | undefined) {
   const parsed = Date.parse(iso ?? "");
-  if (!Number.isFinite(parsed)) return "a l'instant";
+  if (!Number.isFinite(parsed)) return "à l'instant";
 
   const diffSeconds = Math.max(0, Math.round((Date.now() - parsed) / 1000));
-  if (diffSeconds < 10) return "a l'instant";
+  if (diffSeconds < 10) return "à l'instant";
   if (diffSeconds < 60) return `il y a ${diffSeconds}s`;
 
   const minutes = Math.floor(diffSeconds / 60);
@@ -208,7 +208,7 @@ function liveStatusMeta(
 ) {
   if (status === "live" && transport === "sse") {
     return {
-      label: "Flux temps reel",
+      label: "Flux temps réel",
       className:
         "border-emerald-300/80 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-300",
       detail: "Signal direct actif.",
@@ -226,7 +226,7 @@ function liveStatusMeta(
 
   if (status === "error") {
     return {
-      label: "Synchronisation degradee",
+      label: "Synchronisation dégradée",
       className:
         "border-amber-300/80 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-300",
       detail: "Le dashboard continue en mode secours.",
@@ -321,7 +321,7 @@ export default function AnalyticsDashboard() {
         const channelsJson = (await channelsRes.json().catch(() => null)) as ChannelRecord[] | null;
         const streamsJson = (await streamsRes.json().catch(() => null)) as StreamRecord[] | null;
 
-        if (!channelsRes.ok || !Array.isArray(channelsJson)) throw new Error("Impossible de charger les chaines.");
+        if (!channelsRes.ok || !Array.isArray(channelsJson)) throw new Error("Impossible de charger les chaînes.");
         if (!streamsRes.ok || !Array.isArray(streamsJson)) throw new Error("Impossible de charger les flux.");
         if (cancelled) return;
 
@@ -526,18 +526,18 @@ export default function AnalyticsDashboard() {
               Pilotage audience
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Lecture unifiee de l&apos;audience, de l&apos;engagement et du direct multi-chaines pour piloter la plateforme
+              Lecture unifiée de l&apos;audience, de l&apos;engagement et du direct multi-chaînes pour piloter la plateforme
               sans angle mort produit ou operationnel.
             </p>
             <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
-                {activeChannelId ? `Filtre - ${selectedChannel?.name ?? "Chaine selectionnee"}` : "Vue d'ensemble multi-chaines"}
+                {activeChannelId ? `Filtre - ${selectedChannel?.name ?? "Chaîne sélectionnée"}` : "Vue d'ensemble multi-chaînes"}
               </div>
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
                 Role - {role}
               </div>
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
-                Derniere synchro - {formatSyncClock(snapshot?.asOf ?? lastLoadedAt)}
+                Dernière synchro - {formatSyncClock(snapshot?.asOf ?? lastLoadedAt)}
               </div>
             </div>
           </div>
@@ -573,10 +573,10 @@ export default function AnalyticsDashboard() {
                 </div>
                 <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
                   <SelectTrigger className="h-11 w-full rounded-2xl border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
-                    <SelectValue placeholder="Toutes les chaines" />
+                    <SelectValue placeholder="Toutes les chaînes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les chaines</SelectItem>
+                    <SelectItem value="all">Toutes les chaînes</SelectItem>
                     {channels.map((channel) => (
                       <SelectItem key={channel.id} value={channel.id}>
                         {channel.name}
@@ -658,7 +658,7 @@ export default function AnalyticsDashboard() {
               </CardDescription>
             </div>
             <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-              {formatNumber(data.kpi.totalEvents)} evenements
+              {formatNumber(data.kpi.totalEvents)} événements
             </Badge>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -678,7 +678,7 @@ export default function AnalyticsDashboard() {
                 <div className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">
                   {data.kpi.totalUsers > 0 ? (data.kpi.totalEvents / data.kpi.totalUsers).toFixed(1) : "0.0"}
                 </div>
-                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">evenements par utilisateur</div>
+                <div className="mt-1 text-sm text-slate-600 dark:text-slate-300">événements par utilisateur</div>
               </div>
             </div>
 
@@ -884,7 +884,7 @@ export default function AnalyticsDashboard() {
           <CardHeader>
             <CardTitle className="text-xl text-slate-950 dark:text-white">Signal recent</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-300">
-              Activite recente, sessions live et synthese operateur.
+              Activité récente, sessions live et synthèse opérateur.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -932,7 +932,7 @@ export default function AnalyticsDashboard() {
                 ))
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
-                  Aucune activite recente pour le filtre courant.
+                  Aucune activité récente pour le filtre courant.
                 </div>
               )}
             </div>

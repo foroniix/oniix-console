@@ -145,7 +145,7 @@ export default function Topbar() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/channels">Nouvelle chaine</Link>
+                <Link href="/channels">Nouvelle chaîne</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/streams">Nouveau direct</Link>
@@ -231,7 +231,7 @@ export default function Topbar() {
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={handleLogout}>
                 <LogOut className="size-4" />
-                Deconnexion
+                Déconnexion
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

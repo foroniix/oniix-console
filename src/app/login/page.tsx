@@ -58,7 +58,7 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Erreur de connexion. Reessayez.");
+      setError("Erreur de connexion. Réessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +68,7 @@ export default function LoginPage() {
     <AuthFrame
       eyebrow="Connexion"
       title="Accedez a votre console."
-      subtitle="Retrouvez vos espaces, vos chaines, vos operations live et vos rapports depuis un poste unique."
+      subtitle="Retrouvez vos espaces, vos chaînes, vos opérations live et vos rapports depuis un poste unique."
       footer={
         <div className="flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>

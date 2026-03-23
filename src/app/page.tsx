@@ -22,8 +22,8 @@ import { Button } from "@/components/ui/button";
 const OPERATING_PILLARS = [
   {
     label: "Cadre",
-    value: "Multi-tenant reel",
-    body: "Espaces, roles et invitations alignes avec l'exploitation.",
+    value: "Multi-tenant réel",
+    body: "Espaces, rôles et invitations alignés avec l'exploitation.",
   },
   {
     label: "Diffusion",
@@ -32,37 +32,37 @@ const OPERATING_PILLARS = [
   },
   {
     label: "Mesure",
-    value: "Analytics consolidees",
-    body: "Web, mobile, watch time et activite dans le meme poste.",
+    value: "Analytics consolidées",
+    body: "Web, mobile, watch time et activité dans le même poste.",
   },
 ];
 
 const PLATFORM_AREAS = [
   {
     title: "Exploitation live",
-    description: "Suivi des chaines, etats de diffusion et incidents depuis une seule boucle operateur.",
+    description: "Suivi des chaînes, états de diffusion et incidents depuis une seule boucle opérateur.",
     icon: RadioTower,
   },
   {
     title: "Programmation TV",
-    description: "Preparation editoriale, diffusion planifiee et continuite de grille.",
+    description: "Préparation éditoriale, diffusion planifiée et continuité de grille.",
     icon: CalendarRange,
   },
   {
     title: "Distribution et players",
-    description: "Playback securise, lecture web et mobile, controle d'acces et runtime.",
+    description: "Playback sécurisé, lecture web et mobile, contrôle d'accès et runtime.",
     icon: Smartphone,
   },
   {
     title: "Equipe et gouvernance",
-    description: "Workspaces, roles, journal d'activite, notifications et support.",
+    description: "Workspaces, rôles, journal d'activité, notifications et support.",
     icon: Users,
   },
 ];
 
 const TRUST_SIGNALS = [
   {
-    title: "Acces securises",
+    title: "Accès sécurisés",
     body: "Sessions protegees, cookies applicatifs et isolation des espaces.",
     icon: LockKeyhole,
   },
@@ -79,7 +79,7 @@ const TRUST_SIGNALS = [
 ];
 
 const EXECUTION_STEPS = [
-  "Preparer un programme sur la bonne chaine.",
+  "Préparer un programme sur la bonne chaîne.",
   "Lancer ou surveiller le direct dans la meme console.",
   "Lire l'audience live et les signaux web/mobile sans double source.",
   "Tracer les actions sensibles dans un historique exploitable.",
@@ -111,7 +111,7 @@ const HOME_STRUCTURED_DATA = {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       name: "Oniix",
-      description: "Plateforme OTT pour chaines TV, editeurs, diffusion securisee, programmation et analytics.",
+      description: "Plateforme OTT pour chaînes TV, éditeurs, diffusion sécurisée, programmation et analytics.",
       url: "https://oniix.space",
     },
   ],
@@ -160,7 +160,7 @@ export default async function HomePage() {
               </h1>
 
               <p className="mt-5 max-w-3xl text-base leading-8 text-slate-300 sm:text-[1.02rem]">
-                Oniix centralise chaines, directs, planning, inventaire publicitaire et analytics dans un espace securise.
+                Oniix centralise chaînes, directs, planning, inventaire publicitaire et analytics dans un espace sécurisé.
               </p>
             </div>
 
@@ -241,7 +241,7 @@ export default async function HomePage() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Couverture produit</div>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">Une console concue pour le travail operateur.</h2>
+                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">Une console conçue pour le travail opérateur.</h2>
               </div>
               <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-slate-400">
                 Oniix Platform
@@ -266,7 +266,7 @@ export default async function HomePage() {
 
           <div className="grid gap-5">
             <div className="console-panel p-5 sm:p-6">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Parcours operateur</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Parcours opérateur</div>
               <div className="mt-3 text-2xl font-semibold tracking-tight text-white">Du planning a la lecture live.</div>
 
               <div className="mt-5 space-y-3">
@@ -285,7 +285,7 @@ export default async function HomePage() {
             </div>
 
             <div className="console-panel p-5 sm:p-6">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Acces direct</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Accès direct</div>
               <div className="mt-3 text-2xl font-semibold tracking-tight text-white">Ouvrir la console ou lancer un espace.</div>
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
                 Une entree claire pour un produit de pilotage, pas une vitrine decorative.

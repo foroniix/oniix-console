@@ -114,7 +114,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         });
         const tokenJson = await tokenRes.json().catch(() => null);
         if (!tokenRes.ok || !tokenJson?.ok) {
-          throw new Error(tokenJson?.error || "Impossible d'initialiser l'acces de lecture.");
+          throw new Error(tokenJson?.error || "Impossible d'initialiser l'accès de lecture.");
         }
 
         const token = String(tokenJson.token ?? "");
@@ -134,7 +134,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         });
         const playbackJson = (await playbackRes.json().catch(() => null)) as PlaybackUrlResponse | null;
         if (!playbackRes.ok || !playbackJson?.ok) {
-          throw new Error((playbackJson as { error?: string } | null)?.error || "Impossible de resoudre la lecture en direct.");
+          throw new Error((playbackJson as { error?: string } | null)?.error || "Impossible de résoudre la lecture en direct.");
         }
 
         const channelId = String(playbackJson.channel_id ?? "").trim();
@@ -281,7 +281,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-[#8ea5c5]">
-                      Aucune source lisible n&apos;est disponible pour cette chaine.
+                      Aucune source lisible n&apos;est disponible pour cette chaîne.
                     </div>
                   )}
                 </div>
@@ -410,7 +410,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     ))}
                     {(!activeLane || activeLane.slots.length === 0) && (
                       <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf]">
-                        Aucune grille publiee pour cette chaine pour le moment.
+                        Aucune grille publiée pour cette chaîne pour le moment.
                       </p>
                     )}
                   </div>
@@ -438,7 +438,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                   ))}
                   {activeReplaysForChannel.length === 0 && (
                     <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf] sm:col-span-2">
-                      Aucun replay disponible pour cette chaine.
+                      Aucun replay disponible pour cette chaîne.
                     </p>
                   )}
                 </div>

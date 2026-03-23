@@ -142,14 +142,14 @@ export default function GeoBlockingPage() {
           <CardHeader>
             <CardTitle>Configuration de service</CardTitle>
             <CardDescription>
-              Activez le controle geo-IP et choisissez la logique d application la plus adaptee aux droits en cours.
+              Activez le contrôle geo-IP et choisissez la logique d&apos;application la plus adaptée aux droits en cours.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-center justify-between rounded-[24px] border border-white/8 bg-white/[0.03] px-4 py-4">
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-white">Protection territoriale</p>
-                <p className="text-sm text-slate-400">Coupe ou autorise l acces selon la provenance IP detectee.</p>
+                <p className="text-sm text-slate-400">Coupe ou autorise l&apos;accès selon la provenance IP détectée.</p>
               </div>
               <Switch checked={isEnabled} onCheckedChange={setIsEnabled} />
             </div>
@@ -205,7 +205,7 @@ export default function GeoBlockingPage() {
         </Card>
 
         <DataTableShell
-          title="Territoires controles"
+          title="Territoires contrôlés"
           description="Liste operationnelle des pays explicitement rattaches a la politique active."
           isEmpty={filteredCountries.length === 0}
           emptyTitle="Aucun pays visible"
@@ -251,7 +251,7 @@ export default function GeoBlockingPage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-white">{country.name}</p>
                     <p className="text-xs text-slate-500">
-                      {mode === "blacklist" ? "Acces coupe depuis ce territoire." : "Acces autorise uniquement pour ce territoire."}
+                      {mode === "blacklist" ? "Accès coupé depuis ce territoire." : "Accès autorisé uniquement pour ce territoire."}
                     </p>
                   </div>
                 </div>

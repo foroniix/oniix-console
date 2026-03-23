@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     "OTT platform",
     "plateforme OTT",
     "TV channels",
-    "chaines TV",
+    "chaînes TV",
     "programmation TV",
     "mobile streaming",
     "broadcast operations",

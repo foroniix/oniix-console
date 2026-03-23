@@ -5,26 +5,26 @@ import { OniixLogo } from "@/components/branding/oniix-logo";
 import { ConsoleFooter } from "@/components/legal/console-footer";
 
 export const metadata: Metadata = {
-  title: "Confidentialite",
-  description: "Principes de confidentialite de la plateforme Oniix.",
+  title: "Confidentialité",
+  description: "Principes de confidentialité de la plateforme Oniix.",
 };
 
 const sections = [
   {
-    title: "Donnees de compte",
-    body: "Oniix traite les informations necessaires a l'authentification, a la gestion des acces, aux roles, aux invitations et a l'exploitation des espaces editeurs.",
+    title: "Données de compte",
+    body: "Oniix traite les informations nécessaires à l'authentification, à la gestion des accès, aux rôles, aux invitations et à l'exploitation des espaces éditeurs.",
   },
   {
-    title: "Donnees d'exploitation",
-    body: "La plateforme peut enregistrer des signaux d'activite, des journaux d'audit, des evenements live et des metriques techniques afin d'assurer la supervision des chaines, des flux et de la securite produit.",
+    title: "Données d'exploitation",
+    body: "La plateforme peut enregistrer des signaux d'activité, des journaux d'audit, des événements live et des métriques techniques afin d'assurer la supervision des chaînes, des flux et de la sécurité produit.",
   },
   {
-    title: "Usage des donnees",
-    body: "Les donnees sont utilisees pour exploiter la console, securiser la diffusion, assister les equipes, diagnostiquer les incidents et ameliorer l'experience utilisateur. Elles ne sont pas revendues a des tiers.",
+    title: "Usage des données",
+    body: "Les données sont utilisées pour exploiter la console, sécuriser la diffusion, assister les équipes, diagnostiquer les incidents et améliorer l'expérience utilisateur. Elles ne sont pas revendues à des tiers.",
   },
   {
     title: "Demandes et support",
-    body: "Pour toute demande liee a la confidentialite, a la securite ou a l'exercice de droits, le point de contact officiel reste support@oniix.space.",
+    body: "Pour toute demande liée à la confidentialité, à la sécurité ou à l'exercice de droits, le point de contact officiel reste support@oniix.space.",
   },
 ];
 
@@ -38,16 +38,16 @@ export default function PrivacyPage() {
             <div className="space-y-4">
               <OniixLogo size="md" subtitle="Cadre de confiance produit" />
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a7066]">Informations legales</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight">Confidentialite</h1>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a7066]">Informations légales</p>
+                <h1 className="mt-2 text-3xl font-semibold tracking-tight">Confidentialité</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-[#655d53]">
-                  Oniix opere une plateforme OTT professionnelle. La confidentialite couvre l&apos;acces a la console, les
-                  espaces editeurs, les signaux live et les journaux d&apos;exploitation.
+                  Oniix opère une plateforme OTT professionnelle. La confidentialité couvre l&apos;accès à la console, les
+                  espaces éditeurs, les signaux live et les journaux d&apos;exploitation.
                 </p>
               </div>
             </div>
             <Link href="/" className="text-sm font-medium text-[#3549be] hover:text-[#2f40aa]">
-              Retour a l&apos;accueil
+              Retour à l&apos;accueil
             </Link>
           </div>
         </header>
