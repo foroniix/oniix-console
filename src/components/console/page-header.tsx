@@ -50,7 +50,7 @@ export function PageHeader({
 
           <div className="flex items-start gap-4">
             {icon ? (
-              <span className="mt-0.5 inline-flex size-[3.1rem] shrink-0 items-center justify-center rounded-[22px] border border-white/10 bg-white/[0.05] text-[var(--brand-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <span className="mt-0.5 inline-flex size-[3.1rem] shrink-0 items-center justify-center rounded-[22px] border border-white/10 bg-white/[0.04] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 {icon}
               </span>
             ) : null}

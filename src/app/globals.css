@@ -16,15 +16,15 @@ html {
 }
 
 :root {
-  --bg: #03101e;
-  --surface: #071a2e;
-  --surface-2: #0d2239;
-  --surface-3: #123050;
-  --border-strong: rgba(114, 166, 221, 0.26);
-  --border-soft: rgba(114, 166, 221, 0.12);
-  --text-primary: #f5f8fd;
-  --text-secondary: #d8e3ef;
-  --text-muted: #869ab0;
+  --bg: #000000;
+  --surface: #060606;
+  --surface-2: #0d0d0d;
+  --surface-3: #141414;
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-soft: rgba(255, 255, 255, 0.08);
+  --text-primary: #f5f5f5;
+  --text-secondary: #dbdbdb;
+  --text-muted: #8f8f8f;
   --brand-primary: #5cb7ff;
   --brand-primary-strong: #198cf0;
   --brand-primary-soft: rgba(25, 140, 240, 0.14);
@@ -139,7 +139,7 @@ html {
   }
 
   .console-panel {
-    @apply relative overflow-hidden rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,26,45,0.88),rgba(5,17,30,0.9))] shadow-[0_28px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl;
+    @apply relative overflow-hidden rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(8,8,8,0.96),rgba(3,3,3,0.98))] shadow-[0_28px_80px_rgba(0,0,0,0.48)] backdrop-blur-xl;
   }
 
   .console-panel::before {
@@ -148,8 +148,8 @@ html {
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(140deg, rgba(255, 255, 255, 0.06), transparent 42%),
-      radial-gradient(circle at top right, rgba(92, 183, 255, 0.1), transparent 30%);
+      linear-gradient(140deg, rgba(255, 255, 255, 0.04), transparent 42%),
+      radial-gradient(circle at top right, rgba(255, 255, 255, 0.03), transparent 30%);
   }
 
   .console-panel > * {
@@ -158,19 +158,15 @@ html {
   }
 
   .console-panel-muted {
-    @apply rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,24,41,0.82),rgba(7,17,31,0.78))] backdrop-blur;
+    @apply rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(11,11,11,0.88),rgba(5,5,5,0.9))] backdrop-blur;
   }
 
   .console-hero {
     @apply relative overflow-hidden rounded-[34px] border border-white/10 shadow-[0_32px_96px_rgba(0,0,0,0.4)];
     background:
-      linear-gradient(90deg, rgba(4, 15, 28, 0.94) 0%, rgba(4, 16, 29, 0.78) 42%, rgba(4, 15, 28, 0.88) 100%),
-      radial-gradient(circle at top left, rgba(92, 183, 255, 0.2), transparent 34%),
-      radial-gradient(circle at top right, rgba(240, 162, 92, 0.12), transparent 28%),
-      url("/branding/editorial/oniix-control-room.svg");
-    background-size: auto, auto, auto, 520px;
-    background-repeat: no-repeat;
-    background-position: center, top left, top right, right -60px top -24px;
+      linear-gradient(90deg, rgba(0, 0, 0, 0.98) 0%, rgba(7, 7, 7, 0.95) 42%, rgba(0, 0, 0, 0.98) 100%),
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 30%),
+      radial-gradient(circle at top right, rgba(255, 255, 255, 0.03), transparent 24%);
   }
 
   .console-hero::after {
@@ -182,11 +178,11 @@ html {
   }
 
   .console-toolbar {
-    @apply rounded-[26px] border border-white/10 bg-[rgba(8,21,36,0.82)] shadow-[0_22px_58px_rgba(0,0,0,0.28)] backdrop-blur-xl;
+    @apply rounded-[26px] border border-white/10 bg-[rgba(7,7,7,0.92)] shadow-[0_22px_58px_rgba(0,0,0,0.34)] backdrop-blur-xl;
   }
 
   .console-field {
-    @apply rounded-2xl border border-white/10 bg-[rgba(5,17,28,0.82)] text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)];
+    @apply rounded-2xl border border-white/10 bg-[rgba(8,8,8,0.96)] text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)];
   }
 
   .console-chip {

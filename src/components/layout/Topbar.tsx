@@ -83,7 +83,7 @@ export default function Topbar() {
   }, [router]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-[rgba(5,15,27,0.72)] backdrop-blur-2xl">
+    <header className="sticky top-0 z-30 border-b border-white/8 bg-[rgba(0,0,0,0.88)] backdrop-blur-2xl">
       <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
         <Sheet>
           <SheetTrigger asChild>
@@ -169,9 +169,7 @@ export default function Topbar() {
               <Button variant="ghost" className="h-11 gap-2 rounded-[18px] px-2 text-slate-100 hover:text-white sm:px-3">
                 <Avatar className="size-9 border border-white/10">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-                  <AvatarFallback className="bg-[rgba(122,183,255,0.16)] text-[var(--brand-primary)]">
-                    {buildInitials(displayName, email)}
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-white/[0.08] text-white">{buildInitials(displayName, email)}</AvatarFallback>
                 </Avatar>
                 <span className="hidden text-left sm:block">
                   <span className="block text-sm font-semibold text-white">{displayName}</span>
@@ -180,7 +178,7 @@ export default function Topbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel className="space-y-1 normal-case tracking-normal text-left">
+              <DropdownMenuLabel className="space-y-1 text-left normal-case tracking-normal">
                 <p className="truncate text-sm font-semibold text-white">{displayName}</p>
                 <p className="truncate text-xs text-slate-400">{email ?? CONSOLE_PRODUCT_DESCRIPTION}</p>
               </DropdownMenuLabel>
@@ -214,7 +212,7 @@ export default function Topbar() {
                         {workspace.isActive ? (
                           <Check className="size-4 text-emerald-400" />
                         ) : isSwitching ? (
-                          <RefreshCw className="size-4 animate-spin text-[var(--brand-primary)]" />
+                          <RefreshCw className="size-4 animate-spin text-white" />
                         ) : (
                           <span className="size-4" />
                         )}

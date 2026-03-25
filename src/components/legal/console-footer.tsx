@@ -15,7 +15,7 @@ export function ConsoleFooter({ compact = false, className }: ConsoleFooterProps
   return (
     <footer
       className={cn(
-        "rounded-[26px] border border-white/10 bg-[rgba(6,18,31,0.78)] px-5 py-4 text-sm text-slate-300 shadow-[0_20px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl",
+        "rounded-[26px] border border-white/10 bg-[rgba(5,5,5,0.94)] px-5 py-4 text-sm text-slate-300 shadow-[0_20px_42px_rgba(0,0,0,0.32)] backdrop-blur-xl",
         compact && "rounded-[22px] px-4 py-3 text-xs",
         className
       )}
@@ -33,7 +33,7 @@ export function ConsoleFooter({ compact = false, className }: ConsoleFooterProps
           <Link href="/cookies" className="transition hover:text-white">
             Cookies
           </Link>
-          <SupportMailLink className="font-medium text-slate-100 hover:text-[var(--brand-primary)]">
+          <SupportMailLink className="font-medium text-slate-100 hover:text-white">
             {SUPPORT_EMAIL}
           </SupportMailLink>
         </div>

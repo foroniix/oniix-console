@@ -38,7 +38,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   className={cn(
                     "group relative flex items-center gap-3 rounded-[22px] border px-3.5 py-3 transition-all duration-200",
                     active
-                      ? "border-[#5cb7ff]/38 bg-[linear-gradient(180deg,rgba(56,137,210,0.2),rgba(18,50,82,0.24))] text-white shadow-[0_18px_34px_rgba(12,18,28,0.3)]"
+                      ? "border-white/12 bg-[linear-gradient(180deg,rgba(20,20,20,0.96),rgba(8,8,8,0.96))] text-white shadow-[0_18px_34px_rgba(0,0,0,0.34)]"
                       : "border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.04] hover:text-white"
                   )}
                 >
@@ -46,7 +46,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     className={cn(
                       "inline-flex size-11 items-center justify-center rounded-[18px] border transition-colors",
                       active
-                        ? "border-[#77a8e0]/28 bg-[rgba(122,183,255,0.12)] text-[#9fd0ff]"
+                        ? "border-white/12 bg-white/[0.06] text-white"
                         : "border-white/8 bg-white/[0.03] text-slate-400 group-hover:border-white/12 group-hover:text-white"
                     )}
                   >
@@ -58,7 +58,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     <span className="mt-0.5 block truncate text-[11px] text-slate-500">{item.description}</span>
                   </span>
 
-                  {active ? <span className="size-2 rounded-full bg-[var(--brand-primary)]" /> : null}
+                  {active ? <span className="size-2 rounded-full bg-white" /> : null}
                 </Link>
               );
             })}
@@ -89,9 +89,7 @@ function SidebarFooter() {
         <div className="flex items-center gap-3">
           <Avatar className="size-11 border border-white/10">
             {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
-            <AvatarFallback className="bg-[rgba(122,183,255,0.16)] text-[var(--brand-primary)]">
-              {buildInitials(displayName, email)}
-            </AvatarFallback>
+            <AvatarFallback className="bg-white/[0.08] text-white">{buildInitials(displayName, email)}</AvatarFallback>
           </Avatar>
 
           <div className="min-w-0">
@@ -104,11 +102,11 @@ function SidebarFooter() {
 
         <div className="mt-4 rounded-[20px] border border-white/8 bg-white/[0.03] p-4">
           <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-            <ShieldCheck className="size-3.5 text-[var(--brand-primary)]" />
+            <ShieldCheck className="size-3.5 text-white" />
             Support
           </div>
-          <SupportMailLink className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-[var(--brand-primary)]">
-            <Mail className="size-4 text-[var(--brand-primary)]" />
+          <SupportMailLink className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-white transition hover:text-white/80">
+            <Mail className="size-4 text-white" />
             {SUPPORT_EMAIL}
             <ArrowUpRight className="size-4" />
           </SupportMailLink>
@@ -126,12 +124,9 @@ function SidebarFooter() {
 
 export default function Sidebar() {
   return (
-    <aside className="relative hidden h-full w-[316px] shrink-0 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(5,17,31,0.96),rgba(7,20,35,0.9))] shadow-[0_28px_72px_rgba(0,0,0,0.34)] lg:flex">
+    <aside className="relative hidden h-full w-[316px] shrink-0 flex-col overflow-hidden rounded-[32px] border border-white/8 bg-[linear-gradient(180deg,rgba(4,4,4,0.98),rgba(0,0,0,0.99))] shadow-[0_28px_72px_rgba(0,0,0,0.42)] lg:flex">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="console-scene-image right-[-18%] top-[-4%] h-[250px] w-[250px]"
-          style={{ backgroundImage: "url('/branding/editorial/oniix-signal-wall.svg')" }}
-        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.04),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.02),transparent_20%)]" />
       </div>
       <div className="relative border-b border-white/10 p-5">
         <Link href="/dashboard" className="block">
@@ -140,7 +135,7 @@ export default function Sidebar() {
             <OniixLogo size="md" subtitle="Opérations, programmation et revenus" />
           </div>
           <p className="mt-3 max-w-xs text-sm leading-6 text-slate-400">
-            Poste de pilotage Oniix pour la diffusion, le catalogue et l’exploitation.
+            Poste de pilotage Oniix pour la diffusion, le catalogue et l&apos;exploitation.
           </p>
         </Link>
       </div>
