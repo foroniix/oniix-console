@@ -15,7 +15,15 @@ type Props = {
   enableStatsIngest?: boolean;
   statsIngestIntervalMs?: number;
   statsIngestPaused?: boolean;
+  sourceKind?: "hls" | "dash" | "file";
 };
+
+function inferSourceKind(src: string) {
+  const normalized = src.toLowerCase();
+  if (normalized.includes(".mpd")) return "dash";
+  if (normalized.includes(".m3u8")) return "hls";
+  return "file";
+}
 
 export default function HlsPlayer({
   streamId,
@@ -29,6 +37,7 @@ export default function HlsPlayer({
   enableStatsIngest = false,
   statsIngestIntervalMs = 15000,
   statsIngestPaused = false,
+  sourceKind,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -37,7 +46,11 @@ export default function HlsPlayer({
   const errorCountRef = useRef<number>(0);
 
   const [errorToken, setErrorToken] = useState<{ src: string; message: string } | null>(null);
-  const error = errorToken?.src === src ? errorToken.message : null;
+  const staticError =
+    (sourceKind ?? inferSourceKind(src)) === "dash"
+      ? "Lecture MPEG-DASH non supportee sur cette surface web."
+      : null;
+  const error = staticError ?? (errorToken?.src === src ? errorToken.message : null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -46,11 +59,31 @@ export default function HlsPlayer({
     onErrorChange?.(null);
     errorCountRef.current = 0;
     bitrateRef.current = 0;
+    const effectiveSourceKind = sourceKind ?? inferSourceKind(src);
+
+    if (effectiveSourceKind === "dash") {
+      onErrorChange?.("Lecture MPEG-DASH non supportee sur cette surface web.");
+      return;
+    }
+
+    if (effectiveSourceKind === "file") {
+      video.src = src;
+      video.play().catch(() => {});
+      return () => {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      };
+    }
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
       video.play().catch(() => {});
-      return;
+      return () => {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      };
     }
 
     if (Hls.isSupported()) {
@@ -86,7 +119,7 @@ export default function HlsPlayer({
     }
 
     onErrorChange?.("Navigateur non supporte");
-  }, [onErrorChange, src]);
+  }, [onErrorChange, sourceKind, src]);
 
   useEffect(() => {
     if (!streamId || !enableStatsIngest || statsIngestPaused) return;

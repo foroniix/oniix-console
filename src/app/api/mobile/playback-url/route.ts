@@ -17,7 +17,7 @@ const REQUEST_SCHEMA = z
     channel_id: z.string().optional(),
     stream_id: z.string().optional(),
     session_id: z.string().uuid().optional().nullable(),
-    platform: z.enum(["ios", "android"]).optional(),
+    platform: z.enum(["ios", "android", "web"]).optional(),
     device_id: z.string().min(1).max(256).optional(),
     app_version: z.string().max(64).optional(),
     network_type: z.enum(["wifi", "4g", "5g", "unknown"]).optional(),

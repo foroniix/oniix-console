@@ -133,10 +133,14 @@ function buildPlaybackSession(
     cleanId(row.ended_at) ??
     cleanId(row.started_at);
   const lastSeenAtMs = toMs(lastSeenAt);
+  const normalizedPlatform = (row.platform ?? "").trim().toLowerCase();
+  const sessionSource = normalizedPlatform === "web" || normalizedPlatform === "desktop-web" || normalizedPlatform === "mobile-web"
+    ? "web"
+    : "mobile_app";
 
   return {
     sessionId: row.id,
-    source: "mobile_app",
+    source: sessionSource,
     streamId:
       cleanId(input.streamIdOverride) ??
       cleanId(input.channelToStreamId?.get(row.channel_id) ?? null),

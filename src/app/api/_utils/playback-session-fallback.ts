@@ -33,6 +33,8 @@ function uniqueIds(values: Array<string | null | undefined>) {
 export function mapPlaybackPlatformToDevice(platform: string | null | undefined) {
   const normalized = (platform ?? "").trim().toLowerCase();
   if (normalized === "ios" || normalized === "android") return "mobile";
+  if (normalized === "web" || normalized === "desktop-web") return "desktop";
+  if (normalized === "mobile-web") return "mobile";
   if (normalized === "tablet" || normalized === "ipad") return "tablet";
   return "desktop";
 }

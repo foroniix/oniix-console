@@ -30,11 +30,15 @@ type GridSlot = {
 type GridChannel = {
   channel: {
     id: string;
+    tenant_id: string | null;
     name: string;
     logo: string | null;
+    category: string | null;
+    slug: string | null;
   };
   live_stream?: {
     id: string;
+    tenant_id: string;
     channel_id: string;
     title: string;
     poster: string | null;
@@ -48,6 +52,7 @@ type GridChannel = {
 
 type ReplayItem = {
   id: string;
+  tenant_id: string;
   title: string;
   synopsis: string | null;
   poster: string | null;
@@ -58,17 +63,22 @@ type ReplayItem = {
   channel: { id: string | null; name: string | null; logo: string | null };
 };
 
-type ProgramGridResponse = {
+type LivePortalResponse = {
   ok?: boolean;
-  tenant_id?: string;
+  error?: string;
   grid?: GridChannel[];
   replays?: ReplayItem[];
 };
 
-type PlaybackUrlResponse = {
+type WebPlaybackResponse = {
   ok?: boolean;
+  error?: string;
+  tenant_id?: string;
   channel_id?: string;
+  stream_id?: string | null;
+  session_id?: string;
   playback_url?: string;
+  runtime_token?: string;
 };
 
 function formatClock(value: string | null) {
@@ -82,120 +92,110 @@ function formatDuration(value: number | null) {
   if (!value || value <= 0) return null;
   const hours = Math.floor(value / 3600);
   const mins = Math.floor((value % 3600) / 60);
-  if (hours > 0) return `${hours}h ${mins}m`;
-  return `${Math.max(1, mins)}m`;
+  if (hours > 0) return `${hours}h ${mins.toString().padStart(2, "0")}`;
+  return `${Math.max(1, mins)} min`;
 }
 
 export default function ViewerClient({ streamId }: { streamId: string }) {
-  const [ingestToken, setIngestToken] = useState<string | null>(null);
-  const [tenantId, setTenantId] = useState<string | null>(null);
   const [grid, setGrid] = useState<GridChannel[]>([]);
   const [replays, setReplays] = useState<ReplayItem[]>([]);
-  const [livePlaybackUrl, setLivePlaybackUrl] = useState<string | null>(null);
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [activeStreamId, setActiveStreamId] = useState(streamId);
   const [activeReplayId, setActiveReplayId] = useState<string | null>(null);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [runtimeToken, setRuntimeToken] = useState<string | null>(null);
+  const [livePlaybackUrl, setLivePlaybackUrl] = useState<string | null>(null);
+  const [liveSessionId, setLiveSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [resolvingPlayback, setResolvingPlayback] = useState(false);
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(true);
   const [tab, setTab] = useState<"live" | "grid" | "replays">("live");
 
-  const boot = useCallback(
-    async (soft = false) => {
-      if (soft) setRefreshing(true);
-      else setLoading(true);
+  const loadPortal = useCallback(async (soft = false) => {
+    if (soft) setRefreshing(true);
+    else setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/web/live?includeReplays=1", { cache: "no-store" });
+      const payload = (await response.json().catch(() => null)) as LivePortalResponse | null;
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Impossible de charger la TV web.");
+      }
+
+      const lanes = Array.isArray(payload.grid) ? payload.grid : [];
+      const replayRows = Array.isArray(payload.replays) ? payload.replays : [];
+      setGrid(lanes);
+      setReplays(replayRows);
+
+      const stillExists = lanes.some((lane) => lane.live_stream?.id === activeStreamId);
+      if (!stillExists) {
+        const fallbackStreamId = lanes.find((lane) => lane.live_stream?.id)?.live_stream?.id ?? null;
+        if (fallbackStreamId) {
+          setActiveStreamId(fallbackStreamId);
+          setLiveSessionId(null);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de charger la TV web.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [activeStreamId]);
+
+  const resolvePlayback = useCallback(
+    async (nextStreamId: string, existingSessionId?: string | null) => {
+      setResolvingPlayback(true);
       setError("");
 
       try {
-        const tokenRes = await fetch("/api/mobile/ingest-token", {
+        const response = await fetch("/api/web/live/playback-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stream_id: streamId, ttl_sec: 900 }),
+          body: JSON.stringify({
+            stream_id: nextStreamId,
+            session_id: existingSessionId ?? undefined,
+          }),
         });
-        const tokenJson = await tokenRes.json().catch(() => null);
-        if (!tokenRes.ok || !tokenJson?.ok) {
-          throw new Error(tokenJson?.error || "Impossible d'initialiser l'accès de lecture.");
+        const payload = (await response.json().catch(() => null)) as WebPlaybackResponse | null;
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.error || "Impossible de résoudre la lecture web.");
         }
 
-        const token = String(tokenJson.token ?? "");
-        const tenant = String(tokenJson.tenant_id ?? "");
-        if (!token || !tenant) {
-          throw new Error("Invalid ingest token response.");
-        }
-
-        const playbackRes = await fetch("/api/mobile/playback-url", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-oniix-token": token,
-            "x-oniix-tenant": tenant,
-          },
-          body: JSON.stringify({ stream_id: streamId }),
-        });
-        const playbackJson = (await playbackRes.json().catch(() => null)) as PlaybackUrlResponse | null;
-        if (!playbackRes.ok || !playbackJson?.ok) {
-          throw new Error((playbackJson as { error?: string } | null)?.error || "Impossible de résoudre la lecture en direct.");
-        }
-
-        const channelId = String(playbackJson.channel_id ?? "").trim();
-        const playbackUrl = String(playbackJson.playback_url ?? "").trim();
-        if (!channelId || !playbackUrl) {
-          throw new Error("Invalid playback response.");
-        }
-
-        const params = new URLSearchParams({
-          hours: "24",
-          includeReplays: "1",
-          channelId,
-        });
-        const gridRes = await fetch(`/api/mobile/program-grid?${params.toString()}`, {
-          headers: {
-            "x-oniix-token": token,
-            "x-oniix-tenant": tenant,
-          },
-          cache: "no-store",
-        });
-        const gridJson = (await gridRes.json().catch(() => null)) as ProgramGridResponse | null;
-        if (!gridRes.ok || !gridJson?.ok) {
-          throw new Error((gridJson as { error?: string } | null)?.error || "Impossible de charger le catalogue de lecture.");
-        }
-
-        const lanes = Array.isArray(gridJson.grid) ? gridJson.grid : [];
-        const replayRows = Array.isArray(gridJson.replays) ? gridJson.replays : [];
-
-        setIngestToken(token);
-        setTenantId(tenant);
-        setGrid(lanes);
-        setReplays(replayRows);
-        setLivePlaybackUrl(playbackUrl);
-
-        setActiveChannelId((prev) => {
-          if (prev && lanes.some((lane) => lane.channel.id === prev)) return prev;
-          const exact = lanes.find((lane) => lane.live_stream?.id === streamId)?.channel.id ?? null;
-          return exact || lanes[0]?.channel.id || channelId;
-        });
+        setTenantId(payload.tenant_id ?? null);
+        setRuntimeToken(payload.runtime_token ?? null);
+        setLivePlaybackUrl(payload.playback_url ?? null);
+        setLiveSessionId(payload.session_id ?? null);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Impossible de charger la visionneuse.";
         setLivePlaybackUrl(null);
-        setError(message);
+        setRuntimeToken(null);
+        setTenantId(null);
+        setLiveSessionId(null);
+        setError(err instanceof Error ? err.message : "Impossible de résoudre la lecture web.");
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        setResolvingPlayback(false);
       }
     },
-    [streamId]
+    []
   );
 
   useEffect(() => {
-    void boot(false);
-    const t = setInterval(() => void boot(true), 45_000);
-    return () => clearInterval(t);
-  }, [boot]);
+    void loadPortal(false);
+    const timer = setInterval(() => void loadPortal(true), 45_000);
+    return () => clearInterval(timer);
+  }, [loadPortal]);
 
-  const activeLane = useMemo(() => {
-    if (!activeChannelId) return null;
-    return grid.find((lane) => lane.channel.id === activeChannelId) ?? null;
-  }, [activeChannelId, grid]);
+  useEffect(() => {
+    if (!activeStreamId) return;
+    void resolvePlayback(activeStreamId, null);
+  }, [activeStreamId, resolvePlayback]);
+
+  const activeLane = useMemo(
+    () => grid.find((lane) => lane.live_stream?.id === activeStreamId) ?? null,
+    [activeStreamId, grid]
+  );
 
   const activeReplay = useMemo(
     () => replays.find((row) => row.id === activeReplayId) ?? null,
@@ -208,70 +208,83 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
     return replays.filter((row) => row.channel.id === channelId);
   }, [activeLane?.channel.id, replays]);
 
-  const liveSrc = livePlaybackUrl;
-  const replaySrc = activeReplay?.hls_url ?? null;
-  const playbackSrc = replaySrc || liveSrc;
-  const playbackPoster = activeReplay?.poster || activeLane?.live_stream?.poster || activeLane?.now?.poster || undefined;
-  const heartbeatStreamId = replaySrc ? null : streamId;
+  const playbackSrc = activeReplay?.hls_url ?? livePlaybackUrl;
+  const playbackPoster =
+    activeReplay?.poster || activeLane?.live_stream?.poster || activeLane?.now?.poster || undefined;
+  const heartbeatStreamId = activeReplay ? null : activeStreamId;
 
-  useStreamHeartbeat(heartbeatStreamId, { ingestToken, tenantId, intervalSec: 15 });
+  useStreamHeartbeat(heartbeatStreamId, {
+    ingestToken: runtimeToken,
+    tenantId,
+    intervalSec: 15,
+  });
 
   return (
-    <main className="relative min-h-dvh overflow-x-hidden bg-[#081224] text-[#ecf3ff]">
+    <main className="min-h-[calc(100dvh-73px)] overflow-x-hidden bg-[#030303] text-white">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-20 left-1/2 h-[440px] w-[440px] -translate-x-1/2 rounded-full bg-[#00d39b]/14 blur-[130px]" />
-        <div className="absolute top-[25%] right-[-140px] h-[420px] w-[420px] rounded-full bg-[#1f8bff]/20 blur-[120px]" />
+        <div className="absolute left-[-120px] top-0 h-[360px] w-[360px] rounded-full bg-white/[0.04] blur-[130px]" />
+        <div className="absolute bottom-[-120px] right-[-120px] h-[360px] w-[360px] rounded-full bg-white/[0.03] blur-[150px]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-7xl flex-col px-4 pb-8 pt-5 sm:px-6 lg:px-8">
-        <header className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#0c1a33]/70 px-4 py-3 backdrop-blur">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-8 sm:px-6 lg:px-8">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-white/[0.03] px-4 py-4 backdrop-blur">
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-[#102344] text-[#89b5ff]">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white">
               <Tv2 className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-[var(--font-we-display)] text-sm font-semibold tracking-wide">ONIIX WEB LIVE</p>
-              <p className="text-xs text-[#9bb0cb]">Flux {streamId}</p>
+              <p className="font-[var(--font-we-display)] text-base font-semibold">Visionnage desktop</p>
+              <p className="text-xs text-slate-500">{activeLane?.channel.name || "Direct Oniix"}</p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             <Link
               href="/we"
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-white/15 px-3 text-xs text-[#bbcae0] transition hover:bg-white/5"
+              className="inline-flex h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
             >
-              Changer de direct
+              Retour TV
+            </Link>
+            <Link
+              href="/we/catalog"
+              className="inline-flex h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+            >
+              Catalogue
             </Link>
             <button
               type="button"
-              onClick={() => void boot(true)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#1f8bff] px-3 text-xs font-medium text-white transition hover:bg-[#1873d6]"
+              onClick={() => {
+                void loadPortal(true);
+                if (activeStreamId) void resolvePlayback(activeStreamId, liveSessionId);
+              }}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-white transition hover:bg-white/[0.08]"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${(refreshing || resolvingPlayback) ? "animate-spin" : ""}`} />
               Actualiser
             </button>
           </div>
         </header>
 
         {loading ? (
-          <div className="flex min-h-[42vh] items-center justify-center rounded-2xl border border-white/10 bg-[#0c1a33]/55">
-            <Loader2 className="h-7 w-7 animate-spin text-[#7db1ff]" />
+          <div className="flex min-h-[42vh] items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.03]">
+            <Loader2 className="h-7 w-7 animate-spin text-white" />
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-[#ff6e7a]/35 bg-[#3f1622]/55 p-4 text-sm text-[#ffc8ce]">
+          <div className="rounded-[28px] border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-100">
             <div className="flex items-center gap-2 font-medium">
               <CircleAlert className="h-4 w-4" />
-              Impossible de charger la visionneuse
+              Impossible de charger le viewer web
             </div>
-            <p className="mt-2 text-xs text-[#f0b8c0]">{error}</p>
+            <p className="mt-2 text-xs text-red-200/80">{error}</p>
           </div>
         ) : (
           <div className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
             <section className="space-y-4">
-              <div className="overflow-hidden rounded-[24px] border border-white/10 bg-[#081933]">
+              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#050505]">
                 <div className="aspect-video bg-black">
                   {playbackSrc ? (
                     <HlsPlayer
-                      streamId={heartbeatStreamId || streamId}
+                      streamId={heartbeatStreamId || activeStreamId}
                       src={playbackSrc}
                       poster={playbackPoster}
                       muted={muted}
@@ -280,40 +293,38 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       className="h-full w-full"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-[#8ea5c5]">
-                      Aucune source lisible n&apos;est disponible pour cette chaîne.
+                    <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                      Aucune source lisible n&apos;est disponible pour ce contenu.
                     </div>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-3 py-3 sm:px-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="truncate font-[var(--font-we-display)] text-base font-semibold text-white">
+                    <p className="truncate font-[var(--font-we-display)] text-lg font-semibold text-white">
                       {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Direct"}
                     </p>
-                    <p className="text-xs text-[#9ab0cb]">
-                      {activeReplay ? "Mode replay" : "Mode direct"} {activeLane?.channel.name ? `- ${activeLane.channel.name}` : ""}
+                    <p className="text-xs text-slate-500">
+                      {activeReplay ? "Replay" : "Direct"} {activeLane?.channel.name ? `· ${activeLane.channel.name}` : ""}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setMuted((prev) => !prev)}
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-white/15 px-3 text-xs text-[#c7d6ea] transition hover:bg-white/5"
-                    >
-                      {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                      {muted ? "Activer le son" : "Couper le son"}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMuted((prev) => !prev)}
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 px-4 text-sm text-slate-200 transition hover:bg-white/[0.05]"
+                  >
+                    {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                    {muted ? "Activer le son" : "Couper le son"}
+                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-[#0c1a33]/70 p-2">
+              <div className="grid grid-cols-3 gap-2 rounded-[24px] border border-white/10 bg-white/[0.03] p-2">
                 <button
                   type="button"
                   onClick={() => setTab("live")}
-                  className={`h-10 rounded-xl text-sm font-medium transition ${
-                    tab === "live" ? "bg-[#1f8bff] text-white" : "text-[#9cb3d0] hover:bg-white/5"
+                  className={`h-10 rounded-2xl text-sm font-medium transition ${
+                    tab === "live" ? "bg-white text-black" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
                   }`}
                 >
                   Direct
@@ -321,8 +332,8 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 <button
                   type="button"
                   onClick={() => setTab("grid")}
-                  className={`h-10 rounded-xl text-sm font-medium transition ${
-                    tab === "grid" ? "bg-[#1f8bff] text-white" : "text-[#9cb3d0] hover:bg-white/5"
+                  className={`h-10 rounded-2xl text-sm font-medium transition ${
+                    tab === "grid" ? "bg-white text-black" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
                   }`}
                 >
                   Grille
@@ -330,8 +341,8 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 <button
                   type="button"
                   onClick={() => setTab("replays")}
-                  className={`h-10 rounded-xl text-sm font-medium transition ${
-                    tab === "replays" ? "bg-[#1f8bff] text-white" : "text-[#9cb3d0] hover:bg-white/5"
+                  className={`h-10 rounded-2xl text-sm font-medium transition ${
+                    tab === "replays" ? "bg-white text-black" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
                   }`}
                 >
                   Replays
@@ -341,44 +352,40 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               {tab === "live" && (
                 <div className="space-y-3">
                   {grid.map((lane) => {
-                    const isActive = lane.channel.id === activeChannelId;
+                    const laneStreamId = lane.live_stream?.id ?? "";
+                    const isActive = laneStreamId === activeStreamId;
                     return (
                       <button
                         type="button"
                         key={lane.channel.id}
+                        disabled={!laneStreamId}
                         onClick={() => {
+                          if (!laneStreamId) return;
                           setActiveReplayId(null);
-                          setActiveChannelId(lane.channel.id);
+                          setActiveStreamId(laneStreamId);
+                          setLiveSessionId(null);
                         }}
-                        className={`w-full rounded-2xl border p-4 text-left transition ${
+                        className={`w-full rounded-[24px] border p-4 text-left transition ${
                           isActive
-                            ? "border-[#4ea0ff] bg-[#12335e]"
-                            : "border-white/10 bg-[#0d1d38]/70 hover:border-white/25"
+                            ? "border-white/18 bg-white/[0.08]"
+                            : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate font-[var(--font-we-display)] text-base font-semibold text-white">
-                              {lane.channel.name}
-                            </p>
-                            <p className="mt-1 text-xs text-[#9db1cd]">
+                            <p className="truncate text-base font-semibold text-white">{lane.channel.name}</p>
+                            <p className="mt-1 text-xs text-slate-500">
                               {lane.now?.title ? `En cours : ${lane.now.title}` : "Aucun programme en cours"}
                             </p>
                           </div>
-                          <span
-                            className={`inline-flex h-6 items-center rounded-full px-2 text-[11px] font-medium ${
-                              lane.live_stream?.id
-                                ? "bg-[#00d39b]/20 text-[#8ef2d2]"
-                                : "bg-white/10 text-[#adc2de]"
-                            }`}
-                          >
-                            <Radio className="mr-1 h-3 w-3" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-[11px] font-medium text-red-200">
+                            <Radio className="h-3 w-3" />
                             {lane.live_stream?.id ? "Direct" : "Hors antenne"}
                           </span>
                         </div>
                         {lane.next?.title ? (
-                          <p className="mt-2 text-xs text-[#7f95b3]">
-                            A suivre a {formatClock(lane.next.starts_at)} - {lane.next.title}
+                          <p className="mt-3 text-xs text-slate-400">
+                            À suivre à {formatClock(lane.next.starts_at)} · {lane.next.title}
                           </p>
                         ) : null}
                       </button>
@@ -388,28 +395,28 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               )}
 
               {tab === "grid" && (
-                <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-medium text-[#dbe8f8]">
-                    <CalendarClock className="h-4 w-4 text-[#7db1ff]" />
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                  <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
+                    <CalendarClock className="h-4 w-4 text-slate-400" />
                     Grille de diffusion
                   </div>
                   <div className="space-y-2">
                     {(activeLane?.slots ?? []).slice(0, 12).map((slot) => (
                       <div
                         key={slot.id}
-                        className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-[#091427] px-3 py-2"
+                        className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-black/50 px-3 py-3"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-white">{slot.title}</p>
-                          {slot.notes ? <p className="mt-0.5 text-xs text-[#9cb1cd]">{slot.notes}</p> : null}
+                          {slot.notes ? <p className="mt-0.5 text-xs text-slate-500">{slot.notes}</p> : null}
                         </div>
-                        <p className="shrink-0 text-xs text-[#8ca2bf]">
+                        <p className="shrink-0 text-xs text-slate-500">
                           {formatClock(slot.starts_at)} - {formatClock(slot.ends_at)}
                         </p>
                       </div>
                     ))}
                     {(!activeLane || activeLane.slots.length === 0) && (
-                      <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf]">
+                      <p className="rounded-2xl border border-dashed border-white/12 px-3 py-4 text-center text-xs text-slate-500">
                         Aucune grille publiée pour cette chaîne pour le moment.
                       </p>
                     )}
@@ -424,20 +431,20 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       key={replay.id}
                       type="button"
                       onClick={() => setActiveReplayId(replay.id)}
-                      className={`rounded-2xl border bg-[#0d1d38]/70 p-3 text-left transition ${
-                        activeReplayId === replay.id ? "border-[#4ea0ff]" : "border-white/10 hover:border-white/20"
+                      className={`rounded-[24px] border bg-white/[0.03] p-4 text-left transition ${
+                        activeReplayId === replay.id ? "border-white/18" : "border-white/10 hover:border-white/20"
                       }`}
                     >
                       <p className="line-clamp-2 text-sm font-medium text-white">{replay.title}</p>
-                      <div className="mt-2 flex items-center gap-2 text-[11px] text-[#97adca]">
+                      <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
                         <Clapperboard className="h-3.5 w-3.5" />
                         <span>{replay.channel.name || "Replay"}</span>
-                        {replay.duration_sec ? <span>- {formatDuration(replay.duration_sec)}</span> : null}
+                        {replay.duration_sec ? <span>· {formatDuration(replay.duration_sec)}</span> : null}
                       </div>
                     </button>
                   ))}
                   {activeReplaysForChannel.length === 0 && (
-                    <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-center text-xs text-[#8ba2bf] sm:col-span-2">
+                    <p className="rounded-2xl border border-dashed border-white/12 px-3 py-4 text-center text-xs text-slate-500 sm:col-span-2">
                       Aucun replay disponible pour cette chaîne.
                     </p>
                   )}
@@ -446,42 +453,48 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
             </section>
 
             <aside className="space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
-                <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">Contexte editorial</p>
-                <div className="mt-3 space-y-2 text-xs text-[#9cb1cd]">
+              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">Contexte éditorial</p>
+                <div className="mt-3 space-y-2 text-xs text-slate-400">
                   <p>
-                    Chaine : <span className="text-[#eaf3ff]">{activeLane?.channel.name || "--"}</span>
+                    Chaîne : <span className="text-white">{activeLane?.channel.name || "--"}</span>
                   </p>
                   <p>
-                    En cours : <span className="text-[#eaf3ff]">{activeLane?.now?.title || "Aucun programme en cours"}</span>
+                    En cours : <span className="text-white">{activeLane?.now?.title || "Aucun programme en cours"}</span>
                   </p>
                   <p>
-                    A suivre : <span className="text-[#eaf3ff]">{activeLane?.next?.title || "--"}</span>
+                    À suivre : <span className="text-white">{activeLane?.next?.title || "--"}</span>
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-[#0d1d38]/70 p-4">
-                <p className="mb-3 font-[var(--font-we-display)] text-sm font-semibold text-white">Selection rapide</p>
+              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                <p className="mb-3 font-[var(--font-we-display)] text-sm font-semibold text-white">Sélection rapide</p>
                 <div className="space-y-2">
-                  {grid.map((lane) => (
-                    <button
-                      key={lane.channel.id}
-                      type="button"
-                      onClick={() => {
-                        setTab("live");
-                        setActiveReplayId(null);
-                        setActiveChannelId(lane.channel.id);
-                      }}
-                      className={`w-full rounded-xl border px-3 py-2 text-left text-xs transition ${
-                        lane.channel.id === activeChannelId
-                          ? "border-[#4ea0ff] bg-[#12335e] text-white"
-                          : "border-white/10 text-[#b5c7de] hover:border-white/20"
-                      }`}
-                    >
-                      {lane.channel.name}
-                    </button>
-                  ))}
+                  {grid.map((lane) => {
+                    const laneStreamId = lane.live_stream?.id ?? "";
+                    return (
+                      <button
+                        key={lane.channel.id}
+                        type="button"
+                        disabled={!laneStreamId}
+                        onClick={() => {
+                          if (!laneStreamId) return;
+                          setTab("live");
+                          setActiveReplayId(null);
+                          setActiveStreamId(laneStreamId);
+                          setLiveSessionId(null);
+                        }}
+                        className={`w-full rounded-2xl border px-3 py-2 text-left text-xs transition ${
+                          laneStreamId === activeStreamId
+                            ? "border-white/18 bg-white/[0.08] text-white"
+                            : "border-white/10 text-slate-400 hover:border-white/20 hover:text-white"
+                        }`}
+                      >
+                        {lane.channel.name}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </aside>
