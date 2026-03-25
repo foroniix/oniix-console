@@ -66,6 +66,7 @@ import {
   formatCatalogVisibilityLabel,
   slugifyCatalogValue,
 } from "@/lib/catalog";
+import { supabase } from "@/lib/supabaseClient";
 
 type CatalogTitlesResponse = { ok?: boolean; error?: string; titles?: CatalogTitle[] };
 type CatalogTitleResponse = { ok?: boolean; error?: string; title?: CatalogTitle };
@@ -75,6 +76,17 @@ type CatalogEpisodesResponse = { ok?: boolean; error?: string; episodes?: Catalo
 type CatalogEpisodeResponse = { ok?: boolean; error?: string; episode?: CatalogEpisode };
 type CatalogPlaybackSourcesResponse = { ok?: boolean; error?: string; sources?: CatalogPlaybackSource[] };
 type CatalogPlaybackSourceResponse = { ok?: boolean; error?: string; source?: CatalogPlaybackSource };
+type CatalogPlaybackUploadResponse = {
+  ok?: boolean;
+  error?: string;
+  upload?: {
+    bucket: string;
+    path: string;
+    token: string;
+    content_type?: string | null;
+    origin_url: string;
+  };
+};
 type CatalogPublicationsResponse = { ok?: boolean; error?: string; publications?: CatalogPublication[] };
 type CatalogPublicationResponse = { ok?: boolean; error?: string; publication?: CatalogPublication };
 
@@ -241,6 +253,9 @@ function formatPublicationWindow(publication: CatalogPublication) {
 }
 
 function formatOriginHost(originUrl: string) {
+  if (originUrl.startsWith("storage://")) {
+    return originUrl.replace("storage://", "");
+  }
   try {
     const url = new URL(originUrl);
     return url.host;
@@ -307,6 +322,7 @@ export default function CatalogPage() {
     useState<CatalogPlaybackSource | null>(null);
   const [playbackSourceForm, setPlaybackSourceForm] =
     useState<PlaybackSourceFormState>(EMPTY_PLAYBACK_SOURCE_FORM);
+  const [playbackSourceFile, setPlaybackSourceFile] = useState<File | null>(null);
   const [savingPlaybackSource, setSavingPlaybackSource] = useState(false);
   const [publicationDialogOpen, setPublicationDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<CatalogPublication | null>(null);
@@ -632,6 +648,7 @@ export default function CatalogPage() {
       playable_type: fallback.playable_type,
       playable_id: fallback.playable_id,
     });
+    setPlaybackSourceFile(null);
     setPlaybackSourceDialogOpen(true);
   };
 
@@ -646,6 +663,7 @@ export default function CatalogPage() {
       duration_sec: source.duration_sec !== null ? String(source.duration_sec) : "",
       source_status: source.source_status,
     });
+    setPlaybackSourceFile(null);
     setPlaybackSourceDialogOpen(true);
   };
 
@@ -871,13 +889,56 @@ export default function CatalogPage() {
   };
 
   const onSavePlaybackSource = async () => {
-    if (!playbackSourceForm.playable_id || !playbackSourceForm.origin_url.trim()) {
-      toast.error("Choisissez une cible et renseignez une URL source.");
+    if (!playbackSourceForm.playable_id) {
+      toast.error("Choisissez une cible de lecture.");
+      return;
+    }
+
+    if (!playbackSourceForm.origin_url.trim() && !playbackSourceFile) {
+      toast.error("Renseignez une URL source ou sélectionnez un fichier vidéo.");
       return;
     }
 
     setSavingPlaybackSource(true);
     try {
+      let nextOriginUrl = playbackSourceForm.origin_url.trim();
+      let nextSourceKind = playbackSourceForm.source_kind;
+
+      if (playbackSourceFile) {
+        const uploadInitResponse = await fetch("/api/catalog/playback-sources/upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            playable_type: playbackSourceForm.playable_type,
+            playable_id: playbackSourceForm.playable_id,
+            file_name: playbackSourceFile.name,
+            content_type: playbackSourceFile.type || null,
+          }),
+        });
+
+        const uploadInitPayload = (await uploadInitResponse.json().catch(() => null)) as
+          | CatalogPlaybackUploadResponse
+          | null;
+        if (!uploadInitResponse.ok || !uploadInitPayload?.ok || !uploadInitPayload.upload) {
+          throw new Error(uploadInitPayload?.error || "Impossible de préparer l'upload.");
+        }
+
+        const uploadRes = await supabase.storage
+          .from(uploadInitPayload.upload.bucket)
+          .uploadToSignedUrl(
+            uploadInitPayload.upload.path,
+            uploadInitPayload.upload.token,
+            playbackSourceFile
+          );
+
+        if (uploadRes.error) {
+          throw new Error(uploadRes.error.message || "Impossible d'envoyer le fichier.");
+        }
+
+        nextOriginUrl = uploadInitPayload.upload.origin_url;
+        nextSourceKind = "file";
+      }
+
       const response = await fetch(
         editingPlaybackSource
           ? `/api/catalog/playback-sources/${editingPlaybackSource.id}`
@@ -888,9 +949,9 @@ export default function CatalogPage() {
           body: JSON.stringify({
             playable_type: playbackSourceForm.playable_type,
             playable_id: playbackSourceForm.playable_id,
-            source_kind: playbackSourceForm.source_kind,
+            source_kind: nextSourceKind,
             delivery_mode: playbackSourceForm.delivery_mode,
-            origin_url: playbackSourceForm.origin_url.trim(),
+            origin_url: nextOriginUrl,
             duration_sec: playbackSourceForm.duration_sec.trim()
               ? Number(playbackSourceForm.duration_sec.trim())
               : null,
@@ -915,6 +976,7 @@ export default function CatalogPage() {
       setPlaybackSourceDialogOpen(false);
       setEditingPlaybackSource(null);
       setPlaybackSourceForm(EMPTY_PLAYBACK_SOURCE_FORM);
+      setPlaybackSourceFile(null);
       toast.success(
         editingPlaybackSource ? "Source mise à jour." : "Source de lecture ajoutée."
       );
@@ -1591,7 +1653,13 @@ export default function CatalogPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={playbackSourceDialogOpen} onOpenChange={setPlaybackSourceDialogOpen}>
+      <Dialog
+        open={playbackSourceDialogOpen}
+        onOpenChange={(open) => {
+          setPlaybackSourceDialogOpen(open);
+          if (!open) setPlaybackSourceFile(null);
+        }}
+      >
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
@@ -1683,6 +1751,29 @@ export default function CatalogPage() {
                 }
                 placeholder="https://origin.example.com/movie/master.m3u8"
               />
+              <p className="text-xs text-slate-500">
+                Utilisez une URL pour HLS ou DASH. Pour un fichier video unitaire, utilisez
+                le module upload ci-dessous.
+              </p>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Fichier vidéo</Label>
+              <Input
+                type="file"
+                accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
+                onChange={(event) =>
+                  setPlaybackSourceFile(event.target.files?.[0] ?? null)
+                }
+              />
+              <p className="text-xs text-slate-500">
+                Le module upload direct cree une source de type fichier dans le stockage
+                Oniix.
+              </p>
+              {playbackSourceFile ? (
+                <p className="text-xs text-slate-400">
+                  Fichier sélectionné: {playbackSourceFile.name}
+                </p>
+              ) : null}
             </div>
             <div className="space-y-2">
               <Label>Durée estimée (secondes)</Label>

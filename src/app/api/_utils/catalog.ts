@@ -132,7 +132,11 @@ export const catalogPlaybackSourceCreateSchema = z.object({
   playable_id: z.string().uuid(),
   source_kind: SOURCE_KIND_ENUM,
   delivery_mode: DELIVERY_MODE_ENUM.optional(),
-  origin_url: z.string().trim().url().max(2048),
+  origin_url: z
+    .string()
+    .trim()
+    .max(2048)
+    .refine(isCatalogOriginReference, "origin_url"),
   duration_sec: z.number().int().min(1).max(172800).nullable().optional(),
   source_status: SOURCE_STATUS_ENUM.optional(),
 });
@@ -593,6 +597,16 @@ function normalizeGeo(value: unknown) {
 function normalizeStorefront(value: unknown) {
   const normalized = String(value ?? "mobile-app").trim();
   return normalized.length > 0 ? normalized : "mobile-app";
+}
+
+function isCatalogOriginReference(value: string) {
+  if (/^storage:\/\/[^/]+\/.+$/i.test(value)) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function normalizeTitleType(value: unknown): CatalogTitleType {

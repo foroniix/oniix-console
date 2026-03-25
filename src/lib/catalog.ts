@@ -46,6 +46,8 @@ export const CATALOG_SOURCE_STATUSES = [
 ] as const;
 export type CatalogSourceStatus = (typeof CATALOG_SOURCE_STATUSES)[number];
 
+export const CATALOG_PLAYBACK_UPLOAD_BUCKET = "catalog-vod-sources";
+
 export type CatalogTitle = {
   id: string;
   tenant_id: string;
