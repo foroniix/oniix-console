@@ -4,18 +4,19 @@ import { z } from "zod";
 import { getTenantContext, jsonError, requireTenantCapability } from "../../tenant/_utils";
 import { parseJson, parseQuery } from "../../_utils/validate";
 import {
-  buildCatalogSeasonInsert,
+  buildCatalogPlaybackSourceInsert,
   catalogDomainUnavailableResponse,
+  catalogPlaybackSourceCreateSchema,
   catalogPolicyUnavailableResponse,
-  catalogSeasonCreateSchema,
-  CATALOG_SEASON_SELECT,
+  CATALOG_PLAYBACK_SOURCE_SELECT,
   isCatalogDomainMissing,
   isCatalogPolicyMissing,
-  normalizeCatalogSeasonRow,
+  normalizeCatalogPlaybackSourceRow,
 } from "../../_utils/catalog";
 
 const querySchema = z.object({
-  series_id: z.string().uuid().optional(),
+  playable_type: z.string().optional(),
+  playable_id: z.string().uuid().optional(),
 });
 
 export async function GET(req: Request) {
@@ -34,28 +35,27 @@ export async function GET(req: Request) {
   if (!parsed.ok) return parsed.res;
 
   let query = ctx.sb
-    .from("catalog_seasons")
-    .select(CATALOG_SEASON_SELECT)
+    .from("catalog_playback_sources")
+    .select(CATALOG_PLAYBACK_SOURCE_SELECT)
     .eq("tenant_id", ctx.tenant_id)
-    .order("sort_order", { ascending: true })
-    .order("season_number", { ascending: true });
+    .order("updated_at", { ascending: false });
 
-  if (parsed.data.series_id) {
-    query = query.eq("series_id", parsed.data.series_id);
-  }
+  if (parsed.data.playable_type) query = query.eq("playable_type", parsed.data.playable_type);
+  if (parsed.data.playable_id) query = query.eq("playable_id", parsed.data.playable_id);
 
   const { data, error } = await query;
 
   if (error) {
     if (isCatalogDomainMissing(error)) return catalogDomainUnavailableResponse();
     if (isCatalogPolicyMissing(error)) return catalogPolicyUnavailableResponse();
-    console.error("Catalog seasons load error", { error: error.message, tenantId: ctx.tenant_id });
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 
   return NextResponse.json({
     ok: true,
-    seasons: (data ?? []).map((row) => normalizeCatalogSeasonRow(row as Record<string, unknown>)),
+    sources: (data ?? []).map((row) =>
+      normalizeCatalogPlaybackSourceRow(row as Record<string, unknown>)
+    ),
   });
 }
 
@@ -71,31 +71,25 @@ export async function POST(req: Request) {
   );
   if (!permission.ok) return jsonError(permission.error, 403);
 
-  const parsed = await parseJson(req, catalogSeasonCreateSchema);
+  const parsed = await parseJson(req, catalogPlaybackSourceCreateSchema);
   if (!parsed.ok) return parsed.res;
 
-  const payload = buildCatalogSeasonInsert(parsed.data, ctx.tenant_id, ctx.user_id);
+  const payload = buildCatalogPlaybackSourceInsert(parsed.data, ctx.tenant_id);
 
   const { data, error } = await ctx.sb
-    .from("catalog_seasons")
+    .from("catalog_playback_sources")
     .insert(payload)
-    .select(CATALOG_SEASON_SELECT)
+    .select(CATALOG_PLAYBACK_SOURCE_SELECT)
     .single();
 
   if (error) {
     if (isCatalogDomainMissing(error)) return catalogDomainUnavailableResponse();
     if (isCatalogPolicyMissing(error)) return catalogPolicyUnavailableResponse();
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { ok: false, error: "Cette série a déjà une saison avec ce numéro." },
-        { status: 409 }
-      );
-    }
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 
   return NextResponse.json(
-    { ok: true, season: normalizeCatalogSeasonRow(data as Record<string, unknown>) },
+    { ok: true, source: normalizeCatalogPlaybackSourceRow(data as Record<string, unknown>) },
     { status: 201 }
   );
 }

@@ -5,9 +5,11 @@ import { parseJson } from "../../_utils/validate";
 import {
   buildCatalogTitleInsert,
   catalogDomainUnavailableResponse,
+  catalogPolicyUnavailableResponse,
   catalogTitleCreateSchema,
   CATALOG_TITLE_SELECT,
   isCatalogDomainMissing,
+  isCatalogPolicyMissing,
   normalizeCatalogTitleRow,
 } from "../../_utils/catalog";
 
@@ -32,6 +34,7 @@ export async function GET() {
 
   if (error) {
     if (isCatalogDomainMissing(error)) return catalogDomainUnavailableResponse();
+    if (isCatalogPolicyMissing(error)) return catalogPolicyUnavailableResponse();
     console.error("Catalog titles load error", {
       error: error.message,
       tenantId: ctx.tenant_id,
@@ -70,6 +73,7 @@ export async function POST(req: Request) {
 
   if (error) {
     if (isCatalogDomainMissing(error)) return catalogDomainUnavailableResponse();
+    if (isCatalogPolicyMissing(error)) return catalogPolicyUnavailableResponse();
     if (error.code === "23505") {
       return NextResponse.json(
         { ok: false, error: "Un titre avec ce slug existe déjà dans ce tenant." },

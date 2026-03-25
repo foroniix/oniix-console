@@ -2,18 +2,27 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
+  type CatalogDeliveryMode,
   type CatalogEditorialStatus,
   type CatalogEpisode,
+  type CatalogPlaybackPlayableType,
+  type CatalogPlaybackSource,
   type CatalogPlayableType,
   type CatalogPublication,
   type CatalogPublicationStatus,
   type CatalogSeason,
+  type CatalogSourceKind,
+  type CatalogSourceStatus,
   type CatalogTitle,
   type CatalogTitleType,
   type CatalogVisibility,
+  CATALOG_DELIVERY_MODES,
   CATALOG_EDITORIAL_STATUSES,
+  CATALOG_PLAYBACK_PLAYABLE_TYPES,
   CATALOG_PLAYABLE_TYPES,
   CATALOG_PUBLICATION_STATUSES,
+  CATALOG_SOURCE_KINDS,
+  CATALOG_SOURCE_STATUSES,
   CATALOG_TITLE_TYPES,
   CATALOG_VISIBILITIES,
   slugifyCatalogValue,
@@ -24,6 +33,10 @@ const EDITORIAL_STATUS_ENUM = z.enum(CATALOG_EDITORIAL_STATUSES);
 const PUBLICATION_STATUS_ENUM = z.enum(CATALOG_PUBLICATION_STATUSES);
 const PLAYABLE_TYPE_ENUM = z.enum(CATALOG_PLAYABLE_TYPES);
 const VISIBILITY_ENUM = z.enum(CATALOG_VISIBILITIES);
+const PLAYBACK_PLAYABLE_TYPE_ENUM = z.enum(CATALOG_PLAYBACK_PLAYABLE_TYPES);
+const SOURCE_KIND_ENUM = z.enum(CATALOG_SOURCE_KINDS);
+const DELIVERY_MODE_ENUM = z.enum(CATALOG_DELIVERY_MODES);
+const SOURCE_STATUS_ENUM = z.enum(CATALOG_SOURCE_STATUSES);
 
 export const CATALOG_TITLE_SELECT =
   "id,tenant_id,title_type,slug,title,original_title,short_synopsis,long_synopsis,release_year,maturity_rating,original_language,country_of_origin,editorial_status,metadata,created_by,updated_by,created_at,updated_at";
@@ -36,6 +49,9 @@ export const CATALOG_EPISODE_SELECT =
 
 export const CATALOG_PUBLICATION_SELECT =
   "id,tenant_id,playable_type,playable_id,visibility,publication_status,available_from,available_to,geo,storefront,featured_rank,published_at,created_by,updated_by,created_at,updated_at";
+
+export const CATALOG_PLAYBACK_SOURCE_SELECT =
+  "id,tenant_id,playable_type,playable_id,source_kind,delivery_mode,origin_url,duration_sec,drm,audio_tracks,subtitle_tracks,metadata,source_status,created_at,updated_at";
 
 export const catalogTitleCreateSchema = z.object({
   title_type: TITLE_TYPE_ENUM,
@@ -108,6 +124,20 @@ export const catalogPublicationCreateSchema = z.object({
 });
 
 export const catalogPublicationUpdateSchema = catalogPublicationCreateSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, "empty_update");
+
+export const catalogPlaybackSourceCreateSchema = z.object({
+  playable_type: PLAYBACK_PLAYABLE_TYPE_ENUM,
+  playable_id: z.string().uuid(),
+  source_kind: SOURCE_KIND_ENUM,
+  delivery_mode: DELIVERY_MODE_ENUM.optional(),
+  origin_url: z.string().trim().url().max(2048),
+  duration_sec: z.number().int().min(1).max(172800).nullable().optional(),
+  source_status: SOURCE_STATUS_ENUM.optional(),
+});
+
+export const catalogPlaybackSourceUpdateSchema = catalogPlaybackSourceCreateSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, "empty_update");
 
@@ -317,6 +347,46 @@ export function buildCatalogPublicationUpdate(
   };
 }
 
+export function buildCatalogPlaybackSourceInsert(
+  input: z.infer<typeof catalogPlaybackSourceCreateSchema>,
+  tenantId: string
+) {
+  return {
+    tenant_id: tenantId,
+    playable_type: input.playable_type,
+    playable_id: input.playable_id,
+    source_kind: input.source_kind,
+    delivery_mode: input.delivery_mode ?? "gateway",
+    origin_url: input.origin_url.trim(),
+    duration_sec: input.duration_sec ?? null,
+    drm: {},
+    audio_tracks: [],
+    subtitle_tracks: [],
+    metadata: {},
+    source_status: input.source_status ?? "draft",
+  };
+}
+
+export function buildCatalogPlaybackSourceUpdate(
+  input: z.infer<typeof catalogPlaybackSourceUpdateSchema>,
+  current: CatalogPlaybackSource
+) {
+  return {
+    playable_type:
+      (input.playable_type ?? current.playable_type) as CatalogPlaybackPlayableType,
+    playable_id: input.playable_id ?? current.playable_id,
+    source_kind: (input.source_kind ?? current.source_kind) as CatalogSourceKind,
+    delivery_mode:
+      (input.delivery_mode ?? current.delivery_mode) as CatalogDeliveryMode,
+    origin_url: input.origin_url !== undefined ? input.origin_url.trim() : current.origin_url,
+    duration_sec:
+      input.duration_sec !== undefined ? input.duration_sec : current.duration_sec,
+    source_status:
+      (input.source_status ?? current.source_status) as CatalogSourceStatus,
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export function normalizeCatalogTitleRow(row: Record<string, unknown>): CatalogTitle {
   return {
     id: String(row.id ?? ""),
@@ -402,6 +472,28 @@ export function normalizeCatalogPublicationRow(
   };
 }
 
+export function normalizeCatalogPlaybackSourceRow(
+  row: Record<string, unknown>
+): CatalogPlaybackSource {
+  return {
+    id: String(row.id ?? ""),
+    tenant_id: String(row.tenant_id ?? ""),
+    playable_type: normalizePlaybackPlayableType(row.playable_type),
+    playable_id: String(row.playable_id ?? ""),
+    source_kind: normalizeSourceKind(row.source_kind),
+    delivery_mode: normalizeDeliveryMode(row.delivery_mode),
+    origin_url: String(row.origin_url ?? ""),
+    duration_sec: parseNullableNumber(row.duration_sec),
+    drm: normalizeObject(row.drm),
+    audio_tracks: normalizeObjectArray(row.audio_tracks),
+    subtitle_tracks: normalizeObjectArray(row.subtitle_tracks),
+    metadata: normalizeObject(row.metadata),
+    source_status: normalizeSourceStatus(row.source_status),
+    created_at: String(row.created_at ?? ""),
+    updated_at: String(row.updated_at ?? row.created_at ?? ""),
+  };
+}
+
 export function isCatalogDomainMissing(
   error: { code?: string | null; message?: string | null } | null | undefined
 ) {
@@ -413,12 +505,32 @@ export function isCatalogDomainMissing(
   );
 }
 
+export function isCatalogPolicyMissing(
+  error: { code?: string | null; message?: string | null } | null | undefined
+) {
+  const code = String(error?.code ?? "");
+  const message = String(error?.message ?? "");
+  if (code === "42501") return true;
+  return /row-level security|violates row-level security|permission denied/i.test(message);
+}
+
 export function catalogDomainUnavailableResponse() {
   return NextResponse.json(
     {
       ok: false,
       error:
         "Domaine catalogue indisponible. Ex\u00E9cutez la migration Catalog/VOD dans Supabase avant d'utiliser ce module.",
+    },
+    { status: 503 }
+  );
+}
+
+export function catalogPolicyUnavailableResponse() {
+  return NextResponse.json(
+    {
+      ok: false,
+      error:
+        "Politiques RLS du catalogue absentes ou incompl\u00E8tes. Ex\u00E9cutez la migration Supabase 20260324131500_catalog_vod_foundation.sql.",
     },
     { status: 503 }
   );
@@ -458,6 +570,15 @@ function normalizeObject(value: unknown) {
     : {};
 }
 
+function normalizeObjectArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is Record<string, unknown> =>
+          !!item && typeof item === "object" && !Array.isArray(item)
+      )
+    : [];
+}
+
 function normalizeGeo(value: unknown) {
   const source =
     value && typeof value === "object" && !Array.isArray(value)
@@ -494,6 +615,10 @@ function normalizePlayableType(value: unknown): CatalogPlayableType {
   return "movie";
 }
 
+function normalizePlaybackPlayableType(value: unknown): CatalogPlaybackPlayableType {
+  return String(value ?? "").trim().toLowerCase() === "episode" ? "episode" : "movie";
+}
+
 function normalizeVisibility(value: unknown): CatalogVisibility {
   const normalized = String(value ?? "").trim().toLowerCase();
   if (normalized === "public") return "public";
@@ -504,6 +629,25 @@ function normalizeVisibility(value: unknown): CatalogVisibility {
 function normalizePublicationStatus(value: unknown): CatalogPublicationStatus {
   const normalized = String(value ?? "").trim().toLowerCase();
   if (normalized === "scheduled") return "scheduled";
+  if (normalized === "published") return "published";
+  if (normalized === "archived") return "archived";
+  return "draft";
+}
+
+function normalizeSourceKind(value: unknown): CatalogSourceKind {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "dash") return "dash";
+  if (normalized === "file") return "file";
+  return "hls";
+}
+
+function normalizeDeliveryMode(value: unknown): CatalogDeliveryMode {
+  return String(value ?? "").trim().toLowerCase() === "direct" ? "direct" : "gateway";
+}
+
+function normalizeSourceStatus(value: unknown): CatalogSourceStatus {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "ready") return "ready";
   if (normalized === "published") return "published";
   if (normalized === "archived") return "archived";
   return "draft";

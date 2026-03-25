@@ -7,6 +7,7 @@ import {
   Film,
   FolderKanban,
   Globe2,
+  Link2,
   Plus,
   RefreshCw,
   Search,
@@ -43,16 +44,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  type CatalogDeliveryMode,
   type CatalogEditorialStatus,
   type CatalogEpisode,
+  type CatalogPlaybackPlayableType,
+  type CatalogPlaybackSource,
   type CatalogPlayableType,
   type CatalogPublication,
   type CatalogPublicationStatus,
   type CatalogSeason,
+  type CatalogSourceKind,
+  type CatalogSourceStatus,
   type CatalogTitle,
   type CatalogTitleType,
   type CatalogVisibility,
+  formatCatalogDeliveryModeLabel,
   formatCatalogPublicationStatusLabel,
+  formatCatalogSourceKindLabel,
   formatCatalogStatusLabel,
   formatCatalogTitleTypeLabel,
   formatCatalogVisibilityLabel,
@@ -65,6 +73,8 @@ type CatalogSeasonsResponse = { ok?: boolean; error?: string; seasons?: CatalogS
 type CatalogSeasonResponse = { ok?: boolean; error?: string; season?: CatalogSeason };
 type CatalogEpisodesResponse = { ok?: boolean; error?: string; episodes?: CatalogEpisode[] };
 type CatalogEpisodeResponse = { ok?: boolean; error?: string; episode?: CatalogEpisode };
+type CatalogPlaybackSourcesResponse = { ok?: boolean; error?: string; sources?: CatalogPlaybackSource[] };
+type CatalogPlaybackSourceResponse = { ok?: boolean; error?: string; source?: CatalogPlaybackSource };
 type CatalogPublicationsResponse = { ok?: boolean; error?: string; publications?: CatalogPublication[] };
 type CatalogPublicationResponse = { ok?: boolean; error?: string; publication?: CatalogPublication };
 
@@ -115,8 +125,25 @@ type PublicationFormState = {
   published_at: string;
 };
 
+type PlaybackSourceFormState = {
+  playable_type: CatalogPlaybackPlayableType;
+  playable_id: string;
+  source_kind: CatalogSourceKind;
+  delivery_mode: CatalogDeliveryMode;
+  origin_url: string;
+  duration_sec: string;
+  source_status: CatalogSourceStatus;
+};
+
 type PublicationTarget = {
   playable_type: CatalogPlayableType;
+  playable_id: string;
+  label: string;
+  hint: string;
+};
+
+type PlaybackSourceTarget = {
+  playable_type: CatalogPlaybackPlayableType;
   playable_id: string;
   label: string;
   hint: string;
@@ -169,6 +196,16 @@ const EMPTY_PUBLICATION_FORM: PublicationFormState = {
   published_at: "",
 };
 
+const EMPTY_PLAYBACK_SOURCE_FORM: PlaybackSourceFormState = {
+  playable_type: "movie",
+  playable_id: "",
+  source_kind: "hls",
+  delivery_mode: "gateway",
+  origin_url: "",
+  duration_sec: "",
+  source_status: "draft",
+};
+
 function badgeClassForEditorial(status: CatalogEditorialStatus) {
   if (status === "published") return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
   if (status === "ready") return "border-sky-500/25 bg-sky-500/10 text-sky-200";
@@ -201,6 +238,15 @@ function formatPublicationWindow(publication: CatalogPublication) {
   if (publication.available_from && !publication.available_to) return `À partir du ${new Date(publication.available_from).toLocaleString("fr-FR")}`;
   if (!publication.available_from && publication.available_to) return `Jusqu'au ${new Date(publication.available_to).toLocaleString("fr-FR")}`;
   return `${new Date(publication.available_from!).toLocaleDateString("fr-FR")} → ${new Date(publication.available_to!).toLocaleDateString("fr-FR")}`;
+}
+
+function formatOriginHost(originUrl: string) {
+  try {
+    const url = new URL(originUrl);
+    return url.host;
+  } catch {
+    return originUrl;
+  }
 }
 
 function toDatetimeLocal(value: string | null) {
@@ -242,6 +288,7 @@ export default function CatalogPage() {
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [seasons, setSeasons] = useState<CatalogSeason[]>([]);
   const [episodes, setEpisodes] = useState<CatalogEpisode[]>([]);
+  const [playbackSources, setPlaybackSources] = useState<CatalogPlaybackSource[]>([]);
   const [publications, setPublications] = useState<CatalogPublication[]>([]);
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
   const [editingTitle, setEditingTitle] = useState<CatalogTitle | null>(null);
@@ -255,6 +302,12 @@ export default function CatalogPage() {
   const [editingEpisode, setEditingEpisode] = useState<CatalogEpisode | null>(null);
   const [episodeForm, setEpisodeForm] = useState<EpisodeFormState>(EMPTY_EPISODE_FORM);
   const [savingEpisode, setSavingEpisode] = useState(false);
+  const [playbackSourceDialogOpen, setPlaybackSourceDialogOpen] = useState(false);
+  const [editingPlaybackSource, setEditingPlaybackSource] =
+    useState<CatalogPlaybackSource | null>(null);
+  const [playbackSourceForm, setPlaybackSourceForm] =
+    useState<PlaybackSourceFormState>(EMPTY_PLAYBACK_SOURCE_FORM);
+  const [savingPlaybackSource, setSavingPlaybackSource] = useState(false);
   const [publicationDialogOpen, setPublicationDialogOpen] = useState(false);
   const [editingPublication, setEditingPublication] = useState<CatalogPublication | null>(null);
   const [publicationForm, setPublicationForm] = useState<PublicationFormState>(EMPTY_PUBLICATION_FORM);
@@ -317,15 +370,56 @@ export default function CatalogPage() {
     return targets;
   }, [episodes, seasons, selectedTitle]);
 
+  const playbackSourceTargets = useMemo<PlaybackSourceTarget[]>(() => {
+    if (!selectedTitle) return [];
+    if (selectedTitle.title_type === "movie") {
+      return [
+        {
+          playable_type: "movie",
+          playable_id: selectedTitle.id,
+          label: `Film · ${selectedTitle.title}`,
+          hint: "Source VOD principale",
+        },
+      ];
+    }
+
+    return episodes.map((episode) => ({
+      playable_type: "episode",
+      playable_id: episode.id,
+      label: `Épisode ${episode.episode_number} · ${episode.title}`,
+      hint: episode.season_id ? "Source par épisode" : "Épisode hors saison",
+    }));
+  }, [episodes, selectedTitle]);
+
   const publicationTargetMap = useMemo(
     () => new Map(publicationTargets.map((target) => [`${target.playable_type}:${target.playable_id}`, target])),
     [publicationTargets]
+  );
+
+  const playbackSourceTargetMap = useMemo(
+    () =>
+      new Map(
+        playbackSourceTargets.map((target) => [
+          `${target.playable_type}:${target.playable_id}`,
+          target,
+        ])
+      ),
+    [playbackSourceTargets]
   );
 
   const relatedPublications = useMemo(() => {
     const allowedKeys = new Set(publicationTargets.map((target) => `${target.playable_type}:${target.playable_id}`));
     return publications.filter((item) => allowedKeys.has(`${item.playable_type}:${item.playable_id}`));
   }, [publicationTargets, publications]);
+
+  const relatedPlaybackSources = useMemo(() => {
+    const allowedKeys = new Set(
+      playbackSourceTargets.map((target) => `${target.playable_type}:${target.playable_id}`)
+    );
+    return playbackSources.filter((item) =>
+      allowedKeys.has(`${item.playable_type}:${item.playable_id}`)
+    );
+  }, [playbackSourceTargets, playbackSources]);
 
   const seasonTitleMap = useMemo(
     () =>
@@ -361,7 +455,10 @@ export default function CatalogPage() {
     else setWorkspaceLoading(true);
     setWorkspaceError(null);
     try {
-      const requests: Promise<unknown>[] = [readJson<CatalogPublicationsResponse>("/api/catalog/publications")];
+      const requests: Promise<unknown>[] = [
+        readJson<CatalogPlaybackSourcesResponse>("/api/catalog/playback-sources"),
+        readJson<CatalogPublicationsResponse>("/api/catalog/publications"),
+      ];
       if (title.title_type === "series") {
         requests.unshift(
           readJson<CatalogSeasonsResponse>(`/api/catalog/seasons?series_id=${title.id}`),
@@ -373,24 +470,39 @@ export default function CatalogPage() {
       if (title.title_type === "series") {
         const seasonsResult = results[0] as Awaited<ReturnType<typeof readJson<CatalogSeasonsResponse>>>;
         const episodesResult = results[1] as Awaited<ReturnType<typeof readJson<CatalogEpisodesResponse>>>;
-        const publicationsResult = results[2] as Awaited<ReturnType<typeof readJson<CatalogPublicationsResponse>>>;
+        const sourcesResult = results[2] as Awaited<
+          ReturnType<typeof readJson<CatalogPlaybackSourcesResponse>>
+        >;
+        const publicationsResult = results[3] as Awaited<
+          ReturnType<typeof readJson<CatalogPublicationsResponse>>
+        >;
         if (!seasonsResult.response.ok || !seasonsResult.payload?.ok) throw new Error(seasonsResult.payload?.error || "Impossible de charger les saisons.");
         if (!episodesResult.response.ok || !episodesResult.payload?.ok) throw new Error(episodesResult.payload?.error || "Impossible de charger les épisodes.");
+        if (!sourcesResult.response.ok || !sourcesResult.payload?.ok) throw new Error(sourcesResult.payload?.error || "Impossible de charger les sources de lecture.");
         if (!publicationsResult.response.ok || !publicationsResult.payload?.ok) throw new Error(publicationsResult.payload?.error || "Impossible de charger les publications.");
         setSeasons(Array.isArray(seasonsResult.payload.seasons) ? seasonsResult.payload.seasons : []);
         setEpisodes(Array.isArray(episodesResult.payload.episodes) ? episodesResult.payload.episodes : []);
+        setPlaybackSources(Array.isArray(sourcesResult.payload.sources) ? sourcesResult.payload.sources : []);
         setPublications(Array.isArray(publicationsResult.payload.publications) ? publicationsResult.payload.publications : []);
       } else {
-        const publicationsResult = results[0] as Awaited<ReturnType<typeof readJson<CatalogPublicationsResponse>>>;
+        const sourcesResult = results[0] as Awaited<
+          ReturnType<typeof readJson<CatalogPlaybackSourcesResponse>>
+        >;
+        const publicationsResult = results[1] as Awaited<
+          ReturnType<typeof readJson<CatalogPublicationsResponse>>
+        >;
+        if (!sourcesResult.response.ok || !sourcesResult.payload?.ok) throw new Error(sourcesResult.payload?.error || "Impossible de charger les sources de lecture.");
         if (!publicationsResult.response.ok || !publicationsResult.payload?.ok) throw new Error(publicationsResult.payload?.error || "Impossible de charger les publications.");
         setSeasons([]);
         setEpisodes([]);
+        setPlaybackSources(Array.isArray(sourcesResult.payload.sources) ? sourcesResult.payload.sources : []);
         setPublications(Array.isArray(publicationsResult.payload.publications) ? publicationsResult.payload.publications : []);
       }
     } catch (err) {
       setWorkspaceError(err instanceof Error ? err.message : "Impossible de charger la structure du catalogue.");
       setSeasons([]);
       setEpisodes([]);
+      setPlaybackSources([]);
       setPublications([]);
     } finally {
       setWorkspaceLoading(false);
@@ -407,6 +519,7 @@ export default function CatalogPage() {
       setSelectedTitleId(null);
       setSeasons([]);
       setEpisodes([]);
+      setPlaybackSources([]);
       setPublications([]);
       return;
     }
@@ -505,6 +618,35 @@ export default function CatalogPage() {
     setEditingPublication(null);
     setPublicationForm({ ...EMPTY_PUBLICATION_FORM, playable_type: fallback.playable_type, playable_id: fallback.playable_id });
     setPublicationDialogOpen(true);
+  };
+
+  const openCreatePlaybackSource = (target?: PlaybackSourceTarget) => {
+    const fallback = target ?? playbackSourceTargets[0];
+    if (!fallback) {
+      toast.error("Aucune cible de lecture n'est disponible pour ce titre.");
+      return;
+    }
+    setEditingPlaybackSource(null);
+    setPlaybackSourceForm({
+      ...EMPTY_PLAYBACK_SOURCE_FORM,
+      playable_type: fallback.playable_type,
+      playable_id: fallback.playable_id,
+    });
+    setPlaybackSourceDialogOpen(true);
+  };
+
+  const openEditPlaybackSource = (source: CatalogPlaybackSource) => {
+    setEditingPlaybackSource(source);
+    setPlaybackSourceForm({
+      playable_type: source.playable_type,
+      playable_id: source.playable_id,
+      source_kind: source.source_kind,
+      delivery_mode: source.delivery_mode,
+      origin_url: source.origin_url,
+      duration_sec: source.duration_sec !== null ? String(source.duration_sec) : "",
+      source_status: source.source_status,
+    });
+    setPlaybackSourceDialogOpen(true);
   };
 
   const openEditPublication = (publication: CatalogPublication) => {
@@ -728,6 +870,61 @@ export default function CatalogPage() {
     }
   };
 
+  const onSavePlaybackSource = async () => {
+    if (!playbackSourceForm.playable_id || !playbackSourceForm.origin_url.trim()) {
+      toast.error("Choisissez une cible et renseignez une URL source.");
+      return;
+    }
+
+    setSavingPlaybackSource(true);
+    try {
+      const response = await fetch(
+        editingPlaybackSource
+          ? `/api/catalog/playback-sources/${editingPlaybackSource.id}`
+          : "/api/catalog/playback-sources",
+        {
+          method: editingPlaybackSource ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            playable_type: playbackSourceForm.playable_type,
+            playable_id: playbackSourceForm.playable_id,
+            source_kind: playbackSourceForm.source_kind,
+            delivery_mode: playbackSourceForm.delivery_mode,
+            origin_url: playbackSourceForm.origin_url.trim(),
+            duration_sec: playbackSourceForm.duration_sec.trim()
+              ? Number(playbackSourceForm.duration_sec.trim())
+              : null,
+            source_status: playbackSourceForm.source_status,
+          }),
+        }
+      );
+
+      const payload = (await response.json().catch(() => null)) as
+        | CatalogPlaybackSourceResponse
+        | null;
+      if (!response.ok || !payload?.ok || !payload.source) {
+        throw new Error(payload?.error || "Impossible d'enregistrer la source.");
+      }
+
+      setPlaybackSources((current) => {
+        const next = editingPlaybackSource
+          ? current.map((item) => (item.id === payload.source!.id ? payload.source! : item))
+          : [payload.source!, ...current];
+        return next.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+      });
+      setPlaybackSourceDialogOpen(false);
+      setEditingPlaybackSource(null);
+      setPlaybackSourceForm(EMPTY_PLAYBACK_SOURCE_FORM);
+      toast.success(
+        editingPlaybackSource ? "Source mise à jour." : "Source de lecture ajoutée."
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossible d'enregistrer la source.");
+    } finally {
+      setSavingPlaybackSource(false);
+    }
+  };
+
   return (
     <PageShell>
       <PageHeader
@@ -866,6 +1063,10 @@ export default function CatalogPage() {
                       <Edit3 className="size-4" />
                       Modifier la fiche
                     </Button>
+                    <Button variant="outline" onClick={() => openCreatePlaybackSource()}>
+                      <Link2 className="size-4" />
+                      Ajouter une source
+                    </Button>
                     <Button onClick={() => openCreatePublication()}>
                       <Plus className="size-4" />
                       Nouvelle publication
@@ -873,7 +1074,7 @@ export default function CatalogPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Slug</div>
                   <div className="mt-2 text-sm font-semibold text-white">/{selectedTitle.slug}</div>
@@ -889,6 +1090,10 @@ export default function CatalogPage() {
                   <div className="mt-2 text-sm font-semibold text-white">{relatedPublications.length} publication(s)</div>
                 </div>
                 <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Sources</div>
+                  <div className="mt-2 text-sm font-semibold text-white">{relatedPlaybackSources.length} source(s)</div>
+                </div>
+                <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Métadonnées</div>
                   <div className="mt-2 text-sm font-semibold text-white">{selectedTitle.original_language || "À compléter"}</div>
                 </div>
@@ -899,6 +1104,7 @@ export default function CatalogPage() {
               <TabsList className="mb-5">
                 <TabsTrigger value="editorial">Fiche éditoriale</TabsTrigger>
                 {selectedTitle.title_type === "series" ? <TabsTrigger value="structure">Structure série</TabsTrigger> : null}
+                <TabsTrigger value="sources">Sources</TabsTrigger>
                 <TabsTrigger value="publications">Publications</TabsTrigger>
               </TabsList>
 
@@ -1015,6 +1221,21 @@ export default function CatalogPage() {
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => openEditEpisode(episode)}><Edit3 className="size-4" />Modifier</Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    openCreatePlaybackSource({
+                                      playable_type: "episode",
+                                      playable_id: episode.id,
+                                      label: `Épisode ${episode.episode_number} · ${episode.title}`,
+                                      hint: "Source par épisode",
+                                    })
+                                  }
+                                >
+                                  <Link2 className="size-4" />
+                                  Source
+                                </Button>
                                 <Button variant="ghost" size="sm" onClick={() => openCreatePublication({ playable_type: "episode", playable_id: episode.id, label: `Épisode ${episode.episode_number} · ${episode.title}`, hint: "Publication épisode" })}><Globe2 className="size-4" />Publier</Button>
                               </div>
                             </TableCell>
@@ -1025,6 +1246,87 @@ export default function CatalogPage() {
                   </DataTableShell>
                 </TabsContent>
               ) : null}
+
+              <TabsContent value="sources" className="space-y-6">
+                <DataTableShell
+                  title="Sources de lecture"
+                  description="Rattachez un flux HLS, DASH ou un fichier direct à un film ou à un épisode."
+                  loading={workspaceLoading}
+                  error={workspaceError}
+                  onRetry={() => void loadWorkspace(selectedTitle, false)}
+                  isEmpty={!workspaceLoading && !workspaceError && relatedPlaybackSources.length === 0}
+                  emptyTitle="Aucune source de lecture"
+                  emptyDescription="Ajoutez une URL source pour préparer le playback VOD sur le mobile et les futures vitrines."
+                  emptyAction={<Button onClick={() => openCreatePlaybackSource()}><Plus className="size-4" />Ajouter une source</Button>}
+                  footer={<div className="flex justify-end"><Button onClick={() => openCreatePlaybackSource()}><Plus className="size-4" />Nouvelle source</Button></div>}
+                >
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Contenu</TableHead>
+                        <TableHead>Format</TableHead>
+                        <TableHead>Routage</TableHead>
+                        <TableHead>Origine</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {relatedPlaybackSources.map((source) => {
+                        const target =
+                          playbackSourceTargetMap.get(
+                            `${source.playable_type}:${source.playable_id}`
+                          ) ?? null;
+                        return (
+                          <TableRow key={source.id}>
+                            <TableCell>
+                              <div className="min-w-0">
+                                <div className="truncate font-medium text-white">
+                                  {target?.label || source.playable_type}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-400">
+                                  {target?.hint || "Source VOD"}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-slate-300">
+                              {formatCatalogSourceKindLabel(source.source_kind)}
+                            </TableCell>
+                            <TableCell className="text-slate-300">
+                              {formatCatalogDeliveryModeLabel(source.delivery_mode)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="min-w-0">
+                                <div className="truncate text-sm text-white">
+                                  {formatOriginHost(source.origin_url)}
+                                </div>
+                                <div className="mt-1 truncate text-xs text-slate-400">
+                                  {source.origin_url}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={badgeClassForEditorial(source.source_status)}>
+                                {formatCatalogStatusLabel(source.source_status)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditPlaybackSource(source)}
+                              >
+                                <Edit3 className="size-4" />
+                                Modifier
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </DataTableShell>
+              </TabsContent>
 
               <TabsContent value="publications" className="space-y-6">
                 <DataTableShell
@@ -1081,12 +1383,12 @@ export default function CatalogPage() {
       </div>
 
       <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>{editingTitle ? "Modifier le titre" : "Créer un titre catalogue"}</DialogTitle>
             <DialogDescription>Le titre est l’actif éditorial racine du catalogue.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid max-h-[65vh] gap-4 overflow-y-auto pr-2 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Type de titre</Label>
               <Select value={titleForm.title_type} onValueChange={(value) => setTitleForm((current) => ({ ...current, title_type: value as CatalogTitleType }))}>
@@ -1165,7 +1467,7 @@ export default function CatalogPage() {
               <Textarea value={titleForm.long_synopsis} onChange={(event) => setTitleForm((current) => ({ ...current, long_synopsis: event.target.value }))} placeholder="Résumé complet pour la fiche détail." className="min-h-32" />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="border-t border-white/10 pt-4">
             <Button type="button" variant="outline" onClick={() => setTitleDialogOpen(false)}>Annuler</Button>
             <Button type="button" onClick={() => void onSaveTitle()} disabled={savingTitle}>
               {savingTitle ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
@@ -1284,6 +1586,160 @@ export default function CatalogPage() {
             <Button type="button" onClick={() => void onSaveEpisode()} disabled={savingEpisode}>
               {savingEpisode ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
               {editingEpisode ? "Enregistrer" : "Créer l’épisode"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={playbackSourceDialogOpen} onOpenChange={setPlaybackSourceDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPlaybackSource ? "Modifier la source" : "Ajouter une source de lecture"}
+            </DialogTitle>
+            <DialogDescription>
+              Rattachez une URL HLS, DASH ou fichier direct au film ou à un épisode.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Cible de lecture</Label>
+              <Select
+                value={`${playbackSourceForm.playable_type}:${playbackSourceForm.playable_id}`}
+                onValueChange={(value) => {
+                  const [playableType, playableId] = value.split(":");
+                  setPlaybackSourceForm((current) => ({
+                    ...current,
+                    playable_type: playableType as CatalogPlaybackPlayableType,
+                    playable_id: playableId,
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir un film ou un épisode" />
+                </SelectTrigger>
+                <SelectContent>
+                  {playbackSourceTargets.map((target) => (
+                    <SelectItem
+                      key={`${target.playable_type}:${target.playable_id}`}
+                      value={`${target.playable_type}:${target.playable_id}`}
+                    >
+                      {target.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Format source</Label>
+              <Select
+                value={playbackSourceForm.source_kind}
+                onValueChange={(value) =>
+                  setPlaybackSourceForm((current) => ({
+                    ...current,
+                    source_kind: value as CatalogSourceKind,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hls">HLS</SelectItem>
+                  <SelectItem value="dash">MPEG-DASH</SelectItem>
+                  <SelectItem value="file">Fichier direct</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Mode de distribution</Label>
+              <Select
+                value={playbackSourceForm.delivery_mode}
+                onValueChange={(value) =>
+                  setPlaybackSourceForm((current) => ({
+                    ...current,
+                    delivery_mode: value as CatalogDeliveryMode,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gateway">Gateway Oniix</SelectItem>
+                  <SelectItem value="direct">Lecture directe</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>URL source</Label>
+              <Input
+                value={playbackSourceForm.origin_url}
+                onChange={(event) =>
+                  setPlaybackSourceForm((current) => ({
+                    ...current,
+                    origin_url: event.target.value,
+                  }))
+                }
+                placeholder="https://origin.example.com/movie/master.m3u8"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Durée estimée (secondes)</Label>
+              <Input
+                value={playbackSourceForm.duration_sec}
+                onChange={(event) =>
+                  setPlaybackSourceForm((current) => ({
+                    ...current,
+                    duration_sec: event.target.value,
+                  }))
+                }
+                inputMode="numeric"
+                placeholder="5400"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Statut source</Label>
+              <Select
+                value={playbackSourceForm.source_status}
+                onValueChange={(value) =>
+                  setPlaybackSourceForm((current) => ({
+                    ...current,
+                    source_status: value as CatalogSourceStatus,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Brouillon</SelectItem>
+                  <SelectItem value="ready">Prêt</SelectItem>
+                  <SelectItem value="published">Publié</SelectItem>
+                  <SelectItem value="archived">Archivé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPlaybackSourceDialogOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void onSavePlaybackSource()}
+              disabled={savingPlaybackSource}
+            >
+              {savingPlaybackSource ? (
+                <RefreshCw className="size-4 animate-spin" />
+              ) : (
+                <Plus className="size-4" />
+              )}
+              {editingPlaybackSource ? "Enregistrer" : "Ajouter la source"}
             </Button>
           </DialogFooter>
         </DialogContent>

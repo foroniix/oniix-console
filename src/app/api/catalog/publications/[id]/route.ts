@@ -5,9 +5,11 @@ import { parseJson } from "../../../_utils/validate";
 import {
   buildCatalogPublicationUpdate,
   catalogDomainUnavailableResponse,
+  catalogPolicyUnavailableResponse,
   catalogPublicationUpdateSchema,
   CATALOG_PUBLICATION_SELECT,
   isCatalogDomainMissing,
+  isCatalogPolicyMissing,
   normalizeCatalogPublicationRow,
 } from "../../../_utils/catalog";
 
@@ -38,6 +40,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if (currentRes.error) {
     if (isCatalogDomainMissing(currentRes.error)) return catalogDomainUnavailableResponse();
+    if (isCatalogPolicyMissing(currentRes.error)) return catalogPolicyUnavailableResponse();
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 
@@ -61,6 +64,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if (error) {
     if (isCatalogDomainMissing(error)) return catalogDomainUnavailableResponse();
+    if (isCatalogPolicyMissing(error)) return catalogPolicyUnavailableResponse();
     if (error.code === "23505") {
       return NextResponse.json(
         { ok: false, error: "Une publication existe déjà pour ce contenu et cette vitrine." },

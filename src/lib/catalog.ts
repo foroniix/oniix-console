@@ -28,6 +28,24 @@ export const CATALOG_PLAYABLE_TYPES = [
 ] as const;
 export type CatalogPlayableType = (typeof CATALOG_PLAYABLE_TYPES)[number];
 
+export const CATALOG_PLAYBACK_PLAYABLE_TYPES = ["movie", "episode"] as const;
+export type CatalogPlaybackPlayableType =
+  (typeof CATALOG_PLAYBACK_PLAYABLE_TYPES)[number];
+
+export const CATALOG_SOURCE_KINDS = ["hls", "dash", "file"] as const;
+export type CatalogSourceKind = (typeof CATALOG_SOURCE_KINDS)[number];
+
+export const CATALOG_DELIVERY_MODES = ["gateway", "direct"] as const;
+export type CatalogDeliveryMode = (typeof CATALOG_DELIVERY_MODES)[number];
+
+export const CATALOG_SOURCE_STATUSES = [
+  "draft",
+  "ready",
+  "published",
+  "archived",
+] as const;
+export type CatalogSourceStatus = (typeof CATALOG_SOURCE_STATUSES)[number];
+
 export type CatalogTitle = {
   id: string;
   tenant_id: string;
@@ -103,6 +121,24 @@ export type CatalogPublication = {
   updated_at: string;
 };
 
+export type CatalogPlaybackSource = {
+  id: string;
+  tenant_id: string;
+  playable_type: CatalogPlaybackPlayableType;
+  playable_id: string;
+  source_kind: CatalogSourceKind;
+  delivery_mode: CatalogDeliveryMode;
+  origin_url: string;
+  duration_sec: number | null;
+  drm: Record<string, unknown>;
+  audio_tracks: Array<Record<string, unknown>>;
+  subtitle_tracks: Array<Record<string, unknown>>;
+  metadata: Record<string, unknown>;
+  source_status: CatalogSourceStatus;
+  created_at: string;
+  updated_at: string;
+};
+
 export function slugifyCatalogValue(value: string) {
   return value
     .normalize("NFD")
@@ -137,4 +173,15 @@ export function formatCatalogVisibilityLabel(value: string | null | undefined) {
 export function formatCatalogPublicationStatusLabel(value: string | null | undefined) {
   if (value === "scheduled") return "Planifi\u00E9";
   return formatCatalogStatusLabel(value);
+}
+
+export function formatCatalogSourceKindLabel(value: string | null | undefined) {
+  if (value === "dash") return "MPEG-DASH";
+  if (value === "file") return "Fichier";
+  return "HLS";
+}
+
+export function formatCatalogDeliveryModeLabel(value: string | null | undefined) {
+  if (value === "direct") return "Direct";
+  return "Gateway";
 }
