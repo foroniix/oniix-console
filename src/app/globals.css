@@ -16,54 +16,54 @@ html {
 }
 
 :root {
-  --bg: #050a11;
-  --surface: #0d151f;
-  --surface-2: #121d29;
-  --surface-3: #172332;
-  --border-strong: rgba(130, 160, 194, 0.22);
-  --border-soft: rgba(130, 160, 194, 0.12);
-  --text-primary: #f5f7fb;
-  --text-secondary: #d6e0ec;
-  --text-muted: #8a9eb4;
-  --brand-primary: #7ab7ff;
-  --brand-primary-strong: #4f8fff;
-  --brand-primary-soft: rgba(79, 143, 255, 0.14);
-  --accent-gold: #e5b364;
-  --primary-solid: #4f8fff;
-  --primary-soft: rgba(79, 143, 255, 0.14);
+  --bg: #03101e;
+  --surface: #071a2e;
+  --surface-2: #0d2239;
+  --surface-3: #123050;
+  --border-strong: rgba(114, 166, 221, 0.26);
+  --border-soft: rgba(114, 166, 221, 0.12);
+  --text-primary: #f5f8fd;
+  --text-secondary: #d8e3ef;
+  --text-muted: #869ab0;
+  --brand-primary: #5cb7ff;
+  --brand-primary-strong: #198cf0;
+  --brand-primary-soft: rgba(25, 140, 240, 0.14);
+  --accent-gold: #f0a25c;
+  --primary-solid: #198cf0;
+  --primary-soft: rgba(25, 140, 240, 0.14);
   --success-solid: #22c55e;
   --warning-solid: #f59e0b;
   --error-solid: #ef4444;
   --info-solid: #38bdf8;
 
-  --background: 211 39% 6%;
+  --background: 210 65% 8%;
   --foreground: 210 33% 97%;
-  --card: 212 33% 12%;
+  --card: 210 51% 12%;
   --card-foreground: 210 33% 97%;
-  --popover: 212 33% 11%;
+  --popover: 210 54% 10%;
   --popover-foreground: 210 33% 97%;
-  --primary: 211 100% 73%;
-  --primary-foreground: 214 56% 10%;
-  --secondary: 214 26% 17%;
+  --primary: 203 100% 68%;
+  --primary-foreground: 211 64% 11%;
+  --secondary: 210 41% 17%;
   --secondary-foreground: 210 33% 97%;
-  --muted: 214 26% 15%;
+  --muted: 210 40% 15%;
   --muted-foreground: 213 20% 67%;
-  --accent: 214 26% 18%;
+  --accent: 210 41% 18%;
   --accent-foreground: 210 33% 97%;
   --destructive: 0 84% 60%;
-  --border: 214 22% 24%;
-  --input: 214 23% 18%;
-  --ring: 211 100% 73%;
+  --border: 210 34% 24%;
+  --input: 210 37% 18%;
+  --ring: 203 100% 68%;
   --radius: 1rem;
 }
 
 @layer base {
   body {
     background:
-      radial-gradient(circle at 12% 10%, rgba(122, 183, 255, 0.22), transparent 24%),
-      radial-gradient(circle at 88% 0%, rgba(229, 179, 100, 0.12), transparent 22%),
-      radial-gradient(circle at 80% 32%, rgba(79, 143, 255, 0.1), transparent 18%),
-      linear-gradient(180deg, #04070d 0%, #09111a 42%, #0d1722 100%);
+      radial-gradient(circle at 14% 10%, rgba(92, 183, 255, 0.2), transparent 24%),
+      radial-gradient(circle at 86% 2%, rgba(240, 162, 92, 0.14), transparent 22%),
+      radial-gradient(circle at 84% 36%, rgba(25, 140, 240, 0.1), transparent 20%),
+      linear-gradient(180deg, #030a14 0%, #061120 42%, #081728 100%);
     color: var(--text-primary);
     font-family: var(--font-console), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     font-feature-settings: "tnum";
@@ -139,7 +139,7 @@ html {
   }
 
   .console-panel {
-    @apply relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,28,40,0.92),rgba(11,18,28,0.88))] shadow-[0_28px_80px_rgba(0,0,0,0.34)] backdrop-blur-xl;
+    @apply relative overflow-hidden rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,26,45,0.88),rgba(5,17,30,0.9))] shadow-[0_28px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl;
   }
 
   .console-panel::before {
@@ -147,7 +147,9 @@ html {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.06), transparent 42%);
+    background:
+      linear-gradient(140deg, rgba(255, 255, 255, 0.06), transparent 42%),
+      radial-gradient(circle at top right, rgba(92, 183, 255, 0.1), transparent 30%);
   }
 
   .console-panel > * {
@@ -156,11 +158,19 @@ html {
   }
 
   .console-panel-muted {
-    @apply rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(14,22,33,0.88),rgba(10,16,24,0.82))] backdrop-blur;
+    @apply rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(10,24,41,0.82),rgba(7,17,31,0.78))] backdrop-blur;
   }
 
   .console-hero {
-    @apply relative overflow-hidden rounded-[34px] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(122,183,255,0.18),transparent_34%),radial-gradient(circle_at_top_right,rgba(229,179,100,0.12),transparent_28%),linear-gradient(180deg,rgba(16,25,36,0.98),rgba(10,16,24,0.94))] shadow-[0_32px_96px_rgba(0,0,0,0.36)];
+    @apply relative overflow-hidden rounded-[34px] border border-white/10 shadow-[0_32px_96px_rgba(0,0,0,0.4)];
+    background:
+      linear-gradient(90deg, rgba(4, 15, 28, 0.94) 0%, rgba(4, 16, 29, 0.78) 42%, rgba(4, 15, 28, 0.88) 100%),
+      radial-gradient(circle at top left, rgba(92, 183, 255, 0.2), transparent 34%),
+      radial-gradient(circle at top right, rgba(240, 162, 92, 0.12), transparent 28%),
+      url("/branding/editorial/oniix-control-room.svg");
+    background-size: auto, auto, auto, 520px;
+    background-repeat: no-repeat;
+    background-position: center, top left, top right, right -60px top -24px;
   }
 
   .console-hero::after {
@@ -172,14 +182,59 @@ html {
   }
 
   .console-toolbar {
-    @apply rounded-[26px] border border-white/10 bg-[rgba(13,21,31,0.86)] shadow-[0_22px_58px_rgba(0,0,0,0.26)] backdrop-blur-xl;
+    @apply rounded-[26px] border border-white/10 bg-[rgba(8,21,36,0.82)] shadow-[0_22px_58px_rgba(0,0,0,0.28)] backdrop-blur-xl;
   }
 
   .console-field {
-    @apply rounded-2xl border border-white/10 bg-[rgba(8,14,22,0.8)] text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)];
+    @apply rounded-2xl border border-white/10 bg-[rgba(5,17,28,0.82)] text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)];
   }
 
   .console-chip {
-    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400;
+    @apply inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300;
+  }
+
+  .console-scene-image {
+    @apply absolute bg-cover bg-center bg-no-repeat opacity-[0.16] mix-blend-screen;
+    animation: console-float 18s ease-in-out infinite;
+  }
+
+  .console-scene-image-delayed {
+    @apply absolute bg-cover bg-center bg-no-repeat opacity-[0.12] mix-blend-screen;
+    animation: console-float-delayed 22s ease-in-out infinite;
+  }
+
+  .console-ambient-line {
+    @apply absolute h-px bg-gradient-to-r from-transparent via-white/15 to-transparent;
+    animation: console-breathe 8s ease-in-out infinite;
+  }
+}
+
+@keyframes console-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -16px, 0) scale(1.02);
+  }
+}
+
+@keyframes console-float-delayed {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(12px, -12px, 0) scale(1.03);
+  }
+}
+
+@keyframes console-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.78;
   }
 }

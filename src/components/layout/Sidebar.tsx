@@ -36,9 +36,9 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    "group relative flex items-center gap-3 rounded-[22px] border px-3.5 py-3.5 transition-all duration-200",
+                    "group relative flex items-center gap-3 rounded-[22px] border px-3.5 py-3 transition-all duration-200",
                     active
-                      ? "border-[#5b8fd1]/40 bg-[linear-gradient(180deg,rgba(90,143,209,0.18),rgba(43,67,99,0.18))] text-white shadow-[0_18px_34px_rgba(12,18,28,0.26)]"
+                      ? "border-[#5cb7ff]/38 bg-[linear-gradient(180deg,rgba(56,137,210,0.2),rgba(18,50,82,0.24))] text-white shadow-[0_18px_34px_rgba(12,18,28,0.3)]"
                       : "border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.04] hover:text-white"
                   )}
                 >
@@ -55,7 +55,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{item.label}</span>
-                    <span className="mt-0.5 block truncate text-xs text-slate-500">{item.description}</span>
+                    <span className="mt-0.5 block truncate text-[11px] text-slate-500">{item.description}</span>
                   </span>
 
                   {active ? <span className="size-2 rounded-full bg-[var(--brand-primary)]" /> : null}
@@ -126,15 +126,21 @@ function SidebarFooter() {
 
 export default function Sidebar() {
   return (
-    <aside className="hidden h-full w-[316px] shrink-0 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,16,24,0.94),rgba(12,20,30,0.9))] shadow-[0_28px_72px_rgba(0,0,0,0.3)] lg:flex">
-      <div className="border-b border-white/10 p-5">
+    <aside className="relative hidden h-full w-[316px] shrink-0 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(5,17,31,0.96),rgba(7,20,35,0.9))] shadow-[0_28px_72px_rgba(0,0,0,0.34)] lg:flex">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="console-scene-image right-[-18%] top-[-4%] h-[250px] w-[250px]"
+          style={{ backgroundImage: "url('/branding/editorial/oniix-signal-wall.svg')" }}
+        />
+      </div>
+      <div className="relative border-b border-white/10 p-5">
         <Link href="/dashboard" className="block">
           <span className="console-chip">Control room</span>
           <div className="mt-4">
             <OniixLogo size="md" subtitle="Opérations, programmation et revenus" />
           </div>
-          <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">
-            Un seul poste pour piloter les chaînes, les directs, les audiences et les accès.
+          <p className="mt-3 max-w-xs text-sm leading-6 text-slate-400">
+            Poste de pilotage Oniix pour la diffusion, le catalogue et l’exploitation.
           </p>
         </Link>
       </div>

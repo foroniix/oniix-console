@@ -83,7 +83,7 @@ export default function Topbar() {
   }, [router]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-[rgba(8,12,18,0.72)] backdrop-blur-2xl">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-[rgba(5,15,27,0.72)] backdrop-blur-2xl">
       <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
         <Sheet>
           <SheetTrigger asChild>
@@ -111,7 +111,6 @@ export default function Topbar() {
           </div>
           <div className="mt-1 flex min-w-0 items-center gap-3">
             <h1 className="truncate text-lg font-semibold tracking-tight text-white">{route.label}</h1>
-            <span className="hidden truncate text-sm text-slate-500 xl:inline">{route.description}</span>
           </div>
         </div>
 
@@ -129,10 +128,10 @@ export default function Topbar() {
         </form>
 
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="hidden xl:inline-flex">
+          <Badge variant="secondary" className="hidden xl:inline-flex border-white/10 bg-white/[0.05] text-slate-100">
             {workspaceName}
           </Badge>
-          <Badge variant="outline" className="hidden md:inline-flex">
+          <Badge variant="outline" className="hidden md:inline-flex border-white/10 text-slate-300">
             {formatRoleLabel(role)}
           </Badge>
 
