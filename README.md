@@ -1,6 +1,6 @@
 # Oniix Console
 
-Console SaaS multi-tenant pour l'exploitation OTT: tenants, chaines, direct, programmation, replays, analytics et operations.
+Console SaaS multi-tenant pour l'exploitation OTT: tenants, chaines, direct, programmation, replays, analytics, operations et extension catalog / VOD.
 
 ## Perimetre
 
@@ -66,8 +66,10 @@ npm test
 
 - [ADR_001_MEDIA_GATEWAY_NO_CLOUDFLARE.md](C:/Users/53lim/Downloads/superadmin/docs/ADR_001_MEDIA_GATEWAY_NO_CLOUDFLARE.md)
 - [ADR_002_CANONICAL_DOMAIN_MODEL.md](C:/Users/53lim/Downloads/superadmin/docs/ADR_002_CANONICAL_DOMAIN_MODEL.md)
+- [ADR_003_CATALOG_VOD_DOMAIN.md](C:/Users/53lim/Downloads/superadmin/docs/ADR_003_CATALOG_VOD_DOMAIN.md)
 - [OPERATOR_READY_DATA_SPONSORING.md](C:/Users/53lim/Downloads/superadmin/docs/OPERATOR_READY_DATA_SPONSORING.md)
 - [OPERATOR_PILOT_CELTIIS_BENIN.md](C:/Users/53lim/Downloads/superadmin/docs/OPERATOR_PILOT_CELTIIS_BENIN.md)
+- [PRODUCTION_READY_EXECUTION_PLAN.md](C:/Users/53lim/Downloads/superadmin/docs/PRODUCTION_READY_EXECUTION_PLAN.md)
 - [SCHEMA_MAP.md](C:/Users/53lim/Downloads/superadmin/docs/SCHEMA_MAP.md)
 - [OTT_ARCHITECTURE.md](C:/Users/53lim/Downloads/superadmin/docs/OTT_ARCHITECTURE.md)
 - [OTT_DEPLOYMENT.md](C:/Users/53lim/Downloads/superadmin/docs/OTT_DEPLOYMENT.md)

@@ -33,12 +33,12 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/dashboard",
         label: "Pilotage",
-        description: "Vue d'ensemble des opérations",
+        description: "Vue d'ensemble des op\u00E9rations",
         icon: LayoutDashboard,
       },
       {
         href: "/channels",
-        label: "Chaînes TV",
+        label: "Cha\u00EEnes TV",
         description: "Catalogue et distribution",
         icon: Tv2,
       },
@@ -51,7 +51,7 @@ export const NAV_SECTIONS: NavSection[] = [
       {
         href: "/programming",
         label: "Programmation",
-        description: "Grille et continuite",
+        description: "Grille et continuit\u00E9",
         icon: CalendarClock,
       },
     ],
@@ -61,7 +61,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/ads",
-        label: "Monétisation",
+        label: "Mon\u00E9tisation",
         description: "Inventaire et campagnes",
         icon: Megaphone,
       },
@@ -74,18 +74,18 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    title: "Equipe",
+    title: "\u00C9quipe",
     items: [
       {
         href: "/users",
-        label: "Équipe",
-        description: "Accès, rôles et invites",
+        label: "\u00C9quipe",
+        description: "Acc\u00E8s, r\u00F4les et invitations",
         icon: Users,
       },
       {
         href: "/activities",
         label: "Journal",
-        description: "Audit opérationnel",
+        description: "Audit op\u00E9rationnel",
         icon: Activity,
       },
     ],
@@ -95,8 +95,8 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/settings",
-        label: "Paramètres",
-        description: "Workspace et sécurité",
+        label: "Param\u00E8tres",
+        description: "Workspace et s\u00E9curit\u00E9",
         icon: Settings,
       },
     ],
@@ -107,20 +107,20 @@ const ALL_ROUTES = NAV_SECTIONS.flatMap((section) => section.items);
 const AUX_ROUTES: NavItem[] = [
   {
     href: "/tenants",
-    label: "Éditeurs",
-    description: "Portefeuille multi-éditeur",
+    label: "\u00C9diteurs",
+    description: "Portefeuille multi-\u00E9diteur",
     icon: Database,
   },
   {
     href: "/system",
-    label: "Système",
+    label: "Syst\u00E8me",
     description: "Outils plateforme",
     icon: Shield,
   },
   {
-    href: "/series",
+    href: "/catalog",
     label: "Catalogue",
-    description: "Actifs programmes",
+    description: "Films, s\u00E9ries et publications",
     icon: Film,
   },
 ];
