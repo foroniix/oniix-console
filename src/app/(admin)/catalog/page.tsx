@@ -7,11 +7,13 @@ import {
   Film,
   FolderKanban,
   Globe2,
+  ImageIcon,
   Link2,
   Plus,
   RefreshCw,
   Search,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,6 +49,8 @@ import {
   type CatalogDeliveryMode,
   type CatalogEditorialStatus,
   type CatalogEpisode,
+  type CatalogMediaAsset,
+  type CatalogMediaAssetType,
   type CatalogPlaybackPlayableType,
   type CatalogPlaybackSource,
   type CatalogPlayableType,
@@ -59,11 +63,13 @@ import {
   type CatalogTitleType,
   type CatalogVisibility,
   formatCatalogDeliveryModeLabel,
+  formatCatalogMediaAssetTypeLabel,
   formatCatalogPublicationStatusLabel,
   formatCatalogSourceKindLabel,
   formatCatalogStatusLabel,
   formatCatalogTitleTypeLabel,
   formatCatalogVisibilityLabel,
+  CATALOG_MEDIA_UPLOAD_BUCKET,
   slugifyCatalogValue,
 } from "@/lib/catalog";
 import { supabase } from "@/lib/supabaseClient";
@@ -76,7 +82,21 @@ type CatalogEpisodesResponse = { ok?: boolean; error?: string; episodes?: Catalo
 type CatalogEpisodeResponse = { ok?: boolean; error?: string; episode?: CatalogEpisode };
 type CatalogPlaybackSourcesResponse = { ok?: boolean; error?: string; sources?: CatalogPlaybackSource[] };
 type CatalogPlaybackSourceResponse = { ok?: boolean; error?: string; source?: CatalogPlaybackSource };
+type CatalogMediaAssetsResponse = { ok?: boolean; error?: string; assets?: CatalogMediaAsset[] };
+type CatalogMediaAssetResponse = { ok?: boolean; error?: string; asset?: CatalogMediaAsset };
+type CatalogActionResponse = { ok?: boolean; error?: string };
 type CatalogPlaybackUploadResponse = {
+  ok?: boolean;
+  error?: string;
+  upload?: {
+    bucket: string;
+    path: string;
+    token: string;
+    content_type?: string | null;
+    origin_url: string;
+  };
+};
+type CatalogMediaUploadResponse = {
   ok?: boolean;
   error?: string;
   upload?: {
@@ -145,6 +165,16 @@ type PlaybackSourceFormState = {
   origin_url: string;
   duration_sec: string;
   source_status: CatalogSourceStatus;
+};
+
+type MediaAssetFormState = {
+  owner_type: "title";
+  owner_id: string;
+  asset_type: CatalogMediaAssetType;
+  source_url: string;
+  alt_text: string;
+  locale: string;
+  sort_order: string;
 };
 
 type PublicationTarget = {
@@ -218,6 +248,16 @@ const EMPTY_PLAYBACK_SOURCE_FORM: PlaybackSourceFormState = {
   source_status: "draft",
 };
 
+const EMPTY_MEDIA_ASSET_FORM: MediaAssetFormState = {
+  owner_type: "title",
+  owner_id: "",
+  asset_type: "poster",
+  source_url: "",
+  alt_text: "",
+  locale: "",
+  sort_order: "0",
+};
+
 function badgeClassForEditorial(status: CatalogEditorialStatus) {
   if (status === "published") return "border-emerald-500/25 bg-emerald-500/10 text-emerald-200";
   if (status === "ready") return "border-sky-500/25 bg-sky-500/10 text-sky-200";
@@ -264,6 +304,30 @@ function formatOriginHost(originUrl: string) {
   }
 }
 
+function resolveCatalogMediaUrl(sourceUrl: string | null | undefined) {
+  if (!sourceUrl) return null;
+  if (!sourceUrl.startsWith("storage://")) return sourceUrl;
+
+  const normalized = sourceUrl.replace("storage://", "");
+  const separatorIndex = normalized.indexOf("/");
+  if (separatorIndex <= 0) return null;
+
+  const bucket = normalized.slice(0, separatorIndex);
+  const objectPath = normalized.slice(separatorIndex + 1);
+  if (!bucket || !objectPath) return null;
+
+  return supabase.storage.from(bucket).getPublicUrl(objectPath).data.publicUrl ?? null;
+}
+
+function pickPreferredAsset(
+  assets: CatalogMediaAsset[],
+  assetType: CatalogMediaAssetType
+) {
+  return assets
+    .filter((asset) => asset.asset_type === assetType)
+    .sort((left, right) => left.sort_order - right.sort_order || left.created_at.localeCompare(right.created_at))[0] ?? null;
+}
+
 function toDatetimeLocal(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
@@ -301,6 +365,7 @@ export default function CatalogPage() {
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [workspaceRefreshing, setWorkspaceRefreshing] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [mediaAssets, setMediaAssets] = useState<CatalogMediaAsset[]>([]);
   const [seasons, setSeasons] = useState<CatalogSeason[]>([]);
   const [episodes, setEpisodes] = useState<CatalogEpisode[]>([]);
   const [playbackSources, setPlaybackSources] = useState<CatalogPlaybackSource[]>([]);
@@ -317,6 +382,12 @@ export default function CatalogPage() {
   const [editingEpisode, setEditingEpisode] = useState<CatalogEpisode | null>(null);
   const [episodeForm, setEpisodeForm] = useState<EpisodeFormState>(EMPTY_EPISODE_FORM);
   const [savingEpisode, setSavingEpisode] = useState(false);
+  const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
+  const [editingMediaAsset, setEditingMediaAsset] = useState<CatalogMediaAsset | null>(null);
+  const [mediaAssetForm, setMediaAssetForm] = useState<MediaAssetFormState>(EMPTY_MEDIA_ASSET_FORM);
+  const [mediaAssetFile, setMediaAssetFile] = useState<File | null>(null);
+  const [mediaAssetPreviewUrl, setMediaAssetPreviewUrl] = useState<string | null>(null);
+  const [savingMediaAsset, setSavingMediaAsset] = useState(false);
   const [playbackSourceDialogOpen, setPlaybackSourceDialogOpen] = useState(false);
   const [editingPlaybackSource, setEditingPlaybackSource] =
     useState<CatalogPlaybackSource | null>(null);
@@ -330,6 +401,66 @@ export default function CatalogPage() {
   const [savingPublication, setSavingPublication] = useState(false);
 
   const selectedTitle = useMemo(() => titles.find((item) => item.id === selectedTitleId) ?? null, [selectedTitleId, titles]);
+
+  const titleVisualMap = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        poster: CatalogMediaAsset | null;
+        backdrop: CatalogMediaAsset | null;
+        thumbnail: CatalogMediaAsset | null;
+        logo: CatalogMediaAsset | null;
+      }
+    >();
+
+    for (const title of titles) {
+      const assets = mediaAssets.filter(
+        (asset) => asset.owner_type === "title" && asset.owner_id === title.id
+      );
+      map.set(title.id, {
+        poster: pickPreferredAsset(assets, "poster"),
+        backdrop: pickPreferredAsset(assets, "backdrop"),
+        thumbnail: pickPreferredAsset(assets, "thumbnail"),
+        logo: pickPreferredAsset(assets, "logo"),
+      });
+    }
+
+    return map;
+  }, [mediaAssets, titles]);
+
+  const selectedTitleVisuals = useMemo(
+    () =>
+      selectedTitle
+        ? titleVisualMap.get(selectedTitle.id) ?? {
+            poster: null,
+            backdrop: null,
+            thumbnail: null,
+            logo: null,
+          }
+        : null,
+    [selectedTitle, titleVisualMap]
+  );
+  const selectedTitlePosterUrl = selectedTitleVisuals
+    ? resolveCatalogMediaUrl(
+        selectedTitleVisuals.poster?.source_url ??
+          selectedTitleVisuals.thumbnail?.source_url ??
+          null
+      )
+    : null;
+  const selectedTitleBackdropUrl = selectedTitleVisuals
+    ? resolveCatalogMediaUrl(selectedTitleVisuals.backdrop?.source_url ?? null)
+    : null;
+
+  useEffect(() => {
+    if (!mediaAssetFile) {
+      setMediaAssetPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(mediaAssetFile);
+    setMediaAssetPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [mediaAssetFile]);
 
   const stats = useMemo(() => {
     const movies = titles.filter((item) => item.title_type === "movie").length;
@@ -453,11 +584,18 @@ export default function CatalogPage() {
     else setLoading(true);
     setError(null);
     try {
-      const { response, payload } = await readJson<CatalogTitlesResponse>("/api/catalog/titles");
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || "Impossible de charger le catalogue.");
+      const [titlesResult, assetsResult] = await Promise.all([
+        readJson<CatalogTitlesResponse>("/api/catalog/titles"),
+        readJson<CatalogMediaAssetsResponse>("/api/catalog/media-assets?owner_type=title"),
+      ]);
+      if (!titlesResult.response.ok || !titlesResult.payload?.ok) {
+        throw new Error(titlesResult.payload?.error || "Impossible de charger le catalogue.");
       }
-      setTitles(Array.isArray(payload.titles) ? payload.titles : []);
+      if (!assetsResult.response.ok || !assetsResult.payload?.ok) {
+        throw new Error(assetsResult.payload?.error || "Impossible de charger les visuels catalogue.");
+      }
+      setTitles(Array.isArray(titlesResult.payload.titles) ? titlesResult.payload.titles : []);
+      setMediaAssets(Array.isArray(assetsResult.payload.assets) ? assetsResult.payload.assets : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de charger le catalogue.");
     } finally {
@@ -533,6 +671,7 @@ export default function CatalogPage() {
   useEffect(() => {
     if (titles.length === 0) {
       setSelectedTitleId(null);
+      setMediaAssets([]);
       setSeasons([]);
       setEpisodes([]);
       setPlaybackSources([]);
@@ -608,6 +747,33 @@ export default function CatalogPage() {
     setEditingEpisode(null);
     setEpisodeForm({ ...EMPTY_EPISODE_FORM, season_id: seasonId ?? "", episode_number: String(nextEpisodeNumber), sort_order: String(nextEpisodeNumber) });
     setEpisodeDialogOpen(true);
+  };
+
+  const openCreateMediaAsset = (assetType: CatalogMediaAssetType = "poster") => {
+    if (!selectedTitle) return;
+    setEditingMediaAsset(null);
+    setMediaAssetFile(null);
+    setMediaAssetForm({
+      ...EMPTY_MEDIA_ASSET_FORM,
+      owner_id: selectedTitle.id,
+      asset_type: assetType,
+    });
+    setMediaDialogOpen(true);
+  };
+
+  const openEditMediaAsset = (asset: CatalogMediaAsset) => {
+    setEditingMediaAsset(asset);
+    setMediaAssetFile(null);
+    setMediaAssetForm({
+      owner_type: "title",
+      owner_id: asset.owner_id,
+      asset_type: asset.asset_type,
+      source_url: asset.source_url,
+      alt_text: asset.alt_text ?? "",
+      locale: asset.locale ?? "",
+      sort_order: String(asset.sort_order),
+    });
+    setMediaDialogOpen(true);
   };
 
   const openEditEpisode = (episode: CatalogEpisode) => {
@@ -833,6 +999,133 @@ export default function CatalogPage() {
     }
   };
 
+  const onSaveMediaAsset = async () => {
+    if (!selectedTitle) return;
+    if (!mediaAssetForm.source_url.trim() && !mediaAssetFile) {
+      toast.error("Ajoutez une URL de visuel ou téléversez une image.");
+      return;
+    }
+
+    setSavingMediaAsset(true);
+    try {
+      let nextSourceUrl = mediaAssetForm.source_url.trim();
+
+      if (mediaAssetFile) {
+        const uploadInitResponse = await fetch("/api/catalog/media-assets/upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            owner_type: "title",
+            owner_id: selectedTitle.id,
+            file_name: mediaAssetFile.name,
+            content_type: mediaAssetFile.type || null,
+          }),
+        });
+
+        const uploadInitPayload = (await uploadInitResponse.json().catch(() => null)) as
+          | CatalogMediaUploadResponse
+          | null;
+        if (!uploadInitResponse.ok || !uploadInitPayload?.ok || !uploadInitPayload.upload) {
+          throw new Error(uploadInitPayload?.error || "Impossible de préparer l'upload du visuel.");
+        }
+
+        const uploadRes = await supabase.storage
+          .from(uploadInitPayload.upload.bucket)
+          .uploadToSignedUrl(
+            uploadInitPayload.upload.path,
+            uploadInitPayload.upload.token,
+            mediaAssetFile
+          );
+
+        if (uploadRes.error) {
+          throw new Error(uploadRes.error.message || "Impossible d'envoyer le visuel.");
+        }
+
+        nextSourceUrl = uploadInitPayload.upload.origin_url;
+      }
+
+      const response = await fetch(
+        editingMediaAsset
+          ? `/api/catalog/media-assets/${editingMediaAsset.id}`
+          : "/api/catalog/media-assets",
+        {
+          method: editingMediaAsset ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            owner_type: "title",
+            owner_id: selectedTitle.id,
+            asset_type: mediaAssetForm.asset_type,
+            source_url: nextSourceUrl,
+            storage_provider: nextSourceUrl.startsWith(`storage://${CATALOG_MEDIA_UPLOAD_BUCKET}/`)
+              ? "supabase"
+              : null,
+            alt_text: mediaAssetForm.alt_text.trim() || null,
+            locale: mediaAssetForm.locale.trim() || null,
+            sort_order: mediaAssetForm.sort_order.trim()
+              ? Number(mediaAssetForm.sort_order.trim())
+              : 0,
+          }),
+        }
+      );
+
+      const payload = (await response.json().catch(() => null)) as
+        | CatalogMediaAssetResponse
+        | null;
+      if (!response.ok || !payload?.ok || !payload.asset) {
+        throw new Error(payload?.error || "Impossible d'enregistrer le visuel.");
+      }
+
+      setMediaAssets((current) => {
+        const next = editingMediaAsset
+          ? current.map((item) => (item.id === payload.asset!.id ? payload.asset! : item))
+          : [payload.asset!, ...current];
+        return next.sort(
+          (left, right) =>
+            left.owner_id.localeCompare(right.owner_id) ||
+            left.asset_type.localeCompare(right.asset_type) ||
+            left.sort_order - right.sort_order
+        );
+      });
+      setMediaDialogOpen(false);
+      setEditingMediaAsset(null);
+      setMediaAssetForm(EMPTY_MEDIA_ASSET_FORM);
+      setMediaAssetFile(null);
+      toast.success(editingMediaAsset ? "Visuel mis à jour." : "Visuel ajouté.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossible d'enregistrer le visuel.");
+    } finally {
+      setSavingMediaAsset(false);
+    }
+  };
+
+  const onDeleteMediaAsset = async (asset: CatalogMediaAsset) => {
+    const confirmed = window.confirm(
+      `Supprimer le visuel "${formatCatalogMediaAssetTypeLabel(asset.asset_type)}" ?`
+    );
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/catalog/media-assets/${asset.id}`, {
+        method: "DELETE",
+      });
+      const payload = (await response.json().catch(() => null)) as CatalogActionResponse | null;
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Impossible de supprimer le visuel.");
+      }
+
+      setMediaAssets((current) => current.filter((item) => item.id !== asset.id));
+      if (editingMediaAsset?.id === asset.id) {
+        setEditingMediaAsset(null);
+        setMediaAssetFile(null);
+        setMediaAssetForm(EMPTY_MEDIA_ASSET_FORM);
+        setMediaDialogOpen(false);
+      }
+      toast.success("Visuel supprimé.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossible de supprimer le visuel.");
+    }
+  };
+
   const onSavePublication = async () => {
     if (!publicationForm.playable_id) {
       toast.error("Choisissez une cible à publier.");
@@ -1018,8 +1311,8 @@ export default function CatalogPage() {
         <KpiCard label="Prêts / publiés" value={`${stats.qualified} / ${stats.total}`} hint="Titres déjà qualifiés pour diffusion." tone="warning" icon={<Sparkles className="size-4" />} loading={loading} />
       </KpiRow>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
-        <div className="space-y-6">
+      <div className="grid gap-6 2xl:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="space-y-6 2xl:sticky 2xl:top-6 2xl:self-start">
           <FilterBar onReset={resetFilters} resetDisabled={!query && typeFilter === "all" && statusFilter === "all"}>
             <div className="relative min-w-[240px] flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
@@ -1059,27 +1352,54 @@ export default function CatalogPage() {
             <div className="divide-y divide-white/10">
               {filteredTitles.map((item) => {
                 const selected = item.id === selectedTitleId;
+                const visuals = titleVisualMap.get(item.id);
+                const posterUrl = resolveCatalogMediaUrl(
+                  visuals?.poster?.source_url ?? visuals?.thumbnail?.source_url ?? null
+                );
+                const assetCount = mediaAssets.filter(
+                  (asset) => asset.owner_type === "title" && asset.owner_id === item.id
+                ).length;
                 return (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedTitleId(item.id)}
-                    className={`flex w-full flex-col gap-3 px-5 py-4 text-left transition ${selected ? "bg-[var(--brand-primary)]/10 ring-1 ring-inset ring-[var(--brand-primary)]/25" : "hover:bg-white/[0.03]"}`}
+                    className={`flex w-full items-start gap-4 px-5 py-4 text-left transition ${selected ? "bg-[var(--brand-primary)]/10 ring-1 ring-inset ring-[var(--brand-primary)]/25" : "hover:bg-white/[0.03]"}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-white">{item.title}</div>
-                        <div className="mt-1 truncate text-xs text-slate-400">/{item.slug}{item.original_title ? ` · ${item.original_title}` : ""}</div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Badge variant="outline">{formatCatalogTitleTypeLabel(item.title_type)}</Badge>
-                        <Badge className={badgeClassForEditorial(item.editorial_status)}>{formatCatalogStatusLabel(item.editorial_status)}</Badge>
-                      </div>
+                    <div className="relative hidden aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-[18px] border border-white/10 bg-white/[0.04] sm:block">
+                      {posterUrl ? (
+                        <img src={posterUrl} alt={item.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-slate-500">
+                          <ImageIcon className="size-5" />
+                        </div>
+                      )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
-                      <span>Année: {item.release_year ?? "--"}</span>
-                      <span>Langue: {(item.original_language ?? "").trim() || "--"}</span>
-                      <span>Mis à jour: {formatUpdatedAt(item.updated_at)}</span>
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-white">{item.title}</div>
+                          <div className="mt-1 truncate text-xs text-slate-400">
+                            /{item.slug}
+                            {item.original_title ? ` · ${item.original_title}` : ""}
+                          </div>
+                          <div className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">
+                            {item.short_synopsis || "Ajoutez un synopsis court, un poster et une source de lecture pour préparer une fiche catalogue crédible."}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <Badge variant="outline">{formatCatalogTitleTypeLabel(item.title_type)}</Badge>
+                          <Badge className={badgeClassForEditorial(item.editorial_status)}>
+                            {formatCatalogStatusLabel(item.editorial_status)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                        <span>Année: {item.release_year ?? "--"}</span>
+                        <span>Langue: {(item.original_language ?? "").trim() || "--"}</span>
+                        <span>Visuels: {assetCount}</span>
+                        <span>Mis à jour: {formatUpdatedAt(item.updated_at)}</span>
+                      </div>
                     </div>
                   </button>
                 );
@@ -1100,21 +1420,57 @@ export default function CatalogPage() {
         ) : (
           <div className="space-y-6">
             <Card>
-              <CardHeader className="gap-4">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="space-y-3">
+              <div className="relative min-h-[220px] overflow-hidden border-b border-white/10">
+                {selectedTitleBackdropUrl ? (
+                  <img
+                    src={selectedTitleBackdropUrl}
+                    alt={selectedTitle.title}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,13,20,0.3),rgba(8,13,20,0.92))]" />
+                <div className="relative flex flex-col gap-6 p-6 lg:flex-row lg:items-end">
+                  <div className="relative aspect-[2/3] w-32 shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] shadow-[0_20px_50px_rgba(0,0,0,0.28)]">
+                    {selectedTitlePosterUrl ? (
+                      <img
+                        src={selectedTitlePosterUrl}
+                        alt={selectedTitle.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-500">
+                        <ImageIcon className="size-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline">{formatCatalogTitleTypeLabel(selectedTitle.title_type)}</Badge>
-                      <Badge className={badgeClassForEditorial(selectedTitle.editorial_status)}>
-                        {formatCatalogStatusLabel(selectedTitle.editorial_status)}
-                      </Badge>
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl text-white">{selectedTitle.title}</CardTitle>
-                      <CardDescription className="mt-2 text-sm leading-6 text-slate-300">
+                        <Badge className={badgeClassForEditorial(selectedTitle.editorial_status)}>
+                          {formatCatalogStatusLabel(selectedTitle.editorial_status)}
+                        </Badge>
+                        <Badge variant="secondary">
+                          {selectedTitleVisuals?.poster || selectedTitleVisuals?.backdrop || selectedTitleVisuals?.thumbnail
+                            ? "Visuels prêts"
+                            : "Visuels à compléter"}
+                        </Badge>
+                      </div>
+                      <div>
+                        <div className="text-3xl font-semibold tracking-tight text-white">{selectedTitle.title}</div>
+                      <div className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
                         {selectedTitle.short_synopsis || "Ajoutez un résumé éditorial court pour alimenter le catalogue, le mobile et les vitrines partenaires."}
-                      </CardDescription>
+                      </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+              <CardHeader className="gap-4">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="space-y-2">
+                    <CardTitle className="text-xl text-white">Pilotage éditorial</CardTitle>
+                    <CardDescription className="text-sm leading-6 text-slate-300">
+                      Gérez la fiche, les visuels, la structure, les sources et les publications depuis une seule surface.
+                    </CardDescription>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" onClick={() => void loadWorkspace(selectedTitle, true)}>
@@ -1124,6 +1480,10 @@ export default function CatalogPage() {
                     <Button variant="outline" onClick={() => openEditTitle(selectedTitle)}>
                       <Edit3 className="size-4" />
                       Modifier la fiche
+                    </Button>
+                    <Button variant="outline" onClick={() => openCreateMediaAsset("poster")}>
+                      <ImageIcon className="size-4" />
+                      Ajouter un visuel
                     </Button>
                     <Button variant="outline" onClick={() => openCreatePlaybackSource()}>
                       <Link2 className="size-4" />
@@ -1152,6 +1512,12 @@ export default function CatalogPage() {
                   <div className="mt-2 text-sm font-semibold text-white">{relatedPublications.length} publication(s)</div>
                 </div>
                 <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Visuels</div>
+                  <div className="mt-2 text-sm font-semibold text-white">
+                    {mediaAssets.filter((asset) => asset.owner_type === "title" && asset.owner_id === selectedTitle.id).length} asset(s)
+                  </div>
+                </div>
+                <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-4">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Sources</div>
                   <div className="mt-2 text-sm font-semibold text-white">{relatedPlaybackSources.length} source(s)</div>
                 </div>
@@ -1163,8 +1529,9 @@ export default function CatalogPage() {
             </Card>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-5">
+              <TabsList className="mb-5 h-auto flex-wrap justify-start gap-2 bg-transparent p-0 shadow-none">
                 <TabsTrigger value="editorial">Fiche éditoriale</TabsTrigger>
+                <TabsTrigger value="visuals">Visuels</TabsTrigger>
                 {selectedTitle.title_type === "series" ? <TabsTrigger value="structure">Structure série</TabsTrigger> : null}
                 <TabsTrigger value="sources">Sources</TabsTrigger>
                 <TabsTrigger value="publications">Publications</TabsTrigger>
@@ -1309,6 +1676,89 @@ export default function CatalogPage() {
                 </TabsContent>
               ) : null}
 
+              <TabsContent value="visuals" className="space-y-6">
+                <DataTableShell
+                  title="Visuels du titre"
+                  description="Gérez posters, backdrops, miniatures et logos du catalogue."
+                  loading={loading}
+                  error={error}
+                  onRetry={() => void loadTitles(false)}
+                  isEmpty={!loading && !error && mediaAssets.filter((asset) => asset.owner_type === "title" && asset.owner_id === selectedTitle.id).length === 0}
+                  emptyTitle="Aucun visuel"
+                  emptyDescription="Ajoutez un poster, une miniature ou un backdrop pour professionnaliser la fiche titre et le mobile."
+                  emptyAction={<Button onClick={() => openCreateMediaAsset("poster")}><Plus className="size-4" />Ajouter un visuel</Button>}
+                  footer={<div className="flex justify-end"><Button onClick={() => openCreateMediaAsset("poster")}><Plus className="size-4" />Nouveau visuel</Button></div>}
+                >
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {["poster", "thumbnail", "backdrop", "logo"].map((assetType) => {
+                      const asset = pickPreferredAsset(
+                        mediaAssets.filter(
+                          (entry) =>
+                            entry.owner_type === "title" &&
+                            entry.owner_id === selectedTitle.id
+                        ),
+                        assetType as CatalogMediaAssetType
+                      );
+                      const previewUrl = resolveCatalogMediaUrl(asset?.source_url ?? null);
+
+                      return (
+                        <Card key={assetType} className="overflow-hidden border-white/10 bg-white/[0.03]">
+                          <div className="relative aspect-video overflow-hidden border-b border-white/10 bg-black/20">
+                            {previewUrl ? (
+                              <img
+                                src={previewUrl}
+                                alt={asset.alt_text || selectedTitle.title}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-slate-500">
+                                <ImageIcon className="size-8" />
+                              </div>
+                            )}
+                          </div>
+                          <CardContent className="space-y-3 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="text-sm font-semibold text-white">
+                                  {formatCatalogMediaAssetTypeLabel(assetType)}
+                                </div>
+                                <div className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">
+                                  {asset?.source_url
+                                    ? formatOriginHost(asset.source_url)
+                                    : "Aucun visuel défini"}
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  asset ? openEditMediaAsset(asset) : openCreateMediaAsset(assetType as CatalogMediaAssetType)
+                                }
+                              >
+                                <Edit3 className="size-4" />
+                                {asset ? "Modifier" : "Ajouter"}
+                              </Button>
+                            </div>
+                            {asset ? (
+                              <div className="flex justify-end">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-rose-200 hover:text-rose-100"
+                                  onClick={() => void onDeleteMediaAsset(asset)}
+                                >
+                                  Retirer
+                                </Button>
+                              </div>
+                            ) : null}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </DataTableShell>
+              </TabsContent>
+
               <TabsContent value="sources" className="space-y-6">
                 <DataTableShell
                   title="Sources de lecture"
@@ -1445,91 +1895,132 @@ export default function CatalogPage() {
       </div>
 
       <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-hidden p-0">
+          <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
             <DialogTitle>{editingTitle ? "Modifier le titre" : "Créer un titre catalogue"}</DialogTitle>
-            <DialogDescription>Le titre est l’actif éditorial racine du catalogue.</DialogDescription>
+            <DialogDescription>
+              Le titre est l’actif éditorial racine du catalogue. Complétez l’identité, les
+              métadonnées et les synopsis sans sortir du même panneau.
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid max-h-[65vh] gap-4 overflow-y-auto pr-2 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Type de titre</Label>
-              <Select value={titleForm.title_type} onValueChange={(value) => setTitleForm((current) => ({ ...current, title_type: value as CatalogTitleType }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="movie">Film</SelectItem>
-                  <SelectItem value="series">Série</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Statut éditorial</Label>
-              <Select value={titleForm.editorial_status} onValueChange={(value) => setTitleForm((current) => ({ ...current, editorial_status: value as CatalogEditorialStatus }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Brouillon</SelectItem>
-                  <SelectItem value="ready">Prêt</SelectItem>
-                  <SelectItem value="published">Publié</SelectItem>
-                  <SelectItem value="archived">Archivé</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Titre</Label>
-              <Input
-                value={titleForm.title}
-                onChange={(event) =>
-                  setTitleForm((current) => {
-                    const title = event.target.value;
-                    return {
-                      ...current,
-                      title,
-                      slug:
-                        !editingTitle && (!current.slug || current.slug === slugifyCatalogValue(current.title))
-                          ? slugifyCatalogValue(title)
-                          : current.slug,
-                    };
-                  })
-                }
-                placeholder="Ex: Les héritiers du Nil"
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Slug</Label>
-                <Button type="button" variant="ghost" size="sm" onClick={() => setTitleForm((current) => ({ ...current, slug: slugifyCatalogValue(current.title) }))}>Générer</Button>
-              </div>
-              <Input value={titleForm.slug} onChange={(event) => setTitleForm((current) => ({ ...current, slug: event.target.value }))} placeholder="les-heritiers-du-nil" />
-            </div>
-            <div className="space-y-2">
-              <Label>Titre original</Label>
-              <Input value={titleForm.original_title} onChange={(event) => setTitleForm((current) => ({ ...current, original_title: event.target.value }))} placeholder="Original title" />
-            </div>
-            <div className="space-y-2">
-              <Label>Année de sortie</Label>
-              <Input value={titleForm.release_year} onChange={(event) => setTitleForm((current) => ({ ...current, release_year: event.target.value }))} placeholder="2026" inputMode="numeric" />
-            </div>
-            <div className="space-y-2">
-              <Label>Langue originale</Label>
-              <Input value={titleForm.original_language} onChange={(event) => setTitleForm((current) => ({ ...current, original_language: event.target.value }))} placeholder="fr, en, yor, sw" />
-            </div>
-            <div className="space-y-2">
-              <Label>Pays d’origine</Label>
-              <Input value={titleForm.country_of_origin} onChange={(event) => setTitleForm((current) => ({ ...current, country_of_origin: event.target.value }))} placeholder="Bénin, Côte d'Ivoire, Nigeria" />
-            </div>
-            <div className="space-y-2">
-              <Label>Classification</Label>
-              <Input value={titleForm.maturity_rating} onChange={(event) => setTitleForm((current) => ({ ...current, maturity_rating: event.target.value }))} placeholder="Tout public, 12+, 16+..." />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Synopsis court</Label>
-              <Textarea value={titleForm.short_synopsis} onChange={(event) => setTitleForm((current) => ({ ...current, short_synopsis: event.target.value }))} placeholder="Pitch court pour les listes et vitrines." />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Synopsis long</Label>
-              <Textarea value={titleForm.long_synopsis} onChange={(event) => setTitleForm((current) => ({ ...current, long_synopsis: event.target.value }))} placeholder="Résumé complet pour la fiche détail." className="min-h-32" />
+          <div className="max-h-[calc(88vh-10.5rem)] overflow-y-auto px-6 py-5">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <Card className="border-white/10 bg-white/[0.03]">
+                <CardHeader className="space-y-1 pb-4">
+                  <CardTitle className="text-base text-white">Identité éditoriale</CardTitle>
+                  <CardDescription>
+                    Type, statut et nommage du contenu dans le catalogue tenant.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Type de titre</Label>
+                      <Select value={titleForm.title_type} onValueChange={(value) => setTitleForm((current) => ({ ...current, title_type: value as CatalogTitleType }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="movie">Film</SelectItem>
+                          <SelectItem value="series">Série</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Statut éditorial</Label>
+                      <Select value={titleForm.editorial_status} onValueChange={(value) => setTitleForm((current) => ({ ...current, editorial_status: value as CatalogEditorialStatus }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Brouillon</SelectItem>
+                          <SelectItem value="ready">Prêt</SelectItem>
+                          <SelectItem value="published">Publié</SelectItem>
+                          <SelectItem value="archived">Archivé</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Titre</Label>
+                    <Input
+                      value={titleForm.title}
+                      onChange={(event) =>
+                        setTitleForm((current) => {
+                          const title = event.target.value;
+                          return {
+                            ...current,
+                            title,
+                            slug:
+                              !editingTitle && (!current.slug || current.slug === slugifyCatalogValue(current.title))
+                                ? slugifyCatalogValue(title)
+                                : current.slug,
+                          };
+                        })
+                      }
+                      placeholder="Ex: Les héritiers du Nil"
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                    <div className="space-y-2">
+                      <Label>Slug</Label>
+                      <Input value={titleForm.slug} onChange={(event) => setTitleForm((current) => ({ ...current, slug: event.target.value }))} placeholder="les-heritiers-du-nil" />
+                    </div>
+                    <Button type="button" variant="outline" onClick={() => setTitleForm((current) => ({ ...current, slug: slugifyCatalogValue(current.title) }))}>
+                      Générer
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Titre original</Label>
+                    <Input value={titleForm.original_title} onChange={(event) => setTitleForm((current) => ({ ...current, original_title: event.target.value }))} placeholder="Original title" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/10 bg-white/[0.03]">
+                <CardHeader className="space-y-1 pb-4">
+                  <CardTitle className="text-base text-white">Métadonnées de diffusion</CardTitle>
+                  <CardDescription>
+                    Informations utiles pour la vitrine, la recommandation et les exports partenaires.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Année de sortie</Label>
+                    <Input value={titleForm.release_year} onChange={(event) => setTitleForm((current) => ({ ...current, release_year: event.target.value }))} placeholder="2026" inputMode="numeric" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Classification</Label>
+                    <Input value={titleForm.maturity_rating} onChange={(event) => setTitleForm((current) => ({ ...current, maturity_rating: event.target.value }))} placeholder="Tout public, 12+, 16+..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Langue originale</Label>
+                    <Input value={titleForm.original_language} onChange={(event) => setTitleForm((current) => ({ ...current, original_language: event.target.value }))} placeholder="fr, en, yor, sw" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Pays d’origine</Label>
+                    <Input value={titleForm.country_of_origin} onChange={(event) => setTitleForm((current) => ({ ...current, country_of_origin: event.target.value }))} placeholder="Bénin, Côte d'Ivoire, Nigeria" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/10 bg-white/[0.03] xl:col-span-2">
+                <CardHeader className="space-y-1 pb-4">
+                  <CardTitle className="text-base text-white">Synopsis et promesse éditoriale</CardTitle>
+                  <CardDescription>
+                    Le résumé court alimente les listes. Le synopsis long prépare la fiche détail et les partenaires.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label>Synopsis court</Label>
+                    <Textarea value={titleForm.short_synopsis} onChange={(event) => setTitleForm((current) => ({ ...current, short_synopsis: event.target.value }))} placeholder="Pitch court pour les listes et vitrines." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Synopsis long</Label>
+                    <Textarea value={titleForm.long_synopsis} onChange={(event) => setTitleForm((current) => ({ ...current, long_synopsis: event.target.value }))} placeholder="Résumé complet pour la fiche détail." className="min-h-36" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
-          <DialogFooter className="border-t border-white/10 pt-4">
+          <DialogFooter className="border-t border-white/10 px-6 pb-6 pt-4">
             <Button type="button" variant="outline" onClick={() => setTitleDialogOpen(false)}>Annuler</Button>
             <Button type="button" onClick={() => void onSaveTitle()} disabled={savingTitle}>
               {savingTitle ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
@@ -1540,42 +2031,44 @@ export default function CatalogPage() {
       </Dialog>
 
       <Dialog open={seasonDialogOpen} onOpenChange={setSeasonDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[88vh] overflow-hidden p-0">
+          <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
             <DialogTitle>{editingSeason ? "Modifier la saison" : "Créer une saison"}</DialogTitle>
             <DialogDescription>Structurez la série avant la publication détaillée.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Numéro de saison</Label>
-              <Input value={seasonForm.season_number} onChange={(event) => setSeasonForm((current) => ({ ...current, season_number: event.target.value }))} inputMode="numeric" />
-            </div>
-            <div className="space-y-2">
-              <Label>Ordre d’affichage</Label>
-              <Input value={seasonForm.sort_order} onChange={(event) => setSeasonForm((current) => ({ ...current, sort_order: event.target.value }))} inputMode="numeric" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Titre éditorial</Label>
-              <Input value={seasonForm.title} onChange={(event) => setSeasonForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ex: Saison fondatrice" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Synopsis</Label>
-              <Textarea value={seasonForm.synopsis} onChange={(event) => setSeasonForm((current) => ({ ...current, synopsis: event.target.value }))} placeholder="Résumé saisonnier pour les pages détail." />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Statut éditorial</Label>
-              <Select value={seasonForm.editorial_status} onValueChange={(value) => setSeasonForm((current) => ({ ...current, editorial_status: value as CatalogEditorialStatus }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Brouillon</SelectItem>
-                  <SelectItem value="ready">Prêt</SelectItem>
-                  <SelectItem value="published">Publié</SelectItem>
-                  <SelectItem value="archived">Archivé</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="max-h-[calc(88vh-10rem)] overflow-y-auto px-6 py-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Numéro de saison</Label>
+                <Input value={seasonForm.season_number} onChange={(event) => setSeasonForm((current) => ({ ...current, season_number: event.target.value }))} inputMode="numeric" />
+              </div>
+              <div className="space-y-2">
+                <Label>Ordre d’affichage</Label>
+                <Input value={seasonForm.sort_order} onChange={(event) => setSeasonForm((current) => ({ ...current, sort_order: event.target.value }))} inputMode="numeric" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Titre éditorial</Label>
+                <Input value={seasonForm.title} onChange={(event) => setSeasonForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ex: Saison fondatrice" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Synopsis</Label>
+                <Textarea value={seasonForm.synopsis} onChange={(event) => setSeasonForm((current) => ({ ...current, synopsis: event.target.value }))} placeholder="Résumé saisonnier pour les pages détail." />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Statut éditorial</Label>
+                <Select value={seasonForm.editorial_status} onValueChange={(value) => setSeasonForm((current) => ({ ...current, editorial_status: value as CatalogEditorialStatus }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="ready">Prêt</SelectItem>
+                    <SelectItem value="published">Publié</SelectItem>
+                    <SelectItem value="archived">Archivé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="border-t border-white/10 px-6 pb-6 pt-4">
             <Button type="button" variant="outline" onClick={() => setSeasonDialogOpen(false)}>Annuler</Button>
             <Button type="button" onClick={() => void onSaveSeason()} disabled={savingSeason}>
               {savingSeason ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
@@ -1586,68 +2079,243 @@ export default function CatalogPage() {
       </Dialog>
 
       <Dialog open={episodeDialogOpen} onOpenChange={setEpisodeDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-hidden p-0">
+          <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
             <DialogTitle>{editingEpisode ? "Modifier l’épisode" : "Créer un épisode"}</DialogTitle>
             <DialogDescription>Préparez la diffusion VOD épisode par épisode.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Saison</Label>
-              <Select value={episodeForm.season_id || "none"} onValueChange={(value) => setEpisodeForm((current) => ({ ...current, season_id: value === "none" ? "" : value }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Hors saison</SelectItem>
-                  {seasons.map((season) => (
-                    <SelectItem key={season.id} value={season.id}>
-                      {season.title ? `Saison ${season.season_number} · ${season.title}` : `Saison ${season.season_number}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Numéro d’épisode</Label>
-              <Input value={episodeForm.episode_number} onChange={(event) => setEpisodeForm((current) => ({ ...current, episode_number: event.target.value }))} inputMode="numeric" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Titre</Label>
-              <Input value={episodeForm.title} onChange={(event) => setEpisodeForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ex: Le retour du témoin" />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Synopsis</Label>
-              <Textarea value={episodeForm.synopsis} onChange={(event) => setEpisodeForm((current) => ({ ...current, synopsis: event.target.value }))} placeholder="Résumé de l'épisode pour les fiches détail." />
-            </div>
-            <div className="space-y-2">
-              <Label>Durée (secondes)</Label>
-              <Input value={episodeForm.duration_sec} onChange={(event) => setEpisodeForm((current) => ({ ...current, duration_sec: event.target.value }))} inputMode="numeric" />
-            </div>
-            <div className="space-y-2">
-              <Label>Date de sortie</Label>
-              <Input type="date" value={episodeForm.release_date} onChange={(event) => setEpisodeForm((current) => ({ ...current, release_date: event.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Ordre d’affichage</Label>
-              <Input value={episodeForm.sort_order} onChange={(event) => setEpisodeForm((current) => ({ ...current, sort_order: event.target.value }))} inputMode="numeric" />
-            </div>
-            <div className="space-y-2">
-              <Label>Statut éditorial</Label>
-              <Select value={episodeForm.editorial_status} onValueChange={(value) => setEpisodeForm((current) => ({ ...current, editorial_status: value as CatalogEditorialStatus }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Brouillon</SelectItem>
-                  <SelectItem value="ready">Prêt</SelectItem>
-                  <SelectItem value="published">Publié</SelectItem>
-                  <SelectItem value="archived">Archivé</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="max-h-[calc(88vh-10rem)] overflow-y-auto px-6 py-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Saison</Label>
+                <Select value={episodeForm.season_id || "none"} onValueChange={(value) => setEpisodeForm((current) => ({ ...current, season_id: value === "none" ? "" : value }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Hors saison</SelectItem>
+                    {seasons.map((season) => (
+                      <SelectItem key={season.id} value={season.id}>
+                        {season.title ? `Saison ${season.season_number} · ${season.title}` : `Saison ${season.season_number}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Numéro d’épisode</Label>
+                <Input value={episodeForm.episode_number} onChange={(event) => setEpisodeForm((current) => ({ ...current, episode_number: event.target.value }))} inputMode="numeric" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Titre</Label>
+                <Input value={episodeForm.title} onChange={(event) => setEpisodeForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ex: Le retour du témoin" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Synopsis</Label>
+                <Textarea value={episodeForm.synopsis} onChange={(event) => setEpisodeForm((current) => ({ ...current, synopsis: event.target.value }))} placeholder="Résumé de l'épisode pour les fiches détail." />
+              </div>
+              <div className="space-y-2">
+                <Label>Durée (secondes)</Label>
+                <Input value={episodeForm.duration_sec} onChange={(event) => setEpisodeForm((current) => ({ ...current, duration_sec: event.target.value }))} inputMode="numeric" />
+              </div>
+              <div className="space-y-2">
+                <Label>Date de sortie</Label>
+                <Input type="date" value={episodeForm.release_date} onChange={(event) => setEpisodeForm((current) => ({ ...current, release_date: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Ordre d’affichage</Label>
+                <Input value={episodeForm.sort_order} onChange={(event) => setEpisodeForm((current) => ({ ...current, sort_order: event.target.value }))} inputMode="numeric" />
+              </div>
+              <div className="space-y-2">
+                <Label>Statut éditorial</Label>
+                <Select value={episodeForm.editorial_status} onValueChange={(value) => setEpisodeForm((current) => ({ ...current, editorial_status: value as CatalogEditorialStatus }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="ready">Prêt</SelectItem>
+                    <SelectItem value="published">Publié</SelectItem>
+                    <SelectItem value="archived">Archivé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="border-t border-white/10 px-6 pb-6 pt-4">
             <Button type="button" variant="outline" onClick={() => setEpisodeDialogOpen(false)}>Annuler</Button>
             <Button type="button" onClick={() => void onSaveEpisode()} disabled={savingEpisode}>
               {savingEpisode ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
               {editingEpisode ? "Enregistrer" : "Créer l’épisode"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={mediaDialogOpen}
+        onOpenChange={(open) => {
+          setMediaDialogOpen(open);
+          if (!open) setMediaAssetFile(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-hidden p-0">
+          <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
+            <DialogTitle>
+              {editingMediaAsset ? "Modifier le visuel" : "Ajouter un visuel"}
+            </DialogTitle>
+            <DialogDescription>
+              Générez une vraie fiche OTT avec poster, miniature, backdrop et logo. Vous pouvez
+              référencer une URL existante ou téléverser un asset image Oniix.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[calc(88vh-10rem)] overflow-y-auto px-6 py-5">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Type de visuel</Label>
+                    <Select
+                      value={mediaAssetForm.asset_type}
+                      onValueChange={(value) =>
+                        setMediaAssetForm((current) => ({
+                          ...current,
+                          asset_type: value as CatalogMediaAssetType,
+                        }))
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="poster">Poster</SelectItem>
+                        <SelectItem value="thumbnail">Miniature</SelectItem>
+                        <SelectItem value="backdrop">Backdrop</SelectItem>
+                        <SelectItem value="logo">Logo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ordre</Label>
+                    <Input
+                      value={mediaAssetForm.sort_order}
+                      onChange={(event) =>
+                        setMediaAssetForm((current) => ({
+                          ...current,
+                          sort_order: event.target.value,
+                        }))
+                      }
+                      inputMode="numeric"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>URL du visuel</Label>
+                  <Input
+                    value={mediaAssetForm.source_url}
+                    onChange={(event) =>
+                      setMediaAssetForm((current) => ({
+                        ...current,
+                        source_url: event.target.value,
+                      }))
+                    }
+                    placeholder="https://cdn.example.com/poster.jpg"
+                  />
+                  <p className="text-xs leading-5 text-slate-500">
+                    Accepte une URL externe ou une référence de stockage Oniix.
+                  </p>
+                </div>
+
+                <div className="space-y-2 rounded-[22px] border border-dashed border-white/10 bg-white/[0.02] p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-[16px] border border-white/10 bg-white/[0.04] p-2.5 text-slate-300">
+                      <Upload className="size-4" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-white">Téléverser un visuel</div>
+                      <p className="text-xs leading-5 text-slate-500">
+                        Oniix stocke ensuite le visuel et l’associe au titre. Recommandé pour les posters et backdrops.
+                      </p>
+                    </div>
+                  </div>
+                  <Input
+                    className="mt-4"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/avif,image/svg+xml"
+                    onChange={(event) => setMediaAssetFile(event.target.files?.[0] ?? null)}
+                  />
+                  {mediaAssetFile ? (
+                    <p className="text-xs text-slate-400">Fichier sélectionné: {mediaAssetFile.name}</p>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Texte alternatif</Label>
+                    <Input
+                      value={mediaAssetForm.alt_text}
+                      onChange={(event) =>
+                        setMediaAssetForm((current) => ({
+                          ...current,
+                          alt_text: event.target.value,
+                        }))
+                      }
+                      placeholder="Poster officiel du titre"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Locale</Label>
+                    <Input
+                      value={mediaAssetForm.locale}
+                      onChange={(event) =>
+                        setMediaAssetForm((current) => ({
+                          ...current,
+                          locale: event.target.value,
+                        }))
+                      }
+                      placeholder="fr-BJ, en-US..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Card className="overflow-hidden border-white/10 bg-white/[0.03]">
+                <div className="relative aspect-[3/4] overflow-hidden border-b border-white/10 bg-black/20">
+                  {(mediaAssetPreviewUrl ?? resolveCatalogMediaUrl(mediaAssetForm.source_url)) ? (
+                    <img
+                      src={mediaAssetPreviewUrl ?? resolveCatalogMediaUrl(mediaAssetForm.source_url) ?? ""}
+                      alt={mediaAssetForm.alt_text || selectedTitle?.title || "Visuel"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-slate-500">
+                      <ImageIcon className="size-9" />
+                    </div>
+                  )}
+                </div>
+                <CardContent className="space-y-3 p-4">
+                  <div>
+                    <div className="text-sm font-semibold text-white">
+                      {formatCatalogMediaAssetTypeLabel(mediaAssetForm.asset_type)}
+                    </div>
+                    <div className="mt-1 text-xs leading-5 text-slate-400">
+                      Prévisualisation de la vignette catalogue actuelle.
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border border-white/10 bg-white/[0.03] p-3 text-xs leading-5 text-slate-400">
+                    {mediaAssetFile
+                      ? `Upload prêt: ${mediaAssetFile.name}`
+                      : mediaAssetForm.source_url.trim()
+                      ? formatOriginHost(mediaAssetForm.source_url.trim())
+                      : "Aucune source rattachée pour le moment."}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          <DialogFooter className="border-t border-white/10 px-6 pb-6 pt-4">
+            <Button type="button" variant="outline" onClick={() => setMediaDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button type="button" onClick={() => void onSaveMediaAsset()} disabled={savingMediaAsset}>
+              {savingMediaAsset ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
+              {editingMediaAsset ? "Enregistrer" : "Ajouter le visuel"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1660,8 +2328,8 @@ export default function CatalogPage() {
           if (!open) setPlaybackSourceFile(null);
         }}
       >
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-hidden p-0">
+          <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
             <DialogTitle>
               {editingPlaybackSource ? "Modifier la source" : "Ajouter une source de lecture"}
             </DialogTitle>
@@ -1669,7 +2337,8 @@ export default function CatalogPage() {
               Rattachez une URL HLS, DASH ou fichier direct au film ou à un épisode.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="max-h-[calc(88vh-10rem)] overflow-y-auto px-6 py-5">
+            <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label>Cible de lecture</Label>
               <Select
@@ -1752,7 +2421,7 @@ export default function CatalogPage() {
                 placeholder="https://origin.example.com/movie/master.m3u8"
               />
               <p className="text-xs text-slate-500">
-                Utilisez une URL pour HLS ou DASH. Pour un fichier video unitaire, utilisez
+                Utilisez une URL pour HLS ou DASH. Pour un fichier vidéo unitaire, utilisez
                 le module upload ci-dessous.
               </p>
             </div>
@@ -1766,7 +2435,7 @@ export default function CatalogPage() {
                 }
               />
               <p className="text-xs text-slate-500">
-                Le module upload direct cree une source de type fichier dans le stockage
+                Le module upload direct crée une source de type fichier dans le stockage
                 Oniix.
               </p>
               {playbackSourceFile ? (
@@ -1812,7 +2481,8 @@ export default function CatalogPage() {
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          </div>
+          <DialogFooter className="border-t border-white/10 px-6 pb-6 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -1837,12 +2507,13 @@ export default function CatalogPage() {
       </Dialog>
 
       <Dialog open={publicationDialogOpen} onOpenChange={setPublicationDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-hidden p-0">
+          <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
             <DialogTitle>{editingPublication ? "Modifier la publication" : "Créer une publication"}</DialogTitle>
             <DialogDescription>Pilotez la cible publiée, la visibilité, la fenêtre et la vitrine de distribution.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="max-h-[calc(88vh-10rem)] overflow-y-auto px-6 py-5">
+            <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
               <Label>Contenu publié</Label>
               <Select
@@ -1914,7 +2585,8 @@ export default function CatalogPage() {
               <Input value={publicationForm.geo_block} onChange={(event) => setPublicationForm((current) => ({ ...current, geo_block: event.target.value }))} placeholder="FR, US" />
             </div>
           </div>
-          <DialogFooter>
+          </div>
+          <DialogFooter className="border-t border-white/10 px-6 pb-6 pt-4">
             <Button type="button" variant="outline" onClick={() => setPublicationDialogOpen(false)}>Annuler</Button>
             <Button type="button" onClick={() => void onSavePublication()} disabled={savingPublication}>
               {savingPublication ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}

@@ -47,6 +47,19 @@ export const CATALOG_SOURCE_STATUSES = [
 export type CatalogSourceStatus = (typeof CATALOG_SOURCE_STATUSES)[number];
 
 export const CATALOG_PLAYBACK_UPLOAD_BUCKET = "catalog-vod-sources";
+export const CATALOG_MEDIA_UPLOAD_BUCKET = "catalog-vod-media";
+
+export const CATALOG_MEDIA_OWNER_TYPES = ["title", "season", "episode"] as const;
+export type CatalogMediaOwnerType = (typeof CATALOG_MEDIA_OWNER_TYPES)[number];
+
+export const CATALOG_MEDIA_ASSET_TYPES = [
+  "poster",
+  "backdrop",
+  "thumbnail",
+  "logo",
+  "trailer",
+] as const;
+export type CatalogMediaAssetType = (typeof CATALOG_MEDIA_ASSET_TYPES)[number];
 
 export type CatalogTitle = {
   id: string;
@@ -141,6 +154,22 @@ export type CatalogPlaybackSource = {
   updated_at: string;
 };
 
+export type CatalogMediaAsset = {
+  id: string;
+  tenant_id: string;
+  owner_type: CatalogMediaOwnerType;
+  owner_id: string;
+  asset_type: CatalogMediaAssetType;
+  storage_provider: string | null;
+  source_url: string;
+  alt_text: string | null;
+  locale: string | null;
+  sort_order: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
 export function slugifyCatalogValue(value: string) {
   return value
     .normalize("NFD")
@@ -186,4 +215,12 @@ export function formatCatalogSourceKindLabel(value: string | null | undefined) {
 export function formatCatalogDeliveryModeLabel(value: string | null | undefined) {
   if (value === "direct") return "Direct";
   return "Gateway";
+}
+
+export function formatCatalogMediaAssetTypeLabel(value: string | null | undefined) {
+  if (value === "backdrop") return "Backdrop";
+  if (value === "thumbnail") return "Miniature";
+  if (value === "logo") return "Logo";
+  if (value === "trailer") return "Trailer";
+  return "Poster";
 }

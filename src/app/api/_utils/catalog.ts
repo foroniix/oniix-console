@@ -5,6 +5,9 @@ import {
   type CatalogDeliveryMode,
   type CatalogEditorialStatus,
   type CatalogEpisode,
+  type CatalogMediaAsset,
+  type CatalogMediaAssetType,
+  type CatalogMediaOwnerType,
   type CatalogPlaybackPlayableType,
   type CatalogPlaybackSource,
   type CatalogPlayableType,
@@ -18,6 +21,8 @@ import {
   type CatalogVisibility,
   CATALOG_DELIVERY_MODES,
   CATALOG_EDITORIAL_STATUSES,
+  CATALOG_MEDIA_ASSET_TYPES,
+  CATALOG_MEDIA_OWNER_TYPES,
   CATALOG_PLAYBACK_PLAYABLE_TYPES,
   CATALOG_PLAYABLE_TYPES,
   CATALOG_PUBLICATION_STATUSES,
@@ -37,6 +42,8 @@ const PLAYBACK_PLAYABLE_TYPE_ENUM = z.enum(CATALOG_PLAYBACK_PLAYABLE_TYPES);
 const SOURCE_KIND_ENUM = z.enum(CATALOG_SOURCE_KINDS);
 const DELIVERY_MODE_ENUM = z.enum(CATALOG_DELIVERY_MODES);
 const SOURCE_STATUS_ENUM = z.enum(CATALOG_SOURCE_STATUSES);
+const MEDIA_OWNER_TYPE_ENUM = z.enum(CATALOG_MEDIA_OWNER_TYPES);
+const MEDIA_ASSET_TYPE_ENUM = z.enum(CATALOG_MEDIA_ASSET_TYPES);
 
 export const CATALOG_TITLE_SELECT =
   "id,tenant_id,title_type,slug,title,original_title,short_synopsis,long_synopsis,release_year,maturity_rating,original_language,country_of_origin,editorial_status,metadata,created_by,updated_by,created_at,updated_at";
@@ -52,6 +59,9 @@ export const CATALOG_PUBLICATION_SELECT =
 
 export const CATALOG_PLAYBACK_SOURCE_SELECT =
   "id,tenant_id,playable_type,playable_id,source_kind,delivery_mode,origin_url,duration_sec,drm,audio_tracks,subtitle_tracks,metadata,source_status,created_at,updated_at";
+
+export const CATALOG_MEDIA_ASSET_SELECT =
+  "id,tenant_id,owner_type,owner_id,asset_type,storage_provider,source_url,alt_text,locale,sort_order,metadata,created_at,updated_at";
 
 export const catalogTitleCreateSchema = z.object({
   title_type: TITLE_TYPE_ENUM,
@@ -142,6 +152,21 @@ export const catalogPlaybackSourceCreateSchema = z.object({
 });
 
 export const catalogPlaybackSourceUpdateSchema = catalogPlaybackSourceCreateSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, "empty_update");
+
+export const catalogMediaAssetCreateSchema = z.object({
+  owner_type: MEDIA_OWNER_TYPE_ENUM,
+  owner_id: z.string().uuid(),
+  asset_type: MEDIA_ASSET_TYPE_ENUM,
+  source_url: z.string().trim().max(2048).refine(isCatalogOriginReference, "source_url"),
+  storage_provider: z.string().trim().max(64).nullable().optional(),
+  alt_text: z.string().trim().max(240).nullable().optional(),
+  locale: z.string().trim().max(16).nullable().optional(),
+  sort_order: z.number().int().min(0).max(9999).optional(),
+});
+
+export const catalogMediaAssetUpdateSchema = catalogMediaAssetCreateSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, "empty_update");
 
@@ -391,6 +416,45 @@ export function buildCatalogPlaybackSourceUpdate(
   };
 }
 
+export function buildCatalogMediaAssetInsert(
+  input: z.infer<typeof catalogMediaAssetCreateSchema>,
+  tenantId: string
+) {
+  return {
+    tenant_id: tenantId,
+    owner_type: input.owner_type,
+    owner_id: input.owner_id,
+    asset_type: input.asset_type,
+    storage_provider: normalizeNullableText(input.storage_provider),
+    source_url: input.source_url.trim(),
+    alt_text: normalizeNullableText(input.alt_text),
+    locale: normalizeNullableText(input.locale),
+    sort_order: input.sort_order ?? 0,
+    metadata: {},
+  };
+}
+
+export function buildCatalogMediaAssetUpdate(
+  input: z.infer<typeof catalogMediaAssetUpdateSchema>,
+  current: CatalogMediaAsset
+) {
+  return {
+    owner_type: (input.owner_type ?? current.owner_type) as CatalogMediaOwnerType,
+    owner_id: input.owner_id ?? current.owner_id,
+    asset_type: (input.asset_type ?? current.asset_type) as CatalogMediaAssetType,
+    storage_provider:
+      input.storage_provider !== undefined
+        ? normalizeNullableText(input.storage_provider)
+        : current.storage_provider,
+    source_url: input.source_url !== undefined ? input.source_url.trim() : current.source_url,
+    alt_text:
+      input.alt_text !== undefined ? normalizeNullableText(input.alt_text) : current.alt_text,
+    locale: input.locale !== undefined ? normalizeNullableText(input.locale) : current.locale,
+    sort_order: input.sort_order !== undefined ? input.sort_order : current.sort_order,
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export function normalizeCatalogTitleRow(row: Record<string, unknown>): CatalogTitle {
   return {
     id: String(row.id ?? ""),
@@ -493,6 +557,26 @@ export function normalizeCatalogPlaybackSourceRow(
     subtitle_tracks: normalizeObjectArray(row.subtitle_tracks),
     metadata: normalizeObject(row.metadata),
     source_status: normalizeSourceStatus(row.source_status),
+    created_at: String(row.created_at ?? ""),
+    updated_at: String(row.updated_at ?? row.created_at ?? ""),
+  };
+}
+
+export function normalizeCatalogMediaAssetRow(
+  row: Record<string, unknown>
+): CatalogMediaAsset {
+  return {
+    id: String(row.id ?? ""),
+    tenant_id: String(row.tenant_id ?? ""),
+    owner_type: normalizeMediaOwnerType(row.owner_type),
+    owner_id: String(row.owner_id ?? ""),
+    asset_type: normalizeMediaAssetType(row.asset_type),
+    storage_provider: normalizeNullableValue(row.storage_provider),
+    source_url: String(row.source_url ?? ""),
+    alt_text: normalizeNullableValue(row.alt_text),
+    locale: normalizeNullableValue(row.locale),
+    sort_order: parseNumber(row.sort_order),
+    metadata: normalizeObject(row.metadata),
     created_at: String(row.created_at ?? ""),
     updated_at: String(row.updated_at ?? row.created_at ?? ""),
   };
@@ -665,4 +749,20 @@ function normalizeSourceStatus(value: unknown): CatalogSourceStatus {
   if (normalized === "published") return "published";
   if (normalized === "archived") return "archived";
   return "draft";
+}
+
+function normalizeMediaOwnerType(value: unknown): CatalogMediaOwnerType {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "season") return "season";
+  if (normalized === "episode") return "episode";
+  return "title";
+}
+
+function normalizeMediaAssetType(value: unknown): CatalogMediaAssetType {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "backdrop") return "backdrop";
+  if (normalized === "thumbnail") return "thumbnail";
+  if (normalized === "logo") return "logo";
+  if (normalized === "trailer") return "trailer";
+  return "poster";
 }
