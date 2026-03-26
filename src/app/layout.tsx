@@ -3,7 +3,6 @@ import { Manrope, Space_Grotesk } from "next/font/google";
 
 import { CookieBanner } from "@/components/legal/cookie-banner";
 import { Toaster } from "@/components/ui/sonner";
-import { CONSOLE_PRODUCT_DESCRIPTION, CONSOLE_PRODUCT_NAME } from "@/lib/console-branding";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -21,23 +20,26 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL("https://oniix.space"),
   title: {
-    default: CONSOLE_PRODUCT_NAME,
+    default: "Oniix | TV en direct, replays, films et series",
     template: "%s | Oniix",
   },
-  description: CONSOLE_PRODUCT_DESCRIPTION,
+  description:
+    "Oniix diffuse des chaines TV en direct, des replays, des films et des series sur mobile et sur le web.",
   applicationName: "Oniix",
   keywords: [
     "Oniix",
     "Oniix TV",
     "Mobile TV",
-    "OTT platform",
     "plateforme OTT",
-    "TV channels",
     "chaînes TV",
+    "TV en direct",
+    "replays TV",
+    "films et series",
     "programmation TV",
     "mobile streaming",
-    "broadcast operations",
-    "Africa TV platform",
+    "television web",
+    "catalogue video",
+    "plateforme TV Afrique",
   ],
   alternates: {
     canonical: "/",
@@ -46,14 +48,19 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://oniix.space",
     siteName: "Oniix",
-    title: CONSOLE_PRODUCT_NAME,
-    description: CONSOLE_PRODUCT_DESCRIPTION,
+    title: "Oniix | TV en direct, replays, films et series",
+    description:
+      "Oniix diffuse des chaines TV en direct, des replays, des films et des series sur mobile et sur le web.",
     locale: "fr_FR",
   },
   twitter: {
     card: "summary_large_image",
-    title: CONSOLE_PRODUCT_NAME,
-    description: CONSOLE_PRODUCT_DESCRIPTION,
+    title: "Oniix | TV en direct, replays, films et series",
+    description:
+      "Oniix diffuse des chaines TV en direct, des replays, des films et des series sur mobile et sur le web.",
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
   },
   robots: {
     index: true,

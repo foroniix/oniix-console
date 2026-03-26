@@ -265,11 +265,11 @@ export default function WebLiveHomeClient() {
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {grid.map((lane) => (
-                  <Link
-                    key={lane.channel.id}
-                    href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/we"}
-                    className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
-                  >
+                    <Link
+                      key={lane.channel.id}
+                      href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/"}
+                      className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
+                    >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-white">{lane.channel.name}</p>

@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 
 const NAV_ITEMS = [
-  { href: "/we", label: "TV" },
+  { href: "/", label: "TV" },
   { href: "/we/catalog", label: "Catalogue" },
 ];
 
@@ -21,7 +21,7 @@ export function WebViewerNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-black/70 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/we" className="shrink-0">
+        <Link href="/" className="shrink-0">
           <OniixLogo size="sm" subtitle="Web viewer" />
         </Link>
 
@@ -29,7 +29,7 @@ export function WebViewerNav() {
           {NAV_ITEMS.map((item) => {
             const active =
               pathname === item.href ||
-              (item.href !== "/we" && pathname.startsWith(`${item.href}/`));
+              (item.href !== "/" && pathname.startsWith(`${item.href}/`));
 
             return (
               <Link

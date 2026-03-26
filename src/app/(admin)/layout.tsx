@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { ConsoleFooter } from "@/components/legal/console-footer";
@@ -5,6 +6,18 @@ import { ConsoleIdentityProvider } from "@/components/layout/console-identity";
 import { PageTitleSync } from "@/components/layout/page-title-sync";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Console Oniix",
+    template: "%s | Console Oniix",
+  },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (

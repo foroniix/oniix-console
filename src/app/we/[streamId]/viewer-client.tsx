@@ -286,7 +286,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/we"
+              href="/"
               className="inline-flex h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
             >
               Retour TV

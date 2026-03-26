@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import AcceptInviteClient from "./AcceptInviteClient";
+
+export const metadata: Metadata = {
+  title: "Invitation console | Oniix",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
 
 export default function AcceptInvitePage() {
   return (

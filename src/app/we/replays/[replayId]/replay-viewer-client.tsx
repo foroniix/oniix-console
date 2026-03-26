@@ -135,7 +135,7 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Link
-              href="/we"
+              href="/"
               className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />

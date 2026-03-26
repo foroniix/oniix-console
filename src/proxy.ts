@@ -11,6 +11,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/analytics/heartbeat",
   "/api/replays/process/cron",
 ];
+const NOINDEX_PATH_PREFIXES = ["/login", "/signup", "/accept-invite"];
 const CSRF_EXEMPT_API_PREFIXES = [
   "/api/mobile",
   "/api/analytics/ingest",
@@ -44,6 +45,24 @@ const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function withSecurityHeaders(response: NextResponse) {
   Object.entries(SECURITY_HEADERS).forEach(([key, value]) => response.headers.set(key, value));
+  return response;
+}
+
+function applyIndexingHeaders(
+  response: NextResponse,
+  pathname: string,
+  isPublicPath: boolean,
+  isPublicApiPath: boolean
+) {
+  const isStaticAsset = pathname.startsWith("/_next") || pathname.includes(".");
+  const shouldNoindex =
+    NOINDEX_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
+    (!isStaticAsset && !pathname.startsWith("/api") && !isPublicApiPath && !isPublicPath);
+
+  if (shouldNoindex) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  }
+
   return response;
 }
 
@@ -81,21 +100,26 @@ export function proxy(request: NextRequest) {
   const isCsrfExemptApiPath = matchesPrefix(pathname, CSRF_EXEMPT_API_PREFIXES);
 
   if (BLOCKED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
-    return withSecurityHeaders(blockedResponse(pathname));
+    return applyIndexingHeaders(withSecurityHeaders(blockedResponse(pathname)), pathname, isPublicPath, isPublicApiPath);
   }
 
   if (pathname.startsWith("/api")) {
     const method = request.method?.toUpperCase();
     if (method && unsafeMethods.has(method) && !isCsrfExemptApiPath && !isSameOrigin(request)) {
-      return withSecurityHeaders(csrfResponse());
+      return applyIndexingHeaders(withSecurityHeaders(csrfResponse()), pathname, isPublicPath, isPublicApiPath);
     }
   }
 
   if (pathname === "/login" || pathname === "/signup") {
     if (cookie) {
-      return withSecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
+      return applyIndexingHeaders(
+        withSecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url))),
+        pathname,
+        isPublicPath,
+        isPublicApiPath
+      );
     }
-    return withSecurityHeaders(NextResponse.next());
+    return applyIndexingHeaders(withSecurityHeaders(NextResponse.next()), pathname, isPublicPath, isPublicApiPath);
   }
 
   if (
@@ -104,14 +128,19 @@ export function proxy(request: NextRequest) {
     isPublicPath ||
     isPublicApiPath
   ) {
-    return withSecurityHeaders(NextResponse.next());
+    return applyIndexingHeaders(withSecurityHeaders(NextResponse.next()), pathname, isPublicPath, isPublicApiPath);
   }
 
   if (!cookie) {
-    return withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url)));
+    return applyIndexingHeaders(
+      withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url))),
+      pathname,
+      isPublicPath,
+      isPublicApiPath
+    );
   }
 
-  return withSecurityHeaders(NextResponse.next());
+  return applyIndexingHeaders(withSecurityHeaders(NextResponse.next()), pathname, isPublicPath, isPublicApiPath);
 }
 
 export const config = {
