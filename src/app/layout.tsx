@@ -17,6 +17,9 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
 });
 
+const GOOGLE_SITE_VERIFICATION_TOKEN =
+  process.env.GOOGLE_SITE_VERIFICATION || "KfIdokg1Q_L9aKumnZCMlhQ5u4r-tolHGT5dpOuzYGc";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://oniix.space"),
   title: {
@@ -60,7 +63,7 @@ export const metadata: Metadata = {
       "Oniix diffuse des chaines TV en direct, des replays, des films et des series sur mobile et sur le web.",
   },
   verification: {
-    google: process.env.GOOGLE_SITE_VERIFICATION,
+    google: GOOGLE_SITE_VERIFICATION_TOKEN,
   },
   robots: {
     index: true,
