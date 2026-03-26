@@ -14,6 +14,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { OniixLogo } from "@/components/branding/oniix-logo";
+import { ChannelLogoBadge } from "@/components/we/channel-logo-badge";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 
 type GridSlot = {
@@ -182,6 +183,9 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
           En direct
         </div>
         <div className="absolute bottom-4 left-4 right-4">
+          <div className="mb-3">
+            <ChannelLogoBadge name={lane.channel.name} logoUrl={lane.channel.logo} size="sm" />
+          </div>
           <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{category}</p>
           <h3 className="mt-2 line-clamp-2 text-xl font-semibold text-white">{lane.channel.name}</h3>
           <p className="mt-2 line-clamp-2 text-sm text-slate-300">
@@ -465,7 +469,14 @@ export default function WebLiveHomeClient() {
                       </div>
 
                       <div>
-                        <p className="text-sm text-slate-400">{featured.channel.name}</p>
+                        <div className="mb-4 flex items-center gap-3">
+                          <ChannelLogoBadge
+                            name={featured.channel.name}
+                            logoUrl={featured.channel.logo}
+                            size="md"
+                          />
+                          <p className="text-sm text-slate-400">{featured.channel.name}</p>
+                        </div>
                         <h1 className="mt-3 max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                           {featured.live_stream?.title || featured.now?.title || featured.channel.name}
                         </h1>

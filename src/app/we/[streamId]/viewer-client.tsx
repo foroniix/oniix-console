@@ -1,6 +1,7 @@
 "use client";
 
 import HlsPlayer from "@/components/HlsPlayer";
+import { ChannelLogoBadge } from "@/components/we/channel-logo-badge";
 import { useWebPlaybackAnalytics } from "@/components/we/use-web-playback-analytics";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 import { useStreamHeartbeat } from "@/lib/useStreamHeartbeat";
@@ -306,6 +307,16 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               <Radio className="h-3.5 w-3.5 text-red-400" />
               {activeReplay ? "Replay web" : normalizeLiveCategory(activeLane?.channel ?? { id: "", tenant_id: null, name: "", logo: null, category: null, slug: null })}
             </div>
+            {!activeReplay && activeLane?.channel ? (
+              <div className="mt-4 flex items-center gap-3">
+                <ChannelLogoBadge
+                  name={activeLane.channel.name}
+                  logoUrl={activeLane.channel.logo}
+                  size="md"
+                />
+                <p className="text-sm text-slate-400">{activeLane.channel.name}</p>
+              </div>
+            ) : null}
             <h1 className="mt-4 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
               {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Streaming live"}
             </h1>
@@ -461,14 +472,17 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                             />
                           ) : null}
                           <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
-                          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
-                            <Radio className="h-3.5 w-3.5 text-red-400" />
-                            {normalizeLiveCategory(lane.channel)}
+                        <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
+                          <Radio className="h-3.5 w-3.5 text-red-400" />
+                          {normalizeLiveCategory(lane.channel)}
+                        </div>
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <div className="mb-3">
+                            <ChannelLogoBadge name={lane.channel.name} logoUrl={lane.channel.logo} size="sm" />
                           </div>
-                          <div className="absolute bottom-4 left-4 right-4">
-                            <h3 className="text-lg font-semibold text-white">{lane.channel.name}</h3>
-                            <p className="mt-2 line-clamp-2 text-sm text-slate-300">
-                              {lane.now?.title || lane.live_stream?.title || "Direct disponible"}
+                          <h3 className="text-lg font-semibold text-white">{lane.channel.name}</h3>
+                          <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+                            {lane.now?.title || lane.live_stream?.title || "Direct disponible"}
                             </p>
                           </div>
                         </div>
@@ -553,9 +567,18 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
             <aside className="space-y-5">
               <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
                 <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Contexte</p>
-                <h2 className="mt-2 font-[var(--font-we-display)] text-xl font-semibold text-white">
-                  {activeLane?.channel.name || "Selection active"}
-                </h2>
+                <div className="mt-2 flex items-center gap-3">
+                  {activeLane?.channel ? (
+                    <ChannelLogoBadge
+                      name={activeLane.channel.name}
+                      logoUrl={activeLane.channel.logo}
+                      size="md"
+                    />
+                  ) : null}
+                  <h2 className="font-[var(--font-we-display)] text-xl font-semibold text-white">
+                    {activeLane?.channel.name || "Selection active"}
+                  </h2>
+                </div>
                 <div className="mt-5 space-y-3 text-sm text-slate-400">
                   <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
                     <p className="text-xs uppercase tracking-[0.14em] text-slate-500">En cours</p>
@@ -597,7 +620,10 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                             : "border-white/10 bg-black/35 text-slate-400 hover:border-white/18 hover:text-white"
                         }`}
                       >
-                        <span>{lane.channel.name}</span>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <ChannelLogoBadge name={lane.channel.name} logoUrl={lane.channel.logo} size="sm" />
+                          <span className="truncate">{lane.channel.name}</span>
+                        </div>
                         <span className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
                           {normalizeLiveCategory(lane.channel)}
                         </span>
