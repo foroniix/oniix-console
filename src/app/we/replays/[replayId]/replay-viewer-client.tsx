@@ -126,12 +126,12 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
 
   const headline = useMemo(() => {
     if (!replay) return null;
-    return replay.channel.name ? `${replay.channel.name} · Replay` : "Replay";
+    return replay.channel.name ? `${replay.channel.name} - Replay` : "Replay";
   }, [replay]);
 
   return (
-    <main className="min-h-[calc(100dvh-73px)] bg-[#030303] text-white">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-[calc(100dvh-76px)] text-white">
+      <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Link
@@ -172,7 +172,7 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
         </div>
 
         {loading ? (
-          <div className="flex min-h-[42vh] items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.03]">
+          <div className="flex min-h-[42vh] items-center justify-center rounded-[30px] border border-white/10 bg-white/[0.03]">
             <Loader2 className="h-7 w-7 animate-spin text-white" />
           </div>
         ) : error || !replay ? (
@@ -181,9 +181,48 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
           </div>
         ) : (
           <>
-            <div className="grid gap-5 xl:grid-cols-[1.35fr_0.85fr]">
+            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(120deg,#090909,#050505)] p-7">
+              {replay.poster ? (
+                <div
+                  className="absolute inset-0 bg-cover bg-center opacity-26"
+                  style={{ backgroundImage: `url('${replay.poster}')` }}
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,3,3,0.96),rgba(3,3,3,0.72),rgba(3,3,3,0.94))]" />
+
+              <div className="relative grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{headline}</p>
+                  <h1 className="mt-3 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                    {replay.title}
+                  </h1>
+                  <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
+                    {replay.synopsis || "Replay disponible en lecture web."}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Chaine</p>
+                    <p className="mt-3 text-lg font-semibold text-white">{replay.channel.name || "--"}</p>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Duree</p>
+                    <p className="mt-3 text-lg font-semibold text-white">{formatDuration(replay.duration_sec) || "--"}</p>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Progression</p>
+                    <p className="mt-3 text-lg font-semibold text-white">
+                      {formatPercent(progress?.percent_complete) || (progress?.progress_sec ? "En cours" : "--")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[1.32fr_0.9fr]">
               <section className="space-y-4">
-                <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#050505]">
+                <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#050505] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
                   <div className="aspect-video bg-black">
                     <HlsPlayer
                       streamId={replay.id}
@@ -197,37 +236,27 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                       className="h-full w-full"
                     />
                   </div>
-
-                  <div className="border-t border-white/10 px-4 py-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{headline}</p>
-                    <h1 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
-                      {replay.title}
-                    </h1>
-                    <p className="mt-3 text-sm leading-6 text-slate-300">
-                      {replay.synopsis || "Replay disponible en lecture web."}
-                    </p>
-                  </div>
                 </div>
               </section>
 
-              <aside className="space-y-4">
-                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                  <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">
-                    Informations de lecture
-                  </p>
-                  <div className="mt-4 space-y-2 text-sm text-slate-400">
-                    <p>
-                      Chaine : <span className="text-white">{replay.channel.name || "--"}</span>
-                    </p>
-                    <p>
-                      Duree : <span className="text-white">{formatDuration(replay.duration_sec) || "--"}</span>
-                    </p>
-                    <p>
-                      Progression :{" "}
-                      <span className="text-white">
+              <aside className="space-y-5">
+                <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Lecture</p>
+                  <div className="mt-4 space-y-3 text-sm text-slate-400">
+                    <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Canal</p>
+                      <p className="mt-1 text-white">{replay.channel.name || "--"}</p>
+                    </div>
+                    <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Duree</p>
+                      <p className="mt-1 text-white">{formatDuration(replay.duration_sec) || "--"}</p>
+                    </div>
+                    <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Progression</p>
+                      <p className="mt-1 text-white">
                         {formatPercent(progress?.percent_complete) || (progress?.progress_sec ? "En cours" : "--")}
-                      </span>
-                    </p>
+                      </p>
+                    </div>
                   </div>
 
                   {!user ? (
@@ -238,12 +267,10 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                 </div>
 
                 {relatedReplays.length > 0 ? (
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+                  <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
                     <div className="mb-4 flex items-center gap-2">
                       <Clapperboard className="h-4 w-4 text-slate-400" />
-                      <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">
-                        Replays lies
-                      </p>
+                      <p className="text-sm font-semibold text-white">Replays lies</p>
                     </div>
                     <div className="space-y-3">
                       {relatedReplays.map((item) => (
@@ -255,7 +282,7 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                           <div className="min-w-0">
                             <p className="line-clamp-2 text-sm font-medium text-white">{item.title}</p>
                             <p className="mt-1 text-xs text-slate-500">
-                              {item.channel.name || "Replay"} {item.duration_sec ? `· ${formatDuration(item.duration_sec)}` : ""}
+                              {item.channel.name || "Replay"} {item.duration_sec ? ` - ${formatDuration(item.duration_sec)}` : ""}
                             </p>
                           </div>
                           <PlayCircle className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />

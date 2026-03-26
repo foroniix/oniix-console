@@ -7,10 +7,10 @@ import {
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
-  Clapperboard,
   Loader2,
   Play,
   RefreshCw,
+  Tv2,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -85,15 +85,13 @@ function formatPercent(value: number | null | undefined) {
   return `${value}%`;
 }
 
+function formatEpisodeLabel(episode: EpisodeRow) {
+  return `Episode ${episode.episode_number}`;
+}
+
 export default function WebCatalogTitleClient({ titleId }: { titleId: string }) {
-  const {
-    user,
-    openAuthDialog,
-    toggleWatchlist,
-    isInWatchlist,
-    getProgress,
-    saveProgress,
-  } = useWebViewerAuth();
+  const { user, openAuthDialog, toggleWatchlist, isInWatchlist, getProgress, saveProgress } =
+    useWebViewerAuth();
   const [detail, setDetail] = useState<TitleDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -239,16 +237,25 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
   }, [title, toggleWatchlist]);
 
   return (
-    <main className="min-h-[calc(100dvh-73px)] bg-[#030303] text-white">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-[calc(100dvh-76px)] text-white">
+      <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Link
-            href="/we/catalog"
-            className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour au catalogue
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/we/catalog"
+              className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour au catalogue
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+            >
+              <Tv2 className="mr-2 h-4 w-4" />
+              TV
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             {!user ? (
@@ -272,7 +279,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
         </div>
 
         {loading ? (
-          <div className="flex min-h-[40vh] items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.03]">
+          <div className="flex min-h-[40vh] items-center justify-center rounded-[30px] border border-white/10 bg-white/[0.03]">
             <Loader2 className="h-7 w-7 animate-spin text-white" />
           </div>
         ) : error || !title ? (
@@ -281,17 +288,17 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
           </div>
         ) : (
           <>
-            <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(120deg,#090909,#050505)] p-6">
+            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(120deg,#090909,#050505)] p-7">
               {title.backdrop_url ? (
                 <div
-                  className="absolute inset-0 bg-cover bg-center opacity-25"
+                  className="absolute inset-0 bg-cover bg-center opacity-28"
                   style={{ backgroundImage: `url('${title.backdrop_url}')` }}
                 />
               ) : null}
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,3,3,0.95),rgba(3,3,3,0.72),rgba(3,3,3,0.92))]" />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,3,3,0.96),rgba(3,3,3,0.72),rgba(3,3,3,0.94))]" />
 
-              <div className="relative grid gap-6 lg:grid-cols-[220px_1fr]">
-                <div className="overflow-hidden rounded-[28px] border border-white/10 bg-black">
+              <div className="relative grid gap-6 xl:grid-cols-[240px_1fr_16rem]">
+                <div className="overflow-hidden rounded-[30px] border border-white/10 bg-black">
                   {title.poster_url ? (
                     <div
                       className="aspect-[2/3] bg-cover bg-center"
@@ -306,17 +313,20 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
                 <div className="flex flex-col justify-between gap-6">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
                       {title.title_type === "movie" ? "Film" : "Serie"}
                     </p>
-                    <h1 className="mt-3 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white">
+                    <h1 className="mt-3 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                       {title.title}
                     </h1>
+                    {title.original_title && title.original_title !== title.title ? (
+                      <p className="mt-2 text-sm text-slate-500">{title.original_title}</p>
+                    ) : null}
                     <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
                       {title.long_synopsis || title.short_synopsis || "Disponible en lecture web."}
                     </p>
 
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-400">
+                    <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-400">
                       <span className="rounded-full border border-white/10 px-3 py-1">{title.release_year || "--"}</span>
                       {title.maturity_rating ? (
                         <span className="rounded-full border border-white/10 px-3 py-1">{title.maturity_rating}</span>
@@ -361,12 +371,6 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                       )}
                       {isSaved ? "Dans ma liste" : "Ajouter a ma liste"}
                     </button>
-
-                    {title.title_type === "series" ? (
-                      <span className="inline-flex h-11 items-center rounded-full border border-white/10 px-5 text-sm text-slate-300">
-                        {detail.episodes?.length || 0} episodes disponibles
-                      </span>
-                    ) : null}
                   </div>
 
                   {!user ? (
@@ -374,6 +378,37 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                       Connectez-vous pour synchroniser votre progression et votre liste.
                     </p>
                   ) : null}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Lecture</p>
+                    <p className="mt-3 text-3xl font-semibold text-white">
+                      {title.title_type === "movie" ? (detail.movie_source ? "1" : "0") : detail.episodes?.length || 0}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {title.title_type === "movie" ? "source disponible" : "episode(s)"}
+                    </p>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Duree</p>
+                    <p className="mt-3 text-3xl font-semibold text-white">
+                      {formatDuration(detail.movie_source?.duration_sec ?? null) || "--"}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">lecture estimee</p>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Etat</p>
+                    <p className="mt-3 text-lg font-semibold text-white">
+                      {title.title_type === "movie"
+                        ? detail.movie_source
+                          ? "Pret a lire"
+                          : "Sans source"
+                        : (detail.episodes?.length || 0) > 0
+                          ? "Disponible"
+                          : "A completer"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -385,7 +420,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
             ) : null}
 
             {playbackUrl ? (
-              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#050505]">
+              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#050505]">
                 <div className="aspect-video bg-black">
                   <HlsPlayer
                     streamId={activePlayable?.id || title.id}
@@ -411,53 +446,59 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
             {title.title_type === "series" ? (
               <section className="space-y-5">
-                <div className="flex items-center gap-2">
-                  <Clapperboard className="h-4 w-4 text-slate-400" />
-                  <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Episodes</p>
+                  <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
                     Saisons et episodes
                   </h2>
                 </div>
 
                 <div className="space-y-4">
                   {groupedEpisodes.map(({ season, episodes }) => (
-                    <div key={season.id} className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-                      <div className="flex items-center justify-between gap-3">
+                    <div key={season.id} className="rounded-[30px] border border-white/10 bg-white/[0.03] p-5">
+                      <div className="flex items-center justify-between gap-4">
                         <div>
                           <h3 className="text-lg font-semibold text-white">
                             {season.season_number > 0 ? `Saison ${season.season_number}` : "Collection"}
-                            {season.title ? ` · ${season.title}` : ""}
+                            {season.title ? ` - ${season.title}` : ""}
                           </h3>
                           {season.synopsis ? <p className="mt-1 text-sm text-slate-400">{season.synopsis}</p> : null}
                         </div>
+                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+                          {episodes.length} episode(s)
+                        </span>
                       </div>
 
-                      <div className="mt-5 space-y-3">
+                      <div className="mt-5 grid gap-4">
                         {episodes.map((episode) => {
                           const episodeProgress = getProgress("episode", episode.id);
                           return (
                             <div
                               key={episode.id}
-                              className="flex flex-col gap-4 rounded-[22px] border border-white/10 bg-black/40 p-4 lg:flex-row lg:items-center lg:justify-between"
+                              className="grid gap-4 rounded-[24px] border border-white/10 bg-black/35 p-4 lg:grid-cols-[8rem_1fr_auto]"
                             >
-                              <div className="flex min-w-0 items-start gap-4">
-                                <div className="hidden h-16 w-28 shrink-0 overflow-hidden rounded-2xl bg-black sm:block">
-                                  {episode.thumbnail_url || episode.poster_url ? (
-                                    <div
-                                      className="h-full w-full bg-cover bg-center"
-                                      style={{ backgroundImage: `url('${episode.thumbnail_url || episode.poster_url}')` }}
-                                    />
-                                  ) : null}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm text-slate-500">Episode {episode.episode_number}</p>
-                                  <p className="mt-1 text-base font-semibold text-white">{episode.title}</p>
-                                  <p className="mt-2 text-sm text-slate-400">
-                                    {episode.synopsis || "Disponible en lecture web."}
-                                  </p>
-                                </div>
+                              <div className="overflow-hidden rounded-[18px] bg-black">
+                                {episode.thumbnail_url || episode.poster_url ? (
+                                  <div
+                                    className="aspect-[16/10] bg-cover bg-center"
+                                    style={{ backgroundImage: `url('${episode.thumbnail_url || episode.poster_url}')` }}
+                                  />
+                                ) : (
+                                  <div className="flex aspect-[16/10] items-center justify-center text-xs text-slate-500">
+                                    Episode
+                                  </div>
+                                )}
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm text-slate-500">{formatEpisodeLabel(episode)}</p>
+                                <h4 className="mt-1 text-base font-semibold text-white">{episode.title}</h4>
+                                <p className="mt-2 text-sm leading-6 text-slate-400">
+                                  {episode.synopsis || "Disponible en lecture web."}
+                                </p>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-3 lg:flex-col lg:items-end">
                                 {episode.duration_sec ? (
                                   <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
                                     {formatDuration(episode.duration_sec)}

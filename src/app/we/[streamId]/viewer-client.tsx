@@ -11,7 +11,6 @@ import {
   Loader2,
   Radio,
   RefreshCw,
-  Tv2,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -98,6 +97,37 @@ function formatDuration(value: number | null) {
   return `${Math.max(1, mins)} min`;
 }
 
+function normalizeLiveCategory(channel: GridChannel["channel"]) {
+  const raw = `${channel.category ?? ""} ${channel.name ?? ""}`.trim().toLowerCase();
+  if (!raw) return "General";
+  if (raw.includes("sport") || raw.includes("foot") || raw.includes("ball") || raw.includes("racing")) {
+    return "Sport";
+  }
+  if (raw.includes("anim") || raw.includes("manga") || raw.includes("toon") || raw.includes("otaku")) {
+    return "Manga";
+  }
+  if (
+    raw.includes("movie") ||
+    raw.includes("film") ||
+    raw.includes("serie") ||
+    raw.includes("series") ||
+    raw.includes("cinema")
+  ) {
+    return "Films & series";
+  }
+  if (
+    raw.includes("news") ||
+    raw.includes("actualite") ||
+    raw.includes("business") ||
+    raw.includes("economie")
+  ) {
+    return "Actualites";
+  }
+  const source = (channel.category ?? "").trim();
+  if (!source) return "General";
+  return source.charAt(0).toUpperCase() + source.slice(1);
+}
+
 export default function ViewerClient({ streamId }: { streamId: string }) {
   const { user, getProgress, saveProgress } = useWebViewerAuth();
   const [grid, setGrid] = useState<GridChannel[]>([]);
@@ -116,74 +146,74 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
   const [tab, setTab] = useState<"live" | "grid" | "replays">("live");
   const lastReplaySaveRef = useRef<Record<string, number>>({});
 
-  const loadPortal = useCallback(async (soft = false) => {
-    if (soft) setRefreshing(true);
-    else setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch("/api/web/live?includeReplays=1", { cache: "no-store" });
-      const payload = (await response.json().catch(() => null)) as LivePortalResponse | null;
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || "Impossible de charger la TV web.");
-      }
-
-      const lanes = Array.isArray(payload.grid) ? payload.grid : [];
-      const replayRows = Array.isArray(payload.replays) ? payload.replays : [];
-      setGrid(lanes);
-      setReplays(replayRows);
-
-      const stillExists = lanes.some((lane) => lane.live_stream?.id === activeStreamId);
-      if (!stillExists) {
-        const fallbackStreamId = lanes.find((lane) => lane.live_stream?.id)?.live_stream?.id ?? null;
-        if (fallbackStreamId) {
-          setActiveStreamId(fallbackStreamId);
-          setLiveSessionId(null);
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de charger la TV web.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [activeStreamId]);
-
-  const resolvePlayback = useCallback(
-    async (nextStreamId: string, existingSessionId?: string | null) => {
-      setResolvingPlayback(true);
+  const loadPortal = useCallback(
+    async (soft = false) => {
+      if (soft) setRefreshing(true);
+      else setLoading(true);
       setError("");
 
       try {
-        const response = await fetch("/api/web/live/playback-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            stream_id: nextStreamId,
-            session_id: existingSessionId ?? undefined,
-          }),
-        });
-        const payload = (await response.json().catch(() => null)) as WebPlaybackResponse | null;
+        const response = await fetch("/api/web/live?includeReplays=1", { cache: "no-store" });
+        const payload = (await response.json().catch(() => null)) as LivePortalResponse | null;
         if (!response.ok || !payload?.ok) {
-          throw new Error(payload?.error || "Impossible de résoudre la lecture web.");
+          throw new Error(payload?.error || "Impossible de charger la TV web.");
         }
 
-        setTenantId(payload.tenant_id ?? null);
-        setRuntimeToken(payload.runtime_token ?? null);
-        setLivePlaybackUrl(payload.playback_url ?? null);
-        setLiveSessionId(payload.session_id ?? null);
+        const lanes = Array.isArray(payload.grid) ? payload.grid : [];
+        const replayRows = Array.isArray(payload.replays) ? payload.replays : [];
+        setGrid(lanes);
+        setReplays(replayRows);
+
+        const stillExists = lanes.some((lane) => lane.live_stream?.id === activeStreamId);
+        if (!stillExists) {
+          const fallbackStreamId = lanes.find((lane) => lane.live_stream?.id)?.live_stream?.id ?? null;
+          if (fallbackStreamId) {
+            setActiveStreamId(fallbackStreamId);
+            setLiveSessionId(null);
+          }
+        }
       } catch (err) {
-        setLivePlaybackUrl(null);
-        setRuntimeToken(null);
-        setTenantId(null);
-        setLiveSessionId(null);
-        setError(err instanceof Error ? err.message : "Impossible de résoudre la lecture web.");
+        setError(err instanceof Error ? err.message : "Impossible de charger la TV web.");
       } finally {
-        setResolvingPlayback(false);
+        setLoading(false);
+        setRefreshing(false);
       }
     },
-    []
+    [activeStreamId]
   );
+
+  const resolvePlayback = useCallback(async (nextStreamId: string, existingSessionId?: string | null) => {
+    setResolvingPlayback(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/web/live/playback-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stream_id: nextStreamId,
+          session_id: existingSessionId ?? undefined,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as WebPlaybackResponse | null;
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Impossible de resoudre la lecture web.");
+      }
+
+      setTenantId(payload.tenant_id ?? null);
+      setRuntimeToken(payload.runtime_token ?? null);
+      setLivePlaybackUrl(payload.playback_url ?? null);
+      setLiveSessionId(payload.session_id ?? null);
+    } catch (err) {
+      setLivePlaybackUrl(null);
+      setRuntimeToken(null);
+      setTenantId(null);
+      setLiveSessionId(null);
+      setError(err instanceof Error ? err.message : "Impossible de resoudre la lecture web.");
+    } finally {
+      setResolvingPlayback(false);
+    }
+  }, []);
 
   useEffect(() => {
     void loadPortal(false);
@@ -205,11 +235,13 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
     () => replays.find((row) => row.id === activeReplayId) ?? null,
     [activeReplayId, replays]
   );
+
   const { trackPlayback } = useWebPlaybackAnalytics({
     playableType: activeReplay ? "replay" : null,
     playableId: activeReplay?.id ?? null,
     enabled: Boolean(activeReplay),
   });
+
   const activeReplayProgress = activeReplay ? getProgress("replay", activeReplay.id) : null;
 
   const activeReplaysForChannel = useMemo(() => {
@@ -266,25 +298,25 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
   );
 
   return (
-    <main className="min-h-[calc(100dvh-73px)] overflow-x-hidden bg-[#030303] text-white">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-120px] top-0 h-[360px] w-[360px] rounded-full bg-white/[0.04] blur-[130px]" />
-        <div className="absolute bottom-[-120px] right-[-120px] h-[360px] w-[360px] rounded-full bg-white/[0.03] blur-[150px]" />
-      </div>
-
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-[28px] border border-white/10 bg-white/[0.03] px-4 py-4 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white">
-              <Tv2 className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="font-[var(--font-we-display)] text-base font-semibold">Visionnage desktop</p>
-              <p className="text-xs text-slate-500">{activeLane?.channel.name || "Direct Oniix"}</p>
+    <main className="min-h-[calc(100dvh-76px)] text-white">
+      <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+        <header className="grid gap-4 rounded-[30px] border border-white/10 bg-white/[0.03] p-5 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              <Radio className="h-3.5 w-3.5 text-red-400" />
+              {activeReplay ? "Replay web" : normalizeLiveCategory(activeLane?.channel ?? { id: "", tenant_id: null, name: "", logo: null, category: null, slug: null })}
             </div>
+            <h1 className="mt-4 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
+              {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Streaming live"}
+            </h1>
+            <p className="mt-2 text-sm text-slate-400">
+              {activeReplay
+                ? activeReplay.channel.name || "Replay"
+                : activeLane?.now?.title || "Direct desktop en cours"}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/"
               className="inline-flex h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
@@ -312,7 +344,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         </header>
 
         {loading ? (
-          <div className="flex min-h-[42vh] items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.03]">
+          <div className="flex min-h-[42vh] items-center justify-center rounded-[30px] border border-white/10 bg-white/[0.03]">
             <Loader2 className="h-7 w-7 animate-spin text-white" />
           </div>
         ) : error ? (
@@ -324,9 +356,9 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
             <p className="mt-2 text-xs text-red-200/80">{error}</p>
           </div>
         ) : (
-          <div className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
-            <section className="space-y-4">
-              <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#050505]">
+          <div className="grid gap-6 xl:grid-cols-[1.34fr_0.92fr]">
+            <section className="space-y-5">
+              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#050505] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
                 <div className="aspect-video bg-black">
                   {playbackSrc ? (
                     <HlsPlayer
@@ -347,13 +379,14 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 px-5 py-4">
                   <div className="min-w-0">
-                    <p className="truncate font-[var(--font-we-display)] text-lg font-semibold text-white">
+                    <p className="truncate font-[var(--font-we-display)] text-xl font-semibold text-white">
                       {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Direct"}
                     </p>
-                    <p className="text-xs text-slate-500">
-                      {activeReplay ? "Replay" : "Direct"} {activeLane?.channel.name ? `· ${activeLane.channel.name}` : ""}
+                    <p className="text-sm text-slate-500">
+                      {activeReplay ? "Replay" : "Direct"}
+                      {activeLane?.channel.name ? ` - ${activeLane.channel.name}` : ""}
                     </p>
                   </div>
                   <button
@@ -397,11 +430,12 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 </button>
               </div>
 
-              {tab === "live" && (
-                <div className="space-y-3">
+              {tab === "live" ? (
+                <div className="grid gap-4 md:grid-cols-2">
                   {grid.map((lane) => {
                     const laneStreamId = lane.live_stream?.id ?? "";
-                    const isActive = laneStreamId === activeStreamId;
+                    const isActive = laneStreamId === activeStreamId && !activeReplayId;
+
                     return (
                       <button
                         type="button"
@@ -413,50 +447,55 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                           setActiveStreamId(laneStreamId);
                           setLiveSessionId(null);
                         }}
-                        className={`w-full rounded-[24px] border p-4 text-left transition ${
+                        className={`overflow-hidden rounded-[26px] border text-left transition ${
                           isActive
                             ? "border-white/18 bg-white/[0.08]"
-                            : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
+                            : "border-white/10 bg-white/[0.03] hover:border-white/18 hover:bg-white/[0.05]"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-base font-semibold text-white">{lane.channel.name}</p>
-                            <p className="mt-1 text-xs text-slate-500">
-                              {lane.now?.title ? `En cours : ${lane.now.title}` : "Aucun programme en cours"}
+                        <div className="relative aspect-[16/10] bg-black">
+                          {lane.live_stream?.poster || lane.now?.poster ? (
+                            <div
+                              className="absolute inset-0 bg-cover bg-center"
+                              style={{ backgroundImage: `url('${lane.live_stream?.poster || lane.now?.poster}')` }}
+                            />
+                          ) : null}
+                          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
+                          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
+                            <Radio className="h-3.5 w-3.5 text-red-400" />
+                            {normalizeLiveCategory(lane.channel)}
+                          </div>
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <h3 className="text-lg font-semibold text-white">{lane.channel.name}</h3>
+                            <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+                              {lane.now?.title || lane.live_stream?.title || "Direct disponible"}
                             </p>
                           </div>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-[11px] font-medium text-red-200">
-                            <Radio className="h-3 w-3" />
-                            {lane.live_stream?.id ? "Direct" : "Hors antenne"}
-                          </span>
                         </div>
-                        {lane.next?.title ? (
-                          <p className="mt-3 text-xs text-slate-400">
-                            À suivre à {formatClock(lane.next.starts_at)} · {lane.next.title}
-                          </p>
-                        ) : null}
+                        <div className="p-4 text-sm text-slate-400">
+                          {lane.next?.title ? `${formatClock(lane.next.starts_at)} - ${lane.next.title}` : "Suite a venir"}
+                        </div>
                       </button>
                     );
                   })}
                 </div>
-              )}
+              ) : null}
 
-              {tab === "grid" && (
-                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                  <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
+              {tab === "grid" ? (
+                <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                  <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white">
                     <CalendarClock className="h-4 w-4 text-slate-400" />
                     Grille de diffusion
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {(activeLane?.slots ?? []).slice(0, 12).map((slot) => (
                       <div
                         key={slot.id}
-                        className="flex items-start justify-between gap-3 rounded-2xl border border-white/10 bg-black/50 px-3 py-3"
+                        className="flex items-start justify-between gap-4 rounded-[22px] border border-white/10 bg-black/45 px-4 py-3"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-white">{slot.title}</p>
-                          {slot.notes ? <p className="mt-0.5 text-xs text-slate-500">{slot.notes}</p> : null}
+                          {slot.notes ? <p className="mt-1 text-xs text-slate-500">{slot.notes}</p> : null}
                         </div>
                         <p className="shrink-0 text-xs text-slate-500">
                           {formatClock(slot.starts_at)} - {formatClock(slot.ends_at)}
@@ -464,61 +503,80 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       </div>
                     ))}
                     {(!activeLane || activeLane.slots.length === 0) && (
-                      <p className="rounded-2xl border border-dashed border-white/12 px-3 py-4 text-center text-xs text-slate-500">
-                        Aucune grille publiée pour cette chaîne pour le moment.
+                      <p className="rounded-[22px] border border-dashed border-white/12 px-4 py-5 text-center text-xs text-slate-500">
+                        Aucune grille publiee pour cette chaine pour le moment.
                       </p>
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
 
-              {tab === "replays" && (
-                <div className="grid gap-3 sm:grid-cols-2">
+              {tab === "replays" ? (
+                <div className="grid gap-4 sm:grid-cols-2">
                   {activeReplaysForChannel.map((replay) => (
                     <button
                       key={replay.id}
                       type="button"
                       onClick={() => setActiveReplayId(replay.id)}
-                      className={`rounded-[24px] border bg-white/[0.03] p-4 text-left transition ${
-                        activeReplayId === replay.id ? "border-white/18" : "border-white/10 hover:border-white/20"
+                      className={`overflow-hidden rounded-[26px] border text-left transition ${
+                        activeReplayId === replay.id
+                          ? "border-white/18 bg-white/[0.08]"
+                          : "border-white/10 bg-white/[0.03] hover:border-white/18 hover:bg-white/[0.05]"
                       }`}
                     >
-                      <p className="line-clamp-2 text-sm font-medium text-white">{replay.title}</p>
-                      <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
-                        <Clapperboard className="h-3.5 w-3.5" />
-                        <span>{replay.channel.name || "Replay"}</span>
-                        {replay.duration_sec ? <span>· {formatDuration(replay.duration_sec)}</span> : null}
+                      <div className="relative aspect-[16/10] bg-black">
+                        {replay.poster ? (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: `url('${replay.poster}')` }}
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <h3 className="line-clamp-2 text-lg font-semibold text-white">{replay.title}</h3>
+                        </div>
+                      </div>
+                      <div className="p-4 text-sm text-slate-400">
+                        {replay.channel.name || "Replay"} {replay.duration_sec ? ` - ${formatDuration(replay.duration_sec)}` : ""}
                       </div>
                     </button>
                   ))}
                   {activeReplaysForChannel.length === 0 && (
-                    <p className="rounded-2xl border border-dashed border-white/12 px-3 py-4 text-center text-xs text-slate-500 sm:col-span-2">
-                      Aucun replay disponible pour cette chaîne.
+                    <p className="rounded-[22px] border border-dashed border-white/12 px-4 py-5 text-center text-xs text-slate-500 sm:col-span-2">
+                      Aucun replay disponible pour cette chaine.
                     </p>
                   )}
                 </div>
-              )}
+              ) : null}
             </section>
 
-            <aside className="space-y-4">
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                <p className="font-[var(--font-we-display)] text-sm font-semibold text-white">Contexte éditorial</p>
-                <div className="mt-3 space-y-2 text-xs text-slate-400">
-                  <p>
-                    Chaîne : <span className="text-white">{activeLane?.channel.name || "--"}</span>
-                  </p>
-                  <p>
-                    En cours : <span className="text-white">{activeLane?.now?.title || "Aucun programme en cours"}</span>
-                  </p>
-                  <p>
-                    À suivre : <span className="text-white">{activeLane?.next?.title || "--"}</span>
-                  </p>
+            <aside className="space-y-5">
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Contexte</p>
+                <h2 className="mt-2 font-[var(--font-we-display)] text-xl font-semibold text-white">
+                  {activeLane?.channel.name || "Selection active"}
+                </h2>
+                <div className="mt-5 space-y-3 text-sm text-slate-400">
+                  <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">En cours</p>
+                    <p className="mt-1 text-white">{activeLane?.now?.title || "Aucun programme en cours"}</p>
+                  </div>
+                  <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">A suivre</p>
+                    <p className="mt-1 text-white">{activeLane?.next?.title || "--"}</p>
+                  </div>
+                  <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Categorie</p>
+                    <p className="mt-1 text-white">
+                      {activeLane ? normalizeLiveCategory(activeLane.channel) : "General"}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-                <p className="mb-3 font-[var(--font-we-display)] text-sm font-semibold text-white">Sélection rapide</p>
-                <div className="space-y-2">
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Selection rapide</p>
+                <div className="mt-4 grid gap-2">
                   {grid.map((lane) => {
                     const laneStreamId = lane.live_stream?.id ?? "";
                     return (
@@ -533,16 +591,53 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                           setActiveStreamId(laneStreamId);
                           setLiveSessionId(null);
                         }}
-                        className={`w-full rounded-2xl border px-3 py-2 text-left text-xs transition ${
-                          laneStreamId === activeStreamId
+                        className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left text-sm transition ${
+                          laneStreamId === activeStreamId && !activeReplayId
                             ? "border-white/18 bg-white/[0.08] text-white"
-                            : "border-white/10 text-slate-400 hover:border-white/20 hover:text-white"
+                            : "border-white/10 bg-black/35 text-slate-400 hover:border-white/18 hover:text-white"
                         }`}
                       >
-                        {lane.channel.name}
+                        <span>{lane.channel.name}</span>
+                        <span className="text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                          {normalizeLiveCategory(lane.channel)}
+                        </span>
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                <div className="mb-4 flex items-center gap-2">
+                  <Clapperboard className="h-4 w-4 text-slate-400" />
+                  <p className="text-sm font-semibold text-white">Replays lies</p>
+                </div>
+                <div className="space-y-2">
+                  {activeReplaysForChannel.slice(0, 5).map((replay) => (
+                    <button
+                      key={replay.id}
+                      type="button"
+                      onClick={() => {
+                        setTab("replays");
+                        setActiveReplayId(replay.id);
+                      }}
+                      className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm transition ${
+                        activeReplayId === replay.id
+                          ? "border-white/18 bg-white/[0.08] text-white"
+                          : "border-white/10 bg-black/35 text-slate-400 hover:border-white/18 hover:text-white"
+                      }`}
+                    >
+                      <p className="line-clamp-2 font-medium">{replay.title}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {replay.duration_sec ? formatDuration(replay.duration_sec) : "Replay"}
+                      </p>
+                    </button>
+                  ))}
+                  {activeReplaysForChannel.length === 0 ? (
+                    <p className="rounded-[18px] border border-dashed border-white/12 px-4 py-5 text-center text-xs text-slate-500">
+                      Aucun replay lie a cette chaine.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </aside>

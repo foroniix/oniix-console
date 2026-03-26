@@ -1,7 +1,16 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, Clapperboard, Loader2, Radio, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  Loader2,
+  PlayCircle,
+  Radio,
+  RefreshCw,
+  Sparkles,
+  Tv2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
@@ -84,41 +93,174 @@ function formatPercent(value: number | null | undefined) {
 
 function normalizeLiveCategory(channel: GridChannel["channel"]) {
   const raw = `${channel.category ?? ""} ${channel.name ?? ""}`.trim().toLowerCase();
-  if (!raw) return "Général";
-
+  if (!raw) return "General";
   if (raw.includes("sport") || raw.includes("foot") || raw.includes("ball") || raw.includes("racing")) {
     return "Sport";
   }
-
-  if (raw.includes("anim") || raw.includes("manga") || raw.includes("japan") || raw.includes("toon") || raw.includes("otaku")) {
+  if (raw.includes("anim") || raw.includes("manga") || raw.includes("toon") || raw.includes("otaku")) {
     return "Manga";
   }
-
   if (
     raw.includes("movie") ||
     raw.includes("film") ||
     raw.includes("serie") ||
-    raw.includes("série") ||
     raw.includes("series") ||
     raw.includes("cinema")
   ) {
-    return "Films & séries";
+    return "Films & series";
   }
-
   if (
     raw.includes("news") ||
-    raw.includes("actualité") ||
     raw.includes("actualite") ||
     raw.includes("business") ||
-    raw.includes("économie") ||
     raw.includes("economie")
   ) {
-    return "Actualités";
+    return "Actualites";
   }
-
   const source = (channel.category ?? "").trim();
-  if (!source) return "Général";
+  if (!source) return "General";
   return source.charAt(0).toUpperCase() + source.slice(1);
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  detail,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  detail?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{eyebrow}</p>
+        <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white">
+          {title}
+        </h2>
+        {detail ? <p className="mt-2 text-sm text-slate-400">{detail}</p> : null}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[28px] border border-white/10 bg-white/[0.035] p-5">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
+      <p className="mt-2 text-sm text-slate-500">{detail}</p>
+    </div>
+  );
+}
+
+function LiveLaneCard({ lane }: { lane: GridChannel }) {
+  const category = normalizeLiveCategory(lane.channel);
+
+  return (
+    <Link
+      href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/"}
+      className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(4,4,4,0.98))] transition hover:border-white/18 hover:bg-white/[0.05]"
+    >
+      <div className="relative aspect-[16/10] bg-black">
+        {lane.live_stream?.poster || lane.now?.poster ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+            style={{ backgroundImage: `url('${lane.live_stream?.poster || lane.now?.poster}')` }}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02),rgba(0,0,0,0.88))]" />
+        <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
+          <Radio className="h-3.5 w-3.5 text-red-400" />
+          En direct
+        </div>
+        <div className="absolute bottom-4 left-4 right-4">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{category}</p>
+          <h3 className="mt-2 line-clamp-2 text-xl font-semibold text-white">{lane.channel.name}</h3>
+          <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+            {lane.now?.title || lane.live_stream?.title || "Direct disponible maintenant"}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 p-5 text-sm text-slate-400">
+        <span className="truncate">
+          {lane.next?.title ? `${formatClock(lane.next.starts_at)} - ${lane.next.title}` : "Suite a venir"}
+        </span>
+        <ArrowRight className="h-4 w-4 shrink-0 transition group-hover:translate-x-0.5" />
+      </div>
+    </Link>
+  );
+}
+
+function ReplayCard({ replay }: { replay: ReplayItem }) {
+  return (
+    <Link
+      href={`/we/replays/${replay.id}`}
+      className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
+    >
+      <div className="relative aspect-[16/10] bg-black">
+        {replay.poster ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+            style={{ backgroundImage: `url('${replay.poster}')` }}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
+        <div className="absolute bottom-4 left-4 right-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{replay.channel.name || "Replay"}</p>
+          <h3 className="mt-2 line-clamp-2 text-lg font-semibold text-white">{replay.title}</h3>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3 p-4 text-sm text-slate-400">
+        <span>{formatDuration(replay.duration_sec) || "Disponible"}</span>
+        <PlayCircle className="h-4 w-4 shrink-0" />
+      </div>
+    </Link>
+  );
+}
+
+function ContinueReplayCard({
+  item,
+}: {
+  item: ReturnType<typeof useWebViewerAuth>["replayContinueWatching"][number];
+}) {
+  return (
+    <Link
+      href={item.href}
+      className="group overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
+    >
+      <div className="relative aspect-[16/10] bg-black">
+        {item.poster_url ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+            style={{ backgroundImage: `url('${item.poster_url}')` }}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
+        {item.percent_complete ? (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+            <div
+              className="h-full bg-white"
+              style={{ width: `${Math.min(100, Math.max(0, item.percent_complete))}%` }}
+            />
+          </div>
+        ) : null}
+        <div className="absolute bottom-4 left-4 right-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{item.channel_name || "Replay"}</p>
+          <h3 className="mt-2 line-clamp-2 text-lg font-semibold text-white">{item.title}</h3>
+        </div>
+      </div>
+      <div className="p-4 text-sm text-slate-400">
+        {formatPercent(item.percent_complete)
+          ? `Reprendre a ${formatPercent(item.percent_complete)}`
+          : "Reprendre la lecture"}
+      </div>
+    </Link>
+  );
 }
 
 export default function WebLiveHomeClient() {
@@ -185,234 +327,233 @@ export default function WebLiveHomeClient() {
   }, [activeCategory, filteredGrid, replays]);
 
   const featured = useMemo(
-    () => filteredGrid.find((lane) => lane.live_stream?.id) ?? null,
+    () => filteredGrid.find((lane) => lane.live_stream?.id) ?? filteredGrid[0] ?? null,
+    [filteredGrid]
+  );
+
+  const categorySummary = useMemo(
+    () =>
+      Array.from(
+        filteredGrid.reduce<Map<string, number>>((map, lane) => {
+          const key = normalizeLiveCategory(lane.channel);
+          map.set(key, (map.get(key) ?? 0) + 1);
+          return map;
+        }, new Map())
+      ).sort((left, right) => right[1] - left[1]),
     [filteredGrid]
   );
 
   return (
-    <main className="min-h-[calc(100dvh-73px)] bg-[#030303] text-white">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-0 top-0 h-[360px] w-[360px] rounded-full bg-white/[0.04] blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[320px] w-[320px] rounded-full bg-white/[0.03] blur-[140px]" />
-      </div>
-
-      <section className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Web TV</p>
-            <h1 className="mt-2 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
-              Directs Oniix
-            </h1>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void load(true)}
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08]"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            Actualiser
-          </button>
-        </div>
-
-        {categories.length > 1 ? (
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => {
-              const active = category === activeCategory;
-              return (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => setActiveCategory(category)}
-                  className={`inline-flex h-10 items-center rounded-full border px-4 text-sm transition ${
-                    active
-                      ? "border-white/14 bg-white text-black"
-                      : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
-                  }`}
-                >
-                  {category}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+    <main className="min-h-[calc(100dvh-76px)] text-white">
+      <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+        <SectionHeader
+          eyebrow="Oniix streaming"
+          title="TV en direct, replays et catalogue web"
+          detail="Un portail public pense pour le visionnage desktop."
+          action={
+            <button
+              type="button"
+              onClick={() => void load(true)}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08]"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              Actualiser
+            </button>
+          }
+        />
 
         {loading ? (
-          <div className="flex min-h-[40vh] items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.03]">
-            <Loader2 className="h-7 w-7 animate-spin text-white" />
+          <div className="flex min-h-[48vh] items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.03]">
+            <Loader2 className="h-8 w-8 animate-spin text-white" />
           </div>
         ) : error ? (
-          <div className="rounded-[28px] border border-red-500/25 bg-red-500/10 p-5 text-sm text-red-100">
+          <div className="rounded-[28px] border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-100">
             {error}
           </div>
         ) : (
           <>
             {featured ? (
-              <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+              <section className="grid gap-5 xl:grid-cols-[1.32fr_0.68fr]">
                 <Link
-                  href={`/we/${featured.live_stream?.id}`}
-                  className="group relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,#0a0a0a,#050505)] p-6 shadow-[0_28px_80px_rgba(0,0,0,0.42)]"
+                  href={featured.live_stream?.id ? `/we/${featured.live_stream.id}` : "/"}
+                  className="group relative overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(135deg,#0b0b0b,#030303)] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]"
                 >
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.06),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.04),transparent_24%)]" />
-                  <div className="relative flex h-full flex-col justify-between gap-6">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      <Radio className="h-3.5 w-3.5 text-red-400" />
-                      En direct
+                  {featured.live_stream?.poster || featured.now?.poster ? (
+                    <div
+                      className="absolute inset-0 bg-cover bg-center opacity-35 transition duration-700 group-hover:scale-[1.04]"
+                      style={{ backgroundImage: `url('${featured.live_stream?.poster || featured.now?.poster}')` }}
+                    />
+                  ) : null}
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,2,2,0.98),rgba(2,2,2,0.78),rgba(2,2,2,0.96))]" />
+
+                  <div className="relative flex h-full flex-col justify-between gap-10">
+                    <div className="space-y-6">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
+                        <Radio className="h-3.5 w-3.5 text-red-400" />
+                        {normalizeLiveCategory(featured.channel)}
+                      </div>
+
+                      <div>
+                        <p className="text-sm text-slate-400">{featured.channel.name}</p>
+                        <h1 className="mt-3 max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                          {featured.live_stream?.title || featured.now?.title || featured.channel.name}
+                        </h1>
+                        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+                          {featured.now?.title
+                            ? `En cours: ${featured.now.title}`
+                            : "Le direct est disponible instantanement depuis votre navigateur."}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-400">{featured.channel.name}</p>
-                      <h2 className="mt-2 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
-                        {featured.live_stream?.title || featured.now?.title || featured.channel.name}
-                      </h2>
-                      <p className="mt-3 text-sm text-slate-300">
-                        {featured.now?.title ? `En cours : ${featured.now.title}` : "Aucun programme éditorial en cours"}
-                      </p>
-                    </div>
-                    <div className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm text-white transition group-hover:bg-white/[0.09]">
-                      Ouvrir le direct
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="inline-flex h-12 items-center rounded-full bg-white px-5 text-sm font-medium text-black transition group-hover:bg-slate-200">
+                        Ouvrir le direct
+                      </span>
+                      <span className="inline-flex h-12 items-center rounded-full border border-white/10 px-5 text-sm text-slate-300">
+                        {featured.next?.title
+                          ? `${formatClock(featured.next.starts_at)} - ${featured.next.title}`
+                          : "Suite a venir"}
+                      </span>
                     </div>
                   </div>
                 </Link>
 
-                <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
-                  <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Chaînes live</p>
-                    <p className="mt-3 text-3xl font-semibold text-white">{filteredGrid.length}</p>
-                  </div>
-                  <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Replays</p>
-                    <p className="mt-3 text-3xl font-semibold text-white">{filteredReplays.length}</p>
-                  </div>
+                <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+                  <StatCard
+                    label="Chaines live"
+                    value={String(filteredGrid.length)}
+                    detail="Disponibles maintenant sur le portail public"
+                  />
+                  <StatCard
+                    label="Univers"
+                    value={String(Math.max(1, categorySummary.length))}
+                    detail="Sport, actualites, divertissement et plus"
+                  />
                   <Link
                     href="/we/catalog"
-                    className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5 transition hover:bg-white/[0.06]"
+                    className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 transition hover:border-white/18 hover:bg-white/[0.07]"
                   >
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Catalogue</p>
-                    <p className="mt-3 text-lg font-semibold text-white">Ouvrir films et séries</p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Catalogue</p>
+                    <p className="mt-3 text-lg font-semibold text-white">Films, series et collections</p>
+                    <p className="mt-2 text-sm text-slate-400">Basculer vers l espace VOD</p>
                   </Link>
                 </div>
-              </div>
+              </section>
             ) : null}
 
-            {replayContinueWatching.length > 0 ? (
-              <section className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">
-                    Continuer un replay
-                  </h2>
-                  <span className="text-sm text-slate-500">{replayContinueWatching.length} reprise(s)</span>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {replayContinueWatching.map((item) => (
-                    <Link
-                      key={`replay:${item.playable_id}`}
-                      href={item.href}
-                      className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/20 hover:bg-white/[0.05]"
+            <section className="rounded-[30px] border border-white/10 bg-white/[0.025] p-5">
+              <SectionHeader
+                eyebrow="Bouquets"
+                title="Par univers"
+                detail="Filtrez rapidement les chaines par ligne editoriale."
+              />
+              <div className="mt-5 flex flex-wrap gap-2">
+                {categories.map((category) => {
+                  const active = activeCategory === category;
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => setActiveCategory(category)}
+                      className={`inline-flex h-11 items-center rounded-full border px-4 text-sm transition ${
+                        active
+                          ? "border-white/14 bg-white text-black"
+                          : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                      }`}
                     >
-                      <div className="relative aspect-[16/10] bg-black">
-                        {item.poster_url ? (
-                          <div
-                            className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-[1.03]"
-                            style={{ backgroundImage: `url('${item.poster_url}')` }}
-                          />
-                        ) : null}
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.84))]" />
-                        {item.percent_complete ? (
-                          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
-                            <div
-                              className="h-full bg-white"
-                              style={{ width: `${Math.min(100, Math.max(0, item.percent_complete))}%` }}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="space-y-3 p-5">
-                        <div>
-                          <p className="text-xs text-slate-500">{item.channel_name || "Replay"}</p>
-                          <h3 className="mt-1 line-clamp-2 text-lg font-semibold text-white">{item.title}</h3>
-                        </div>
-                        <div className="flex items-center justify-between gap-3 text-sm text-slate-400">
-                          <span>
-                            {formatPercent(item.percent_complete)
-                              ? `Reprendre à ${formatPercent(item.percent_complete)}`
-                              : "Reprendre la lecture"}
-                          </span>
-                          <ArrowRight className="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5" />
-                        </div>
-                      </div>
-                    </Link>
+                      {category}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {replayContinueWatching.length > 0 ? (
+              <section className="space-y-5">
+                <SectionHeader
+                  eyebrow="Reprise"
+                  title="Continuer vos replays"
+                  detail="Retrouvez votre lecture en cours sur le web."
+                />
+                <div className="grid gap-4 lg:grid-cols-3">
+                  {replayContinueWatching.slice(0, 3).map((item) => (
+                    <ContinueReplayCard key={`replay:${item.playable_id}`} item={item} />
                   ))}
                 </div>
               </section>
             ) : null}
 
-            <section className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">Chaînes en direct</h2>
-                <span className="text-sm text-slate-500">{filteredGrid.length} chaînes</span>
-              </div>
-
+            <section className="space-y-5">
+              <SectionHeader
+                eyebrow="Directs"
+                title="Maintenant a l'antenne"
+                detail="Un acces desktop simple pour regarder les chaines actives."
+                action={
+                  <Link
+                    href="/we/catalog"
+                    className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    <Tv2 className="mr-2 h-4 w-4" />
+                    Ouvrir le catalogue
+                  </Link>
+                }
+              />
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {filteredGrid.map((lane) => (
-                  <Link
-                    key={lane.channel.id}
-                    href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/"}
-                    className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-white">{lane.channel.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {normalizeLiveCategory(lane.channel)}
-                        </p>
-                      </div>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-[11px] font-medium text-red-200">
-                        <Radio className="h-3 w-3" />
-                        Live
-                      </span>
-                    </div>
-
-                    <div className="mt-5 space-y-3">
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">En cours</p>
-                        <p className="mt-1 line-clamp-2 text-sm text-slate-100">
-                          {lane.now?.title || lane.live_stream?.title || "Direct sans habillage éditorial"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">À suivre</p>
-                        <p className="mt-1 text-sm text-slate-300">
-                          {lane.next?.title ? `${formatClock(lane.next.starts_at)} · ${lane.next.title}` : "À venir"}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
+                  <LiveLaneCard key={lane.channel.id} lane={lane} />
                 ))}
               </div>
+              {filteredGrid.length === 0 ? (
+                <div className="rounded-[28px] border border-dashed border-white/12 bg-white/[0.02] p-5 text-sm text-slate-500">
+                  Aucun direct public n est encore disponible dans cette categorie.
+                </div>
+              ) : null}
             </section>
 
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Clapperboard className="h-4 w-4 text-slate-400" />
-                <h2 className="font-[var(--font-we-display)] text-xl font-semibold text-white">Replays récents</h2>
+            <section id="replays" className="grid gap-5 xl:grid-cols-[0.88fr_1.12fr]">
+              <div className="rounded-[30px] border border-white/10 bg-white/[0.03] p-5">
+                <SectionHeader
+                  eyebrow="Selection"
+                  title="Vue d'ensemble"
+                  detail="Le portail se concentre sur le direct, le replay et le catalogue."
+                />
+                <div className="mt-5 space-y-3">
+                  <div className="rounded-[22px] border border-white/10 bg-black/30 p-4">
+                    <div className="flex items-center gap-2 text-white">
+                      <Sparkles className="h-4 w-4 text-slate-400" />
+                      <p className="text-sm font-medium">Visionnage desktop</p>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-400">
+                      Navigation rapide entre live, grille, replays et catalogue.
+                    </p>
+                  </div>
+                  {categorySummary.map(([category, count]) => (
+                    <div
+                      key={category}
+                      className="flex items-center justify-between rounded-[18px] border border-white/10 bg-black/30 px-4 py-3"
+                    >
+                      <span className="text-sm text-white">{category}</span>
+                      <span className="text-sm text-slate-400">{count} chaine(s)</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {filteredReplays.slice(0, 6).map((replay) => (
-                  <Link
-                    key={replay.id}
-                    href={`/we/replays/${replay.id}`}
-                    className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
-                  >
-                    <p className="line-clamp-2 text-sm font-semibold text-white">{replay.title}</p>
-                    <p className="mt-2 text-xs text-slate-400">{replay.channel.name || "Replay"}</p>
-                    <p className="mt-3 text-xs text-slate-500">{formatDuration(replay.duration_sec) || "Replay"}</p>
-                  </Link>
-                ))}
+              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(10,10,10,0.96),rgba(3,3,3,0.98))] p-5">
+                <SectionHeader
+                  eyebrow="Replays"
+                  title="Selection recente"
+                  detail="Les derniers programmes rattrapables sur le web."
+                />
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {filteredReplays.slice(0, 6).map((replay) => (
+                    <ReplayCard key={replay.id} replay={replay} />
+                  ))}
+                </div>
                 {filteredReplays.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-white/12 bg-white/[0.02] p-5 text-sm text-slate-500">
-                    Aucun replay public n&apos;est encore disponible.
+                  <div className="mt-5 rounded-[24px] border border-dashed border-white/12 bg-white/[0.02] p-5 text-sm text-slate-500">
+                    Aucun replay public n est encore disponible.
                   </div>
                 ) : null}
               </div>
