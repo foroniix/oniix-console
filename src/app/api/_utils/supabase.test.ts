@@ -57,6 +57,7 @@ describe("supabaseAdmin", () => {
       "src/app/api/mobile/playback-url/route.ts",
       "src/app/api/playback/hls/[channelId]/[file]/route.ts",
       "src/app/api/web/auth/signup/route.ts",
+      "src/app/api/web/analytics/playback/route.ts",
       "src/app/api/web/catalog/route.ts",
       "src/app/api/web/catalog/[titleId]/route.ts",
       "src/app/api/web/catalog/playback-url/route.ts",

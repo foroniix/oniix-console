@@ -1,6 +1,7 @@
 "use client";
 
 import HlsPlayer from "@/components/HlsPlayer";
+import { useWebPlaybackAnalytics } from "@/components/we/use-web-playback-analytics";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 import { useStreamHeartbeat } from "@/lib/useStreamHeartbeat";
 import {
@@ -204,6 +205,11 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
     () => replays.find((row) => row.id === activeReplayId) ?? null,
     [activeReplayId, replays]
   );
+  const { trackPlayback } = useWebPlaybackAnalytics({
+    playableType: activeReplay ? "replay" : null,
+    playableId: activeReplay?.id ?? null,
+    enabled: Boolean(activeReplay),
+  });
   const activeReplayProgress = activeReplay ? getProgress("replay", activeReplay.id) : null;
 
   const activeReplaysForChannel = useMemo(() => {
@@ -234,6 +240,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
 
   const handleReplayProgress = useCallback(
     (snapshot: { currentTime: number; duration: number | null; ended: boolean }) => {
+      trackPlayback(snapshot);
       if (!activeReplay || !user) return;
 
       const progressSec = Math.max(0, Math.floor(snapshot.currentTime || 0));
@@ -255,7 +262,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         completed,
       });
     },
-    [activeReplay, saveProgress, user]
+    [activeReplay, saveProgress, trackPlayback, user]
   );
 
   return (

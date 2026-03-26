@@ -1,6 +1,7 @@
 "use client";
 
 import HlsPlayer from "@/components/HlsPlayer";
+import { useWebPlaybackAnalytics } from "@/components/we/use-web-playback-analytics";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 import {
   ArrowLeft,
@@ -57,6 +58,11 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const lastSavedRef = useRef<number>(0);
+  const { trackPlayback } = useWebPlaybackAnalytics({
+    playableType: replay ? "replay" : null,
+    playableId: replay?.id ?? null,
+    enabled: Boolean(replay),
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,6 +101,7 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
 
   const handlePlaybackProgress = useCallback(
     (snapshot: { currentTime: number; duration: number | null; ended: boolean }) => {
+      trackPlayback(snapshot);
       if (!replay || !user) return;
 
       const progressSec = Math.max(0, Math.floor(snapshot.currentTime || 0));
@@ -114,7 +121,7 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
         completed,
       });
     },
-    [replay, saveProgress, user]
+    [replay, saveProgress, trackPlayback, user]
   );
 
   const headline = useMemo(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import HlsPlayer from "@/components/HlsPlayer";
+import { useWebPlaybackAnalytics } from "@/components/we/use-web-playback-analytics";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 import {
   ArrowLeft,
@@ -104,6 +105,11 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
   const [playbackStartAtSec, setPlaybackStartAtSec] = useState<number>(0);
   const [updatingWatchlist, setUpdatingWatchlist] = useState(false);
   const lastSavedRef = useRef<Record<string, number>>({});
+  const { trackPlayback } = useWebPlaybackAnalytics({
+    playableType: activePlayable?.type ?? null,
+    playableId: activePlayable?.id ?? null,
+    enabled: Boolean(activePlayable),
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -197,6 +203,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
   const handlePlaybackProgress = useCallback(
     (snapshot: { currentTime: number; duration: number | null; ended: boolean }) => {
+      trackPlayback(snapshot);
       if (!activePlayable || !user) return;
 
       const progressSec = Math.max(0, Math.floor(snapshot.currentTime || 0));
@@ -218,7 +225,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
         completed,
       });
     },
-    [activePlayable, saveProgress, user]
+    [activePlayable, saveProgress, trackPlayback, user]
   );
 
   const handleToggleWatchlist = useCallback(async () => {
