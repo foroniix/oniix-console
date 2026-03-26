@@ -6,6 +6,11 @@ const BLOCKED_PATH_PREFIXES = ["/api/public", "/api/upload", "/api/utils/validat
 const PUBLIC_PATH_PREFIXES = ["/", "/login", "/signup", "/accept-invite", "/cookies", "/privacy", "/we", "/web"];
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
+  "/api/web/auth/signup",
+  "/api/web/live",
+  "/api/web/catalog",
+  "/api/web/replays",
+  "/api/web/analytics/playback",
   "/api/mobile",
   "/api/analytics/ingest",
   "/api/analytics/heartbeat",

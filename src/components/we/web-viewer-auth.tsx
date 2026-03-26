@@ -91,8 +91,8 @@ type ViewerAuthContextValue = {
   watchlist: ViewerWatchlistItem[];
   openAuthDialog: (mode?: "login" | "signup") => void;
   closeAuthDialog: () => void;
-  login: (input: { email: string; password: string }) => Promise<boolean>;
-  signup: (input: { fullName: string; email: string; password: string }) => Promise<boolean>;
+  login: (input: { email: string; password: string }) => Promise<AuthActionResult>;
+  signup: (input: { fullName: string; email: string; password: string }) => Promise<AuthActionResult>;
   logout: () => Promise<void>;
   refreshLibrary: () => Promise<void>;
   isInWatchlist: (playableType: "movie" | "series" | "episode", playableId: string) => boolean;
@@ -114,12 +114,19 @@ type AuthResponse = {
   ok?: boolean;
   error?: string;
   message?: string;
+  requires_email_confirmation?: boolean;
   user?: {
     id: string;
     email: string | null;
     full_name: string | null;
     avatar_url: string | null;
   };
+};
+
+type AuthActionResult = {
+  ok: boolean;
+  message?: string;
+  requiresEmailConfirmation?: boolean;
 };
 
 type LibraryResponse = {
@@ -191,8 +198,8 @@ function WebViewerAuthDialog({
   busy: boolean;
   onOpenChange: (open: boolean) => void;
   onModeChange: (mode: "login" | "signup") => void;
-  onLogin: (input: { email: string; password: string }) => Promise<boolean>;
-  onSignup: (input: { fullName: string; email: string; password: string }) => Promise<boolean>;
+  onLogin: (input: { email: string; password: string }) => Promise<AuthActionResult>;
+  onSignup: (input: { fullName: string; email: string; password: string }) => Promise<AuthActionResult>;
 }) {
   const [loginEmail, setLoginEmail] = React.useState("");
   const [loginPassword, setLoginPassword] = React.useState("");
@@ -200,29 +207,53 @@ function WebViewerAuthDialog({
   const [signupEmail, setSignupEmail] = React.useState("");
   const [signupPassword, setSignupPassword] = React.useState("");
   const [error, setError] = React.useState("");
+  const [notice, setNotice] = React.useState("");
 
   React.useEffect(() => {
-    if (!open) setError("");
+    if (!open) {
+      setError("");
+      setNotice("");
+    }
   }, [open]);
 
   const submitLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
-    const ok = await onLogin({ email: loginEmail, password: loginPassword });
-    if (!ok) setError("Connexion impossible. Verifiez vos identifiants.");
+    setNotice("");
+    const result = await onLogin({ email: loginEmail, password: loginPassword });
+    if (!result.ok) {
+      setError(result.message || "Connexion impossible. Verifiez vos identifiants.");
+    }
   };
 
   const submitSignup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
-    const ok = await onSignup({
+    setNotice("");
+    const result = await onSignup({
       fullName: signupName,
       email: signupEmail,
       password: signupPassword,
     });
-    if (!ok) {
-      setError("Inscription impossible. Utilisez un mot de passe fort et verifiez vos informations.");
+    if (result.ok) {
+      return;
     }
+
+    if (result.requiresEmailConfirmation) {
+      setNotice(
+        result.message ||
+          "Compte cree. Verifiez votre email pour confirmer votre adresse, puis connectez-vous."
+      );
+      onModeChange("login");
+      setLoginEmail(signupEmail);
+      setLoginPassword("");
+      return;
+    }
+
+    setError(
+      result.message ||
+        "Inscription impossible. Utilisez un mot de passe fort et verifiez vos informations."
+    );
   };
 
   return (
@@ -289,6 +320,11 @@ function WebViewerAuthDialog({
                   {error}
                 </div>
               ) : null}
+              {notice ? (
+                <div className="rounded-[18px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                  {notice}
+                </div>
+              ) : null}
 
               <Button
                 type="submit"
@@ -331,6 +367,11 @@ function WebViewerAuthDialog({
               {error ? (
                 <div className="rounded-[18px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                   {error}
+                </div>
+              ) : null}
+              {notice ? (
+                <div className="rounded-[18px] border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                  {notice}
                 </div>
               ) : null}
 
@@ -445,14 +486,19 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
           body: JSON.stringify({ email, password }),
         });
         const payload = (await response.json().catch(() => null)) as AuthResponse | null;
-        if (!response.ok || payload?.ok === false) return false;
+        if (!response.ok || payload?.ok === false) {
+          return {
+            ok: false,
+            message: payload?.error || payload?.message || "Connexion impossible.",
+          };
+        }
 
         await hydrate();
         setDialogOpen(false);
-        return true;
+        return { ok: true };
       } catch (error) {
         console.error("web_viewer_login_failed", error);
-        return false;
+        return { ok: false, message: "Connexion impossible." };
       } finally {
         setIsAuthenticating(false);
       }
@@ -470,16 +516,29 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
           body: JSON.stringify({ fullName, email, password }),
         });
         const payload = (await response.json().catch(() => null)) as AuthResponse | null;
-        if (!response.ok || payload?.ok === false || payload?.message?.includes("Verifiez votre email")) {
-          return false;
+        if (!response.ok || payload?.ok === false) {
+          return {
+            ok: false,
+            message: payload?.error || payload?.message || "Inscription impossible.",
+          };
+        }
+
+        if (payload?.requires_email_confirmation) {
+          return {
+            ok: false,
+            requiresEmailConfirmation: true,
+            message:
+              payload.message ||
+              "Compte cree. Verifiez votre email pour confirmer votre adresse, puis connectez-vous.",
+          };
         }
 
         await hydrate();
         setDialogOpen(false);
-        return true;
+        return { ok: true };
       } catch (error) {
         console.error("web_viewer_signup_failed", error);
-        return false;
+        return { ok: false, message: "Inscription impossible." };
       } finally {
         setIsAuthenticating(false);
       }
