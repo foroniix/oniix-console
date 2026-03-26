@@ -123,7 +123,7 @@ export default function SignupPage() {
         <div className="flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
             Deja equipe ?{" "}
-            <Link href="/login" className="font-semibold text-[var(--brand-primary)] hover:text-white">
+            <Link href="/console/login" className="font-semibold text-[var(--brand-primary)] hover:text-white">
               Se connecter
             </Link>
           </p>

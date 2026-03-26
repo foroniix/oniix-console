@@ -3,7 +3,19 @@ import { NextResponse } from "next/server";
 
 const ACCESS_COOKIE = process.env.ACCESS_TOKEN_COOKIE_NAME || "oniix-access-token";
 const BLOCKED_PATH_PREFIXES = ["/api/public", "/api/upload", "/api/utils/validate-hls", "/api/_debug"];
-const PUBLIC_PATH_PREFIXES = ["/", "/login", "/signup", "/accept-invite", "/cookies", "/privacy", "/we", "/web"];
+const PUBLIC_PATH_PREFIXES = [
+  "/",
+  "/login",
+  "/signup",
+  "/accept-invite",
+  "/console/login",
+  "/console/signup",
+  "/console/accept-invite",
+  "/cookies",
+  "/privacy",
+  "/we",
+  "/web",
+];
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
   "/api/web/auth/signup",
@@ -16,7 +28,14 @@ const PUBLIC_API_PREFIXES = [
   "/api/analytics/heartbeat",
   "/api/replays/process/cron",
 ];
-const NOINDEX_PATH_PREFIXES = ["/login", "/signup", "/accept-invite"];
+const NOINDEX_PATH_PREFIXES = [
+  "/login",
+  "/signup",
+  "/accept-invite",
+  "/console/login",
+  "/console/signup",
+  "/console/accept-invite",
+];
 const CSRF_EXEMPT_API_PREFIXES = [
   "/api/mobile",
   "/api/analytics/ingest",
@@ -104,6 +123,34 @@ export function proxy(request: NextRequest) {
   const isPublicApiPath = matchesPrefix(pathname, PUBLIC_API_PREFIXES);
   const isCsrfExemptApiPath = matchesPrefix(pathname, CSRF_EXEMPT_API_PREFIXES);
 
+  if (pathname === "/login" || pathname === "/signup" || pathname === "/accept-invite") {
+    if (cookie && (pathname === "/login" || pathname === "/signup")) {
+      return applyIndexingHeaders(
+        withSecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url))),
+        pathname,
+        isPublicPath,
+        isPublicApiPath
+      );
+    }
+
+    const redirectedUrl = new URL(
+      pathname === "/login"
+        ? "/console/login"
+        : pathname === "/signup"
+          ? "/console/signup"
+          : "/console/accept-invite",
+      request.url
+    );
+    redirectedUrl.search = request.nextUrl.search;
+
+    return applyIndexingHeaders(
+      withSecurityHeaders(NextResponse.redirect(redirectedUrl)),
+      pathname,
+      isPublicPath,
+      isPublicApiPath
+    );
+  }
+
   if (BLOCKED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return applyIndexingHeaders(withSecurityHeaders(blockedResponse(pathname)), pathname, isPublicPath, isPublicApiPath);
   }
@@ -115,7 +162,7 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  if (pathname === "/login" || pathname === "/signup") {
+  if (pathname === "/console/login" || pathname === "/console/signup") {
     if (cookie) {
       return applyIndexingHeaders(
         withSecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url))),
@@ -138,7 +185,7 @@ export function proxy(request: NextRequest) {
 
   if (!cookie) {
     return applyIndexingHeaders(
-      withSecurityHeaders(NextResponse.redirect(new URL("/login", request.url))),
+      withSecurityHeaders(NextResponse.redirect(new URL("/console/login", request.url))),
       pathname,
       isPublicPath,
       isPublicApiPath

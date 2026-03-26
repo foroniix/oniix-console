@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -151,6 +152,13 @@ export function ConsoleLoginScreen() {
                     {isLoading ? <Loader2 className="size-4 animate-spin" /> : "Connexion"}
                   </Button>
                 </form>
+
+                <div className="mt-5 flex items-center justify-between gap-3 text-sm text-white/56">
+                  <span>Espace tenant</span>
+                  <Link href="/console/signup" className="font-medium text-[#f2cb63] transition hover:text-[#ffe08e]">
+                    Créer un espace
+                  </Link>
+                </div>
               </div>
             </section>
           </div>

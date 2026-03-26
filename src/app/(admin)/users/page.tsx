@@ -111,7 +111,7 @@ export default function UsersPage() {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   const inviteLink = useCallback(
-    (code: string) => `${origin}/accept-invite?code=${encodeURIComponent(code)}`,
+    (code: string) => `${origin}/console/accept-invite?code=${encodeURIComponent(code)}`,
     [origin]
   );
 

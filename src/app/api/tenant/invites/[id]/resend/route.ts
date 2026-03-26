@@ -64,7 +64,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     {
       ok: true,
       invite: { ...data, role: normalizeTenantRole(data.role) },
-      invite_url: `/accept-invite?code=${data.code}`,
+      invite_url: `/console/accept-invite?code=${data.code}`,
     },
     { status: 200 }
   );

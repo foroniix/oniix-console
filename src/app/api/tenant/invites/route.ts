@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         {
           ok: true,
           invite: { ...inv, role: normalizeTenantRole(inv.role) },
-          invite_url: `/accept-invite?code=${inv.code}`,
+          invite_url: `/console/accept-invite?code=${inv.code}`,
           reused: true,
         },
         { status: 200 }
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     {
       ok: true,
       invite: { ...withExpired(data), role: normalizeTenantRole(data.role) },
-      invite_url: `/accept-invite?code=${data.code}`,
+      invite_url: `/console/accept-invite?code=${data.code}`,
     },
     { status: 200 }
   );

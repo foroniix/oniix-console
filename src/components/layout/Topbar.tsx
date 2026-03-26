@@ -75,7 +75,7 @@ export default function Topbar() {
   const handleLogout = React.useCallback(async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
+      router.push("/console/login");
       router.refresh();
     } catch (error) {
       console.error("logout_failed", error);
