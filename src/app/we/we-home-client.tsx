@@ -60,6 +60,8 @@ type LivePortalResponse = {
   replays?: ReplayItem[];
 };
 
+type WebCategory = "Tout" | string;
+
 function formatClock(value: string | null) {
   if (!value) return "--:--";
   const date = new Date(value);
@@ -80,6 +82,45 @@ function formatPercent(value: number | null | undefined) {
   return `${value}%`;
 }
 
+function normalizeLiveCategory(channel: GridChannel["channel"]) {
+  const raw = `${channel.category ?? ""} ${channel.name ?? ""}`.trim().toLowerCase();
+  if (!raw) return "Général";
+
+  if (raw.includes("sport") || raw.includes("foot") || raw.includes("ball") || raw.includes("racing")) {
+    return "Sport";
+  }
+
+  if (raw.includes("anim") || raw.includes("manga") || raw.includes("japan") || raw.includes("toon") || raw.includes("otaku")) {
+    return "Manga";
+  }
+
+  if (
+    raw.includes("movie") ||
+    raw.includes("film") ||
+    raw.includes("serie") ||
+    raw.includes("série") ||
+    raw.includes("series") ||
+    raw.includes("cinema")
+  ) {
+    return "Films & séries";
+  }
+
+  if (
+    raw.includes("news") ||
+    raw.includes("actualité") ||
+    raw.includes("actualite") ||
+    raw.includes("business") ||
+    raw.includes("économie") ||
+    raw.includes("economie")
+  ) {
+    return "Actualités";
+  }
+
+  const source = (channel.category ?? "").trim();
+  if (!source) return "Général";
+  return source.charAt(0).toUpperCase() + source.slice(1);
+}
+
 export default function WebLiveHomeClient() {
   const { replayContinueWatching } = useWebViewerAuth();
   const [grid, setGrid] = useState<GridChannel[]>([]);
@@ -87,6 +128,7 @@ export default function WebLiveHomeClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [activeCategory, setActiveCategory] = useState<WebCategory>("Tout");
 
   const load = useCallback(async (soft = false) => {
     if (soft) setRefreshing(true);
@@ -116,9 +158,35 @@ export default function WebLiveHomeClient() {
     return () => clearInterval(timer);
   }, [load]);
 
+  const categories = useMemo<WebCategory[]>(() => {
+    const items = Array.from(new Set(grid.map((lane) => normalizeLiveCategory(lane.channel)))).sort((a, b) =>
+      a.localeCompare(b, "fr")
+    );
+    return ["Tout", ...items];
+  }, [grid]);
+
+  useEffect(() => {
+    if (!categories.includes(activeCategory)) {
+      setActiveCategory("Tout");
+    }
+  }, [activeCategory, categories]);
+
+  const filteredGrid = useMemo(() => {
+    if (activeCategory === "Tout") return grid;
+    return grid.filter((lane) => normalizeLiveCategory(lane.channel) === activeCategory);
+  }, [activeCategory, grid]);
+
+  const filteredReplays = useMemo(() => {
+    if (activeCategory === "Tout") return replays;
+    const allowedChannelIds = new Set(
+      filteredGrid.map((lane) => lane.channel.id).filter((value): value is string => Boolean(value))
+    );
+    return replays.filter((replay) => replay.channel.id && allowedChannelIds.has(replay.channel.id));
+  }, [activeCategory, filteredGrid, replays]);
+
   const featured = useMemo(
-    () => grid.find((lane) => lane.live_stream?.id) ?? null,
-    [grid]
+    () => filteredGrid.find((lane) => lane.live_stream?.id) ?? null,
+    [filteredGrid]
   );
 
   return (
@@ -146,6 +214,28 @@ export default function WebLiveHomeClient() {
             Actualiser
           </button>
         </div>
+
+        {categories.length > 1 ? (
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => {
+              const active = category === activeCategory;
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveCategory(category)}
+                  className={`inline-flex h-10 items-center rounded-full border px-4 text-sm transition ${
+                    active
+                      ? "border-white/14 bg-white text-black"
+                      : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="flex min-h-[40vh] items-center justify-center rounded-[28px] border border-white/10 bg-white/[0.03]">
@@ -187,11 +277,11 @@ export default function WebLiveHomeClient() {
                 <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
                   <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Chaînes live</p>
-                    <p className="mt-3 text-3xl font-semibold text-white">{grid.length}</p>
+                    <p className="mt-3 text-3xl font-semibold text-white">{filteredGrid.length}</p>
                   </div>
                   <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Replays</p>
-                    <p className="mt-3 text-3xl font-semibold text-white">{replays.length}</p>
+                    <p className="mt-3 text-3xl font-semibold text-white">{filteredReplays.length}</p>
                   </div>
                   <Link
                     href="/we/catalog"
@@ -260,20 +350,22 @@ export default function WebLiveHomeClient() {
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">Chaînes en direct</h2>
-                <span className="text-sm text-slate-500">{grid.length} chaînes</span>
+                <span className="text-sm text-slate-500">{filteredGrid.length} chaînes</span>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {grid.map((lane) => (
-                    <Link
-                      key={lane.channel.id}
-                      href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/"}
-                      className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
-                    >
+                {filteredGrid.map((lane) => (
+                  <Link
+                    key={lane.channel.id}
+                    href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/"}
+                    className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.05]"
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-white">{lane.channel.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">{lane.channel.category || "TV"}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {normalizeLiveCategory(lane.channel)}
+                        </p>
                       </div>
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2.5 py-1 text-[11px] font-medium text-red-200">
                         <Radio className="h-3 w-3" />
@@ -307,7 +399,7 @@ export default function WebLiveHomeClient() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {replays.slice(0, 6).map((replay) => (
+                {filteredReplays.slice(0, 6).map((replay) => (
                   <Link
                     key={replay.id}
                     href={`/we/replays/${replay.id}`}
@@ -318,7 +410,7 @@ export default function WebLiveHomeClient() {
                     <p className="mt-3 text-xs text-slate-500">{formatDuration(replay.duration_sec) || "Replay"}</p>
                   </Link>
                 ))}
-                {replays.length === 0 ? (
+                {filteredReplays.length === 0 ? (
                   <div className="rounded-[24px] border border-dashed border-white/12 bg-white/[0.02] p-5 text-sm text-slate-500">
                     Aucun replay public n&apos;est encore disponible.
                   </div>
