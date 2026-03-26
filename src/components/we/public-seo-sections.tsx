@@ -50,7 +50,7 @@ const FAQ = [
   {
     question: "Oniix propose-t-il aussi des films et des series ?",
     answer:
-      "Oui. Le catalogue web couvre les films, les series, les saisons et les episodes publies par les tenants.",
+      "Oui. Le catalogue web couvre les films, les series, les saisons et les episodes publiés par les ayants droits.",
   },
 ] as const;
 

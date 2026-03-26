@@ -12,6 +12,7 @@ import {
   isCatalogPolicyMissing,
   normalizeCatalogPublicationRow,
 } from "../../../_utils/catalog";
+import { buildCatalogIndexNowUrls, notifyIndexNow } from "../../../_utils/indexnow";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -74,8 +75,11 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 
+  const publication = normalizeCatalogPublicationRow(data as Record<string, unknown>);
+  void notifyIndexNow(buildCatalogIndexNowUrls(publication.playable_id));
+
   return NextResponse.json({
     ok: true,
-    publication: normalizeCatalogPublicationRow(data as Record<string, unknown>),
+    publication,
   });
 }

@@ -13,6 +13,7 @@ import {
   isCatalogPolicyMissing,
   normalizeCatalogPublicationRow,
 } from "../../_utils/catalog";
+import { buildCatalogIndexNowUrls, notifyIndexNow } from "../../_utils/indexnow";
 
 const querySchema = z.object({
   playable_type: z.string().optional(),
@@ -94,8 +95,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
   }
 
-  return NextResponse.json(
-    { ok: true, publication: normalizeCatalogPublicationRow(data as Record<string, unknown>) },
-    { status: 201 }
-  );
+  const publication = normalizeCatalogPublicationRow(data as Record<string, unknown>);
+  void notifyIndexNow(buildCatalogIndexNowUrls(publication.playable_id));
+
+  return NextResponse.json({ ok: true, publication }, { status: 201 });
 }

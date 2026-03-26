@@ -19,6 +19,7 @@ const spaceGrotesk = Space_Grotesk({
 
 const GOOGLE_SITE_VERIFICATION_TOKEN =
   process.env.GOOGLE_SITE_VERIFICATION || "KfIdokg1Q_L9aKumnZCMlhQ5u4r-tolHGT5dpOuzYGc";
+const BING_SITE_VERIFICATION_TOKEN = process.env.BING_SITE_VERIFICATION?.trim() || "";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://oniix.space"),
@@ -71,6 +72,13 @@ export const metadata: Metadata = {
   },
   verification: {
     google: GOOGLE_SITE_VERIFICATION_TOKEN,
+    ...(BING_SITE_VERIFICATION_TOKEN
+      ? {
+          other: {
+            "msvalidate.01": BING_SITE_VERIFICATION_TOKEN,
+          },
+        }
+      : {}),
   },
   robots: {
     index: true,

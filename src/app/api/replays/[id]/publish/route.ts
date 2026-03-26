@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { auditLog } from "../../../_utils/audit";
+import { buildReplayIndexNowUrls, notifyIndexNow } from "../../../_utils/indexnow";
 import { canTransitionReplayStatus } from "../../../_utils/programming";
 import { getTenantContext, jsonError, requireTenantCapability } from "../../../tenant/_utils";
 
@@ -81,6 +82,8 @@ export async function POST(
       availableFrom: data.available_from ?? null,
     },
   });
+
+  void notifyIndexNow(buildReplayIndexNowUrls(data.id));
 
   return NextResponse.json(data);
 }
