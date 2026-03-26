@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { OniixLogo } from "@/components/branding/oniix-logo";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 
 type GridSlot = {
@@ -70,6 +71,10 @@ type LivePortalResponse = {
 };
 
 type WebCategory = "Tout" | string;
+
+const PHOTO_WALL = "/branding/photography/rural-broadband-data-center.jpg";
+const PHOTO_FIELD = "/branding/photography/fiber-field-work.jpg";
+const PHOTO_TOWER = "/branding/photography/communications-tower.jpg";
 
 function formatClock(value: string | null) {
   if (!value) return "--:--";
@@ -159,6 +164,7 @@ function StatCard({ label, value, detail }: { label: string; value: string; deta
 
 function LiveLaneCard({ lane }: { lane: GridChannel }) {
   const category = normalizeLiveCategory(lane.channel);
+  const artwork = lane.live_stream?.poster || lane.now?.poster || PHOTO_TOWER;
 
   return (
     <Link
@@ -166,12 +172,10 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
       className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(4,4,4,0.98))] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        {lane.live_stream?.poster || lane.now?.poster ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-            style={{ backgroundImage: `url('${lane.live_stream?.poster || lane.now?.poster}')` }}
-          />
-        ) : null}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+          style={{ backgroundImage: `url('${artwork}')` }}
+        />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02),rgba(0,0,0,0.88))]" />
         <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
           <Radio className="h-3.5 w-3.5 text-red-400" />
@@ -197,18 +201,18 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
 }
 
 function ReplayCard({ replay }: { replay: ReplayItem }) {
+  const artwork = replay.poster || PHOTO_FIELD;
+
   return (
     <Link
       href={`/we/replays/${replay.id}`}
       className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        {replay.poster ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-            style={{ backgroundImage: `url('${replay.poster}')` }}
-          />
-        ) : null}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+          style={{ backgroundImage: `url('${artwork}')` }}
+        />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
         <div className="absolute bottom-4 left-4 right-4">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{replay.channel.name || "Replay"}</p>
@@ -228,18 +232,18 @@ function ContinueReplayCard({
 }: {
   item: ReturnType<typeof useWebViewerAuth>["replayContinueWatching"][number];
 }) {
+  const artwork = item.poster_url || PHOTO_WALL;
+
   return (
     <Link
       href={item.href}
       className="group overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        {item.poster_url ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-            style={{ backgroundImage: `url('${item.poster_url}')` }}
-          />
-        ) : null}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+          style={{ backgroundImage: `url('${artwork}')` }}
+        />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
         {item.percent_complete ? (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
@@ -346,21 +350,90 @@ export default function WebLiveHomeClient() {
   return (
     <main className="min-h-[calc(100dvh-76px)] text-white">
       <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <SectionHeader
-          eyebrow="Oniix streaming"
-          title="TV en direct, replays et catalogue web"
-          detail="Un portail public pense pour le visionnage desktop."
-          action={
-            <button
-              type="button"
-              onClick={() => void load(true)}
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08]"
+        <section className="grid gap-4 xl:grid-cols-[1.22fr_0.78fr]">
+          <div className="relative overflow-hidden rounded-[38px] border border-white/10 bg-black p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-30"
+              style={{ backgroundImage: `url('${PHOTO_WALL}')` }}
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.96),rgba(0,0,0,0.74),rgba(0,0,0,0.92))]" />
+            <div className="relative flex h-full flex-col justify-between gap-10">
+              <div className="space-y-6">
+                <OniixLogo size="md" subtitle={undefined} showMark={false} className="text-white" />
+                <div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Espace public web
+                </div>
+                <div>
+                  <h1 className="max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                    Un vrai espace de streaming pour le live, les replays et le catalogue.
+                  </h1>
+                  <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">
+                    Visionnage desktop, acces direct aux chaines et bascule immediate vers les films et les series.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={featured?.live_stream?.id ? `/we/${featured.live_stream.id}` : "#live-now"}
+                  className="inline-flex h-12 items-center rounded-full bg-white px-5 text-sm font-medium text-black transition hover:bg-slate-200"
+                >
+                  Ouvrir le direct
+                </Link>
+                <Link
+                  href="/we/catalog"
+                  className="inline-flex h-12 items-center rounded-full border border-white/10 px-5 text-sm text-slate-200 transition hover:bg-white/[0.05] hover:text-white"
+                >
+                  Explorer le catalogue
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void load(true)}
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08]"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  Actualiser
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+            <Link
+              href="/we/catalog"
+              className="group relative overflow-hidden rounded-[30px] border border-white/10 bg-black p-6 transition hover:border-white/18"
             >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-              Actualiser
-            </button>
-          }
-        />
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-28 transition duration-700 group-hover:scale-[1.04]"
+                style={{ backgroundImage: `url('${PHOTO_FIELD}')` }}
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42),rgba(0,0,0,0.92))]" />
+              <div className="relative flex h-full flex-col justify-end">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Catalogue</p>
+                <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
+                  Films, series, collections
+                </h2>
+              </div>
+            </Link>
+
+            <Link
+              href="#replays"
+              className="group relative overflow-hidden rounded-[30px] border border-white/10 bg-black p-6 transition hover:border-white/18"
+            >
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-28 transition duration-700 group-hover:scale-[1.04]"
+                style={{ backgroundImage: `url('${PHOTO_TOWER}')` }}
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42),rgba(0,0,0,0.92))]" />
+              <div className="relative flex h-full flex-col justify-end">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Replays</p>
+                <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
+                  Rattrapage et reprise de lecture
+                </h2>
+              </div>
+            </Link>
+          </div>
+        </section>
 
         {loading ? (
           <div className="flex min-h-[48vh] items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.03]">
@@ -378,12 +451,10 @@ export default function WebLiveHomeClient() {
                   href={featured.live_stream?.id ? `/we/${featured.live_stream.id}` : "/"}
                   className="group relative overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(135deg,#0b0b0b,#030303)] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]"
                 >
-                  {featured.live_stream?.poster || featured.now?.poster ? (
-                    <div
-                      className="absolute inset-0 bg-cover bg-center opacity-35 transition duration-700 group-hover:scale-[1.04]"
-                      style={{ backgroundImage: `url('${featured.live_stream?.poster || featured.now?.poster}')` }}
-                    />
-                  ) : null}
+                  <div
+                    className="absolute inset-0 bg-cover bg-center opacity-35 transition duration-700 group-hover:scale-[1.04]"
+                    style={{ backgroundImage: `url('${featured.live_stream?.poster || featured.now?.poster || PHOTO_WALL}')` }}
+                  />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,2,2,0.98),rgba(2,2,2,0.78),rgba(2,2,2,0.96))]" />
 
                   <div className="relative flex h-full flex-col justify-between gap-10">
@@ -484,7 +555,7 @@ export default function WebLiveHomeClient() {
               </section>
             ) : null}
 
-            <section className="space-y-5">
+            <section id="live-now" className="space-y-5">
               <SectionHeader
                 eyebrow="Directs"
                 title="Maintenant a l'antenne"

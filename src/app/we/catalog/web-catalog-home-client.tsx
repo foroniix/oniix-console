@@ -43,6 +43,14 @@ type CatalogListResponse = {
   items?: CatalogItem[];
 };
 
+const PHOTO_WALL = "/branding/photography/rural-broadband-data-center.jpg";
+const PHOTO_FIELD = "/branding/photography/fiber-field-work.jpg";
+const PHOTO_TOWER = "/branding/photography/communications-tower.jpg";
+
+function getCatalogFallback(item: CatalogItem) {
+  return item.title_type === "movie" ? PHOTO_FIELD : PHOTO_WALL;
+}
+
 function formatPercent(value: number | null | undefined) {
   if (!value || value <= 0) return null;
   return `${value}%`;
@@ -78,18 +86,18 @@ function ContinueCard({
 }: {
   item: ReturnType<typeof useWebViewerAuth>["continueWatching"][number];
 }) {
+  const artwork = item.poster_url || PHOTO_FIELD;
+
   return (
     <Link
       href={`/we/catalog/${item.title_id}`}
       className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        {item.poster_url ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-            style={{ backgroundImage: `url('${item.poster_url}')` }}
-          />
-        ) : null}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+          style={{ backgroundImage: `url('${artwork}')` }}
+        />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.92))]" />
         {item.percent_complete ? (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
@@ -120,18 +128,18 @@ function WatchlistCard({
 }: {
   item: ReturnType<typeof useWebViewerAuth>["watchlist"][number];
 }) {
+  const artwork = item.poster_url || PHOTO_TOWER;
+
   return (
     <Link
       href={`/we/catalog/${item.title_id}`}
       className="group overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[4/5] bg-black">
-        {item.poster_url ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-            style={{ backgroundImage: `url('${item.poster_url}')` }}
-          />
-        ) : null}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+          style={{ backgroundImage: `url('${artwork}')` }}
+        />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.92))]" />
         <div className="absolute bottom-4 left-4 right-4">
           <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
@@ -147,18 +155,18 @@ function WatchlistCard({
 }
 
 function CatalogCard({ item }: { item: CatalogItem }) {
+  const artwork = item.poster_url || item.backdrop_url || getCatalogFallback(item);
+
   return (
     <Link
       href={`/we/catalog/${item.id}`}
       className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        {item.poster_url || item.backdrop_url ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-            style={{ backgroundImage: `url('${item.poster_url || item.backdrop_url}')` }}
-          />
-        ) : null}
+        <div
+          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
+          style={{ backgroundImage: `url('${artwork}')` }}
+        />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
         <div className="absolute left-4 top-4 inline-flex items-center rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
           {item.title_type === "movie" ? "Film" : `${item.episode_count} episodes`}
@@ -318,12 +326,10 @@ export default function WebCatalogHomeClient() {
                 href={`/we/catalog/${featured.id}`}
                 className="group relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(120deg,#0a0a0a,#050505)] p-7"
               >
-                {featured.backdrop_url || featured.poster_url ? (
-                  <div
-                    className="absolute inset-0 bg-cover bg-center opacity-30 transition duration-700 group-hover:scale-[1.03]"
-                    style={{ backgroundImage: `url('${featured.backdrop_url || featured.poster_url}')` }}
-                  />
-                ) : null}
+                <div
+                  className="absolute inset-0 bg-cover bg-center opacity-30 transition duration-700 group-hover:scale-[1.03]"
+                  style={{ backgroundImage: `url('${featured.backdrop_url || featured.poster_url || getCatalogFallback(featured)}')` }}
+                />
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,3,3,0.95),rgba(3,3,3,0.7),rgba(3,3,3,0.95))]" />
                 <div className="relative grid gap-5 lg:grid-cols-[1fr_14rem]">
                   <div className="max-w-3xl">

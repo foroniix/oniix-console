@@ -5,9 +5,9 @@ import { buildWebMetadata } from "./we/metadata";
 import { WebViewerShell } from "@/components/we/web-viewer-shell";
 
 export const metadata: Metadata = buildWebMetadata({
-  title: "Oniix | TV en direct, replays, films et series",
+  title: "Oniix | Streaming web, TV en direct, replays, films et series",
   description:
-    "Regardez les chaines TV, les replays, les films et les series Oniix depuis votre navigateur.",
+    "Accedez au streaming web Oniix pour regarder les chaines TV, les replays, les films et les series depuis votre navigateur.",
   path: "/",
 });
 
