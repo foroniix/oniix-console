@@ -25,7 +25,7 @@ import { isPublicationActive, pickPreferredAsset, resolvePublicMediaUrl } from "
 type WatchProgressRow = {
   tenant_id: string;
   user_id: string;
-  playable_type: "movie" | "episode";
+  playable_type: "movie" | "episode" | "replay";
   playable_id: string;
   progress_sec: number;
   duration_sec: number | null;
@@ -39,6 +39,25 @@ type WatchlistRow = {
   playable_type: "movie" | "series" | "episode";
   playable_id: string;
   created_at: string;
+};
+
+type ReplayRow = {
+  id: string;
+  tenant_id: string;
+  title: string | null;
+  poster: string | null;
+  hls_url: string | null;
+  duration_sec: number | null;
+  available_from: string | null;
+  available_to: string | null;
+  replay_status: string | null;
+  channel_id: string | null;
+};
+
+type ChannelRow = {
+  id: string;
+  name: string;
+  logo: string | null;
 };
 
 function uniqueIds(values: Array<string | null | undefined>) {
@@ -72,7 +91,7 @@ export async function GET() {
         .from("watch_progress")
         .select("tenant_id,user_id,playable_type,playable_id,progress_sec,duration_sec,completed,updated_at")
         .eq("user_id", ctx.userId)
-        .in("playable_type", ["movie", "episode"])
+        .in("playable_type", ["movie", "episode", "replay"])
         .gt("progress_sec", 0)
         .order("updated_at", { ascending: false })
         .limit(100),
@@ -127,6 +146,10 @@ export async function GET() {
       ...progressRows.filter((row) => row.playable_type === "episode").map((row) => row.playable_id),
       ...watchlistRows.filter((row) => row.playable_type === "episode").map((row) => row.playable_id),
     ]);
+
+    const replayIds = uniqueIds(
+      progressRows.filter((row) => row.playable_type === "replay").map((row) => row.playable_id)
+    );
 
     let episodeRows = [] as ReturnType<typeof normalizeCatalogEpisodeRow>[];
     if (episodeIds.length > 0) {
@@ -185,6 +208,41 @@ export async function GET() {
     }
 
     const seasonMap = new Map(seasonRows.map((row) => [row.id, row]));
+
+    let replayRows = [] as ReplayRow[];
+    if (replayIds.length > 0) {
+      const { data, error } = await admin
+        .from("replays")
+        .select("id,tenant_id,title,poster,hls_url,duration_sec,available_from,available_to,replay_status,channel_id")
+        .in("id", replayIds);
+
+      if (error) {
+        if (isCatalogDomainMissing(error)) return catalogDomainUnavailableResponse();
+        console.error("Web library replay load error", { error: error.message, userId: ctx.userId });
+        return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
+      }
+
+      replayRows = (data ?? []) as ReplayRow[];
+    }
+
+    const replayChannelIds = uniqueIds(replayRows.map((row) => row.channel_id));
+    let replayChannelRows = [] as ChannelRow[];
+    if (replayChannelIds.length > 0) {
+      const { data, error } = await admin
+        .from("channels")
+        .select("id,name,logo")
+        .in("id", replayChannelIds);
+
+      if (error) {
+        console.error("Web library replay channels load error", { error: error.message, userId: ctx.userId });
+        return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
+      }
+
+      replayChannelRows = (data ?? []) as ChannelRow[];
+    }
+
+    const replayChannelMap = new Map(replayChannelRows.map((row) => [row.id, row]));
+    const replayMap = new Map(replayRows.map((row) => [row.id, row]));
 
     let publicationRows = [] as ReturnType<typeof normalizeCatalogPublicationRow>[];
     if (titleIds.length > 0) {
@@ -358,6 +416,45 @@ export async function GET() {
       .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))
       .slice(0, 12);
 
+    const replayContinueWatching = progressRows
+      .filter((row) => row.playable_type === "replay" && !row.completed && row.progress_sec > 0)
+      .map((row) => {
+        const replay = replayMap.get(row.playable_id);
+        if (!replay || String(replay.replay_status ?? "").toLowerCase() !== "published" || !replay.hls_url) return null;
+
+        const nowMs = Date.now();
+        const fromMs = replay.available_from ? Date.parse(replay.available_from) : null;
+        const toMs = replay.available_to ? Date.parse(replay.available_to) : null;
+        if (fromMs !== null && Number.isFinite(fromMs) && fromMs > nowMs) return null;
+        if (toMs !== null && Number.isFinite(toMs) && toMs <= nowMs) return null;
+
+        const channel = replay.channel_id ? replayChannelMap.get(replay.channel_id) : null;
+        const durationSec = row.duration_sec ?? replay.duration_sec ?? null;
+        const percentComplete =
+          durationSec && durationSec > 0
+            ? Math.min(99, Math.max(1, Math.round((row.progress_sec / durationSec) * 100)))
+            : null;
+
+        return {
+          playable_type: "replay" as const,
+          playable_id: replay.id,
+          tenant_id: replay.tenant_id,
+          title: replay.title?.trim() || "Replay",
+          poster_url: replay.poster ?? null,
+          channel_name: channel?.name ?? null,
+          channel_logo: channel?.logo ?? null,
+          progress_sec: row.progress_sec,
+          duration_sec: durationSec,
+          completed: row.completed,
+          percent_complete: percentComplete,
+          updated_at: row.updated_at,
+          href: `/we/replays/${replay.id}`,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => Boolean(row))
+      .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))
+      .slice(0, 12);
+
     const progressMap = new Map(
       continueWatching.map((item) => [progressKey(item.playable_type, item.playable_id), item])
     );
@@ -442,7 +539,15 @@ export async function GET() {
       .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))
       .slice(0, 24);
 
-    return NextResponse.json({ ok: true, continue_watching: continueWatching, watchlist }, { status: 200 });
+    return NextResponse.json(
+      {
+        ok: true,
+        continue_watching: continueWatching,
+        replay_continue_watching: replayContinueWatching,
+        watchlist,
+      },
+      { status: 200 }
+    );
   } catch (error: unknown) {
     console.error("Web library route error", {
       error: error instanceof Error ? error.message : "unknown_error",

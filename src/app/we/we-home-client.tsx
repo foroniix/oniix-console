@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Clapperboard, Loader2, Radio, RefreshCw } from "lucide-react";
+import { ArrowRight, Clapperboard, Loader2, Radio, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 
 type GridSlot = {
   id: string;
@@ -73,7 +75,13 @@ function formatDuration(value: number | null) {
   return `${Math.max(1, mins)} min`;
 }
 
+function formatPercent(value: number | null | undefined) {
+  if (!value || value <= 0) return null;
+  return `${value}%`;
+}
+
 export default function WebLiveHomeClient() {
+  const { replayContinueWatching } = useWebViewerAuth();
   const [grid, setGrid] = useState<GridChannel[]>([]);
   const [replays, setReplays] = useState<ReplayItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,6 +204,59 @@ export default function WebLiveHomeClient() {
               </div>
             ) : null}
 
+            {replayContinueWatching.length > 0 ? (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">
+                    Continuer un replay
+                  </h2>
+                  <span className="text-sm text-slate-500">{replayContinueWatching.length} reprise(s)</span>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {replayContinueWatching.map((item) => (
+                    <Link
+                      key={`replay:${item.playable_id}`}
+                      href={item.href}
+                      className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/20 hover:bg-white/[0.05]"
+                    >
+                      <div className="relative aspect-[16/10] bg-black">
+                        {item.poster_url ? (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-[1.03]"
+                            style={{ backgroundImage: `url('${item.poster_url}')` }}
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.84))]" />
+                        {item.percent_complete ? (
+                          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+                            <div
+                              className="h-full bg-white"
+                              style={{ width: `${Math.min(100, Math.max(0, item.percent_complete))}%` }}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="space-y-3 p-5">
+                        <div>
+                          <p className="text-xs text-slate-500">{item.channel_name || "Replay"}</p>
+                          <h3 className="mt-1 line-clamp-2 text-lg font-semibold text-white">{item.title}</h3>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm text-slate-400">
+                          <span>
+                            {formatPercent(item.percent_complete)
+                              ? `Reprendre à ${formatPercent(item.percent_complete)}`
+                              : "Reprendre la lecture"}
+                          </span>
+                          <ArrowRight className="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5" />
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">Chaînes en direct</h2>
@@ -247,11 +308,15 @@ export default function WebLiveHomeClient() {
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {replays.slice(0, 6).map((replay) => (
-                  <div key={replay.id} className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                  <Link
+                    key={replay.id}
+                    href={`/we/replays/${replay.id}`}
+                    className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+                  >
                     <p className="line-clamp-2 text-sm font-semibold text-white">{replay.title}</p>
                     <p className="mt-2 text-xs text-slate-400">{replay.channel.name || "Replay"}</p>
                     <p className="mt-3 text-xs text-slate-500">{formatDuration(replay.duration_sec) || "Replay"}</p>
-                  </div>
+                  </Link>
                 ))}
                 {replays.length === 0 ? (
                   <div className="rounded-[24px] border border-dashed border-white/12 bg-white/[0.02] p-5 text-sm text-slate-500">

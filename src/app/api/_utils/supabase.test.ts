@@ -62,6 +62,7 @@ describe("supabaseAdmin", () => {
       "src/app/api/web/catalog/playback-url/route.ts",
       "src/app/api/web/live/route.ts",
       "src/app/api/web/live/playback-url/route.ts",
+      "src/app/api/web/replays/[replayId]/route.ts",
       "src/app/api/web/me/library/route.ts",
       "src/app/api/web/me/watch-progress/route.ts",
       "src/app/api/web/me/watchlist/route.ts",

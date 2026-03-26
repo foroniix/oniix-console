@@ -1,6 +1,7 @@
 "use client";
 
 import HlsPlayer from "@/components/HlsPlayer";
+import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 import { useStreamHeartbeat } from "@/lib/useStreamHeartbeat";
 import {
   CalendarClock,
@@ -14,7 +15,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type GridSlot = {
   id: string;
@@ -97,6 +98,7 @@ function formatDuration(value: number | null) {
 }
 
 export default function ViewerClient({ streamId }: { streamId: string }) {
+  const { user, getProgress, saveProgress } = useWebViewerAuth();
   const [grid, setGrid] = useState<GridChannel[]>([]);
   const [replays, setReplays] = useState<ReplayItem[]>([]);
   const [activeStreamId, setActiveStreamId] = useState(streamId);
@@ -111,6 +113,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(true);
   const [tab, setTab] = useState<"live" | "grid" | "replays">("live");
+  const lastReplaySaveRef = useRef<Record<string, number>>({});
 
   const loadPortal = useCallback(async (soft = false) => {
     if (soft) setRefreshing(true);
@@ -201,6 +204,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
     () => replays.find((row) => row.id === activeReplayId) ?? null,
     [activeReplayId, replays]
   );
+  const activeReplayProgress = activeReplay ? getProgress("replay", activeReplay.id) : null;
 
   const activeReplaysForChannel = useMemo(() => {
     const channelId = activeLane?.channel.id ?? null;
@@ -212,12 +216,47 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
   const playbackPoster =
     activeReplay?.poster || activeLane?.live_stream?.poster || activeLane?.now?.poster || undefined;
   const heartbeatStreamId = activeReplay ? null : activeStreamId;
+  const playbackStartAtSec = activeReplay
+    ? activeReplayProgress?.completed
+      ? 0
+      : activeReplayProgress?.progress_sec ?? 0
+    : null;
 
   useStreamHeartbeat(heartbeatStreamId, {
     ingestToken: runtimeToken,
     tenantId,
     intervalSec: 15,
   });
+
+  useEffect(() => {
+    lastReplaySaveRef.current = {};
+  }, [activeReplayId]);
+
+  const handleReplayProgress = useCallback(
+    (snapshot: { currentTime: number; duration: number | null; ended: boolean }) => {
+      if (!activeReplay || !user) return;
+
+      const progressSec = Math.max(0, Math.floor(snapshot.currentTime || 0));
+      const durationSec = snapshot.duration ?? activeReplay.duration_sec ?? null;
+      const completed =
+        snapshot.ended || (durationSec ? progressSec >= Math.max(1, durationSec - 5) : false);
+      const key = activeReplay.id;
+      const lastPersisted = lastReplaySaveRef.current[key] ?? 0;
+
+      if (!completed && progressSec < 5) return;
+      if (!completed && Math.abs(progressSec - lastPersisted) < 15) return;
+
+      lastReplaySaveRef.current[key] = progressSec;
+      void saveProgress({
+        playableType: "replay",
+        playableId: activeReplay.id,
+        progressSec,
+        durationSec,
+        completed,
+      });
+    },
+    [activeReplay, saveProgress, user]
+  );
 
   return (
     <main className="min-h-[calc(100dvh-73px)] overflow-x-hidden bg-[#030303] text-white">
@@ -291,6 +330,8 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       controls
                       autoPlay
                       className="h-full w-full"
+                      startAtSec={playbackStartAtSec}
+                      onPlaybackProgress={activeReplay ? handleReplayProgress : undefined}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-slate-500">

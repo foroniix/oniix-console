@@ -10,7 +10,7 @@ import {
 } from "../../../_utils/catalog";
 import { supabaseAdmin, supabaseUser } from "../../../_utils/supabase";
 import { parseJson } from "../../../_utils/validate";
-import { resolveTenantForPlayable, WEB_PROGRESS_PLAYABLE_TYPES } from "../_utils";
+import { resolveTenantForProgressPlayable, WEB_PROGRESS_PLAYABLE_TYPES } from "../_utils";
 
 const requestSchema = z.object({
   playable_type: z.enum(WEB_PROGRESS_PLAYABLE_TYPES),
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
     const body = parsed.data;
     const admin = supabaseAdmin();
-    const tenant = await resolveTenantForPlayable(admin, body.playable_type, body.playable_id);
+    const tenant = await resolveTenantForProgressPlayable(admin, body.playable_type, body.playable_id);
     if (!tenant.ok || !tenant.tenantId) {
       const message = tenant.error ?? "Contenu introuvable.";
       if (isCatalogDomainMissing({ message })) return catalogDomainUnavailableResponse();

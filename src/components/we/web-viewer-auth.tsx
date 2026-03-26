@@ -39,6 +39,22 @@ export type ViewerProgressItem = {
   updated_at: string;
 };
 
+export type ViewerReplayProgressItem = {
+  playable_type: "replay";
+  playable_id: string;
+  tenant_id: string;
+  title: string;
+  poster_url: string | null;
+  channel_name: string | null;
+  channel_logo: string | null;
+  progress_sec: number;
+  duration_sec: number | null;
+  completed: boolean;
+  percent_complete: number | null;
+  updated_at: string;
+  href: string;
+};
+
 export type ViewerWatchlistItem = {
   playable_type: "movie" | "series" | "episode";
   playable_id: string;
@@ -71,6 +87,7 @@ type ViewerAuthContextValue = {
   isAuthenticating: boolean;
   libraryLoading: boolean;
   continueWatching: ViewerProgressItem[];
+  replayContinueWatching: ViewerReplayProgressItem[];
   watchlist: ViewerWatchlistItem[];
   openAuthDialog: (mode?: "login" | "signup") => void;
   closeAuthDialog: () => void;
@@ -79,10 +96,13 @@ type ViewerAuthContextValue = {
   logout: () => Promise<void>;
   refreshLibrary: () => Promise<void>;
   isInWatchlist: (playableType: "movie" | "series" | "episode", playableId: string) => boolean;
-  getProgress: (playableType: "movie" | "episode", playableId: string) => ViewerProgressSnapshot | null;
+  getProgress: (
+    playableType: "movie" | "episode" | "replay",
+    playableId: string
+  ) => ViewerProgressSnapshot | null;
   toggleWatchlist: (playableType: "movie" | "series" | "episode", playableId: string) => Promise<boolean>;
   saveProgress: (input: {
-    playableType: "movie" | "episode";
+    playableType: "movie" | "episode" | "replay";
     playableId: string;
     progressSec: number;
     durationSec?: number | null;
@@ -106,6 +126,7 @@ type LibraryResponse = {
   ok?: boolean;
   error?: string;
   continue_watching?: ViewerProgressItem[];
+  replay_continue_watching?: ViewerReplayProgressItem[];
   watchlist?: ViewerWatchlistItem[];
 };
 
@@ -118,6 +139,7 @@ function keyFor(playableType: string, playableId: string) {
 function buildProgressSnapshot(
   source:
     | ViewerProgressItem
+    | ViewerReplayProgressItem
     | ViewerWatchlistItem
     | {
         progress_sec: number;
@@ -180,9 +202,7 @@ function WebViewerAuthDialog({
   const [error, setError] = React.useState("");
 
   React.useEffect(() => {
-    if (!open) {
-      setError("");
-    }
+    if (!open) setError("");
   }, [open]);
 
   const submitLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -339,6 +359,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
   const [isAuthenticating, setIsAuthenticating] = React.useState(false);
   const [libraryLoading, setLibraryLoading] = React.useState(false);
   const [continueWatching, setContinueWatching] = React.useState<ViewerProgressItem[]>([]);
+  const [replayContinueWatching, setReplayContinueWatching] = React.useState<ViewerReplayProgressItem[]>([]);
   const [watchlist, setWatchlist] = React.useState<ViewerWatchlistItem[]>([]);
   const [progressOverrides, setProgressOverrides] = React.useState<Record<string, ViewerProgressSnapshot>>({});
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -346,6 +367,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
 
   const resetLibrary = React.useCallback(() => {
     setContinueWatching([]);
+    setReplayContinueWatching([]);
     setWatchlist([]);
     setProgressOverrides({});
   }, []);
@@ -366,6 +388,9 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
       }
 
       setContinueWatching(Array.isArray(payload.continue_watching) ? payload.continue_watching : []);
+      setReplayContinueWatching(
+        Array.isArray(payload.replay_continue_watching) ? payload.replay_continue_watching : []
+      );
       setWatchlist(Array.isArray(payload.watchlist) ? payload.watchlist : []);
     } catch (error) {
       console.error("web_viewer_library_refresh_failed", error);
@@ -420,9 +445,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
           body: JSON.stringify({ email, password }),
         });
         const payload = (await response.json().catch(() => null)) as AuthResponse | null;
-        if (!response.ok || payload?.ok === false) {
-          return false;
-        }
+        if (!response.ok || payload?.ok === false) return false;
 
         await hydrate();
         setDialogOpen(false);
@@ -485,6 +508,9 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
     for (const item of continueWatching) {
       map.set(keyFor(item.playable_type, item.playable_id), buildProgressSnapshot(item));
     }
+    for (const item of replayContinueWatching) {
+      map.set(keyFor(item.playable_type, item.playable_id), buildProgressSnapshot(item));
+    }
     for (const item of watchlist) {
       if (item.progress_sec !== null && item.progress_sec > 0) {
         map.set(keyFor(item.playable_type, item.playable_id), buildProgressSnapshot(item));
@@ -494,7 +520,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
       map.set(key, value);
     }
     return map;
-  }, [continueWatching, progressOverrides, watchlist]);
+  }, [continueWatching, progressOverrides, replayContinueWatching, watchlist]);
 
   const isInWatchlist = React.useCallback(
     (playableType: "movie" | "series" | "episode", playableId: string) =>
@@ -503,7 +529,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
   );
 
   const getProgress = React.useCallback(
-    (playableType: "movie" | "episode", playableId: string) =>
+    (playableType: "movie" | "episode" | "replay", playableId: string) =>
       progressMap.get(keyFor(playableType, playableId)) ?? null,
     [progressMap]
   );
@@ -525,9 +551,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
         }),
       });
 
-      if (!response.ok) {
-        return exists;
-      }
+      if (!response.ok) return exists;
 
       await refreshLibrary();
       return !exists;
@@ -543,7 +567,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
       durationSec = null,
       completed = false,
     }: {
-      playableType: "movie" | "episode";
+      playableType: "movie" | "episode" | "replay";
       playableId: string;
       progressSec: number;
       durationSec?: number | null;
@@ -587,6 +611,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
       isAuthenticating,
       libraryLoading,
       continueWatching,
+      replayContinueWatching,
       watchlist,
       openAuthDialog,
       closeAuthDialog,
@@ -611,6 +636,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
       logout,
       openAuthDialog,
       refreshLibrary,
+      replayContinueWatching,
       saveProgress,
       signup,
       toggleWatchlist,
