@@ -11,25 +11,25 @@ type OniixLogoProps = {
 
 const SIZE_STYLES = {
   sm: {
-    root: "gap-3",
-    wrap: "rounded-[18px] px-3 py-2",
-    imageWidth: 108,
-    imageHeight: 40,
-    subtitle: "text-[11px]",
+    root: "gap-2",
+    wrap: "rounded-[14px] px-2 py-1.5",
+    imageWidth: 82,
+    imageHeight: 30,
+    subtitle: "text-[10px]",
   },
   md: {
-    root: "gap-3.5",
-    wrap: "rounded-[20px] px-3.5 py-2.5",
-    imageWidth: 136,
-    imageHeight: 50,
-    subtitle: "text-xs",
+    root: "gap-2.5",
+    wrap: "rounded-[18px] px-3 py-2",
+    imageWidth: 112,
+    imageHeight: 41,
+    subtitle: "text-[11px]",
   },
   lg: {
-    root: "gap-4",
-    wrap: "rounded-[24px] px-4 py-3",
-    imageWidth: 168,
-    imageHeight: 62,
-    subtitle: "text-sm",
+    root: "gap-3",
+    wrap: "rounded-[20px] px-3.5 py-2.5",
+    imageWidth: 140,
+    imageHeight: 52,
+    subtitle: "text-xs",
   },
 } as const;
 

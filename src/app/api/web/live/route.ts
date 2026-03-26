@@ -82,7 +82,7 @@ function getSingleRelation<T>(value: T | T[] | null | undefined): T | null {
   return value;
 }
 
-function isMissingProgrammingTable(message?: string | null) {
+function isMissingSchemaResource(message?: string | null) {
   const normalized = (message ?? "").toLowerCase();
   return normalized.includes("schema cache") || normalized.includes("could not find the table");
 }
@@ -191,7 +191,7 @@ export async function GET(req: NextRequest) {
       .order("starts_at", { ascending: true })
       .limit(limit);
 
-    if (slotsError && !isMissingProgrammingTable(slotsError.message)) {
+    if (slotsError && !isMissingSchemaResource(slotsError.message)) {
       console.error("Web live slots load error", { error: slotsError.message, channelIds: visibleChannelIds });
       return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
     }
@@ -278,7 +278,7 @@ export async function GET(req: NextRequest) {
         .order("available_from", { ascending: false })
         .limit(Math.min(limit, 200));
 
-      if (replayError) {
+      if (replayError && !isMissingSchemaResource(replayError.message)) {
         console.error("Web live replay load error", { error: replayError.message });
         return NextResponse.json({ ok: false, error: "Une erreur est survenue." }, { status: 500 });
       }
