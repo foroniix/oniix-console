@@ -16,6 +16,12 @@ type Props = {
   statsIngestIntervalMs?: number;
   statsIngestPaused?: boolean;
   sourceKind?: "hls" | "dash" | "file";
+  startAtSec?: number | null;
+  onPlaybackProgress?: (snapshot: {
+    currentTime: number;
+    duration: number | null;
+    ended: boolean;
+  }) => void;
 };
 
 function inferSourceKind(src: string) {
@@ -38,9 +44,12 @@ export default function HlsPlayer({
   statsIngestIntervalMs = 15000,
   statsIngestPaused = false,
   sourceKind,
+  startAtSec = null,
+  onPlaybackProgress,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const appliedStartRef = useRef<string | null>(null);
 
   const bitrateRef = useRef<number>(0);
   const errorCountRef = useRef<number>(0);
@@ -120,6 +129,55 @@ export default function HlsPlayer({
 
     onErrorChange?.("Navigateur non supporte");
   }, [onErrorChange, sourceKind, src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const seekKey = `${src}:${startAtSec ?? 0}`;
+    const applyStartOffset = () => {
+      if (!startAtSec || startAtSec <= 0) return;
+      if (appliedStartRef.current === seekKey) return;
+
+      const duration = Number.isFinite(video.duration) ? video.duration : NaN;
+      const safeTarget =
+        Number.isFinite(duration) && duration > 10
+          ? Math.min(startAtSec, Math.max(0, duration - 5))
+          : startAtSec;
+
+      try {
+        video.currentTime = Math.max(0, safeTarget);
+        appliedStartRef.current = seekKey;
+      } catch {
+        // Ignore browsers that refuse early seeks before metadata is stable.
+      }
+    };
+
+    const emitProgress = (ended = false) => {
+      onPlaybackProgress?.({
+        currentTime: Math.max(0, Math.floor(video.currentTime || 0)),
+        duration: Number.isFinite(video.duration) ? Math.floor(video.duration) : null,
+        ended,
+      });
+    };
+
+    const handleLoadedMetadata = () => {
+      applyStartOffset();
+      emitProgress(false);
+    };
+    const handleTimeUpdate = () => emitProgress(false);
+    const handleEnded = () => emitProgress(true);
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("ended", handleEnded);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [onPlaybackProgress, src, startAtSec]);
 
   useEffect(() => {
     if (!streamId || !enableStatsIngest || statsIngestPaused) return;

@@ -1,8 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { Clapperboard, Loader2, RefreshCw, Search, Tv2 } from "lucide-react";
+import {
+  Bookmark,
+  Clapperboard,
+  Loader2,
+  PlayCircle,
+  RefreshCw,
+  Search,
+  Tv2,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 
 type CatalogItem = {
   id: string;
@@ -32,7 +42,13 @@ type CatalogListResponse = {
   items?: CatalogItem[];
 };
 
+function formatPercent(value: number | null | undefined) {
+  if (!value || value <= 0) return null;
+  return `${value}%`;
+}
+
 export default function WebCatalogHomeClient() {
+  const { continueWatching, watchlist } = useWebViewerAuth();
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -85,7 +101,7 @@ export default function WebCatalogHomeClient() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Catalogue web</p>
             <h1 className="mt-2 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
-              Films et séries
+              Films et series
             </h1>
           </div>
 
@@ -95,7 +111,7 @@ export default function WebCatalogHomeClient() {
               className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
             >
               <Tv2 className="mr-2 h-4 w-4" />
-              Revenir à la TV
+              Revenir a la TV
             </Link>
             <button
               type="button"
@@ -114,7 +130,7 @@ export default function WebCatalogHomeClient() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Rechercher un film ou une série"
+              placeholder="Rechercher un film ou une serie"
               className="h-11 w-full rounded-full border border-white/10 bg-black/50 pl-10 pr-4 text-sm text-white outline-none transition focus:border-white/20"
             />
           </div>
@@ -123,7 +139,7 @@ export default function WebCatalogHomeClient() {
             {([
               { value: "all", label: "Tout" },
               { value: "movie", label: "Films" },
-              { value: "series", label: "Séries" },
+              { value: "series", label: "Series" },
             ] as const).map((item) => (
               <button
                 key={item.value}
@@ -149,6 +165,89 @@ export default function WebCatalogHomeClient() {
           <div className="rounded-[28px] border border-red-500/25 bg-red-500/10 p-5 text-sm text-red-100">{error}</div>
         ) : (
           <>
+            {continueWatching.length > 0 ? (
+              <section id="continue" className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <PlayCircle className="h-4 w-4 text-slate-400" />
+                  <h2 className="font-[var(--font-we-display)] text-xl font-semibold text-white">Continuer</h2>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {continueWatching.map((item) => (
+                    <Link
+                      key={`${item.playable_type}:${item.playable_id}`}
+                      href={`/we/catalog/${item.title_id}`}
+                      className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/20 hover:bg-white/[0.05]"
+                    >
+                      <div className="relative aspect-[16/10] bg-black">
+                        {item.poster_url ? (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: `url('${item.poster_url}')` }}
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.82))]" />
+                        {item.percent_complete ? (
+                          <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+                            <div
+                              className="h-full bg-white"
+                              style={{ width: `${Math.min(100, Math.max(0, item.percent_complete))}%` }}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="p-5">
+                        <p className="text-xs text-slate-500">
+                          {item.parent_title ? `${item.parent_title} · ` : ""}
+                          {item.season_number ? `Saison ${item.season_number} · ` : ""}
+                          {item.episode_number ? `Episode ${item.episode_number}` : "Film"}
+                        </p>
+                        <h3 className="mt-1 text-lg font-semibold text-white">{item.title}</h3>
+                        <p className="mt-3 text-sm text-slate-400">
+                          Reprendre {formatPercent(item.percent_complete) ? `a ${formatPercent(item.percent_complete)}` : "la lecture"}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {watchlist.length > 0 ? (
+              <section id="watchlist" className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Bookmark className="h-4 w-4 text-slate-400" />
+                  <h2 className="font-[var(--font-we-display)] text-xl font-semibold text-white">Ma liste</h2>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {watchlist.slice(0, 8).map((item) => (
+                    <Link
+                      key={`${item.playable_type}:${item.playable_id}`}
+                      href={`/we/catalog/${item.title_id}`}
+                      className="overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.03] transition hover:border-white/20 hover:bg-white/[0.05]"
+                    >
+                      <div className="relative aspect-[4/5] bg-black">
+                        {item.poster_url ? (
+                          <div
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: `url('${item.poster_url}')` }}
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.88))]" />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-xs text-slate-500">{item.title_type === "movie" ? "Film" : "Serie"}</p>
+                        <h3 className="mt-1 line-clamp-2 text-base font-semibold text-white">
+                          {item.parent_title ? `${item.parent_title} · ${item.title}` : item.title}
+                        </h3>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {featured ? (
               <Link
                 href={`/we/catalog/${featured.id}`}
@@ -163,7 +262,7 @@ export default function WebCatalogHomeClient() {
                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,3,3,0.94),rgba(3,3,3,0.68),rgba(3,3,3,0.92))]" />
                 <div className="relative max-w-2xl">
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                    {featured.title_type === "movie" ? "Film" : "Série"}
+                    {featured.title_type === "movie" ? "Film" : "Serie"}
                   </p>
                   <h2 className="mt-3 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white">
                     {featured.title}
@@ -191,10 +290,10 @@ export default function WebCatalogHomeClient() {
                     ) : null}
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.82))]" />
                     <div className="absolute left-4 top-4 inline-flex items-center rounded-full border border-white/10 bg-black/60 px-3 py-1 text-[11px] font-medium text-white">
-                      {item.title_type === "movie" ? "Film" : `${item.episode_count} épisodes`}
+                      {item.title_type === "movie" ? "Film" : `${item.episode_count} episodes`}
                     </div>
                     {item.has_playback ? (
-                      <div className="absolute right-4 top-4 inline-flex items-center rounded-full bg-white text-[11px] font-medium text-black px-3 py-1">
+                      <div className="absolute right-4 top-4 inline-flex items-center rounded-full bg-white px-3 py-1 text-[11px] font-medium text-black">
                         Lecture disponible
                       </div>
                     ) : null}
@@ -220,7 +319,7 @@ export default function WebCatalogHomeClient() {
 
             {filteredItems.length === 0 ? (
               <div className="rounded-[28px] border border-dashed border-white/12 bg-white/[0.02] p-6 text-sm text-slate-500">
-                Aucun contenu public ne correspond à ce filtre.
+                Aucun contenu public ne correspond a ce filtre.
               </div>
             ) : null}
           </>

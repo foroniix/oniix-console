@@ -1,9 +1,18 @@
 "use client";
 
 import HlsPlayer from "@/components/HlsPlayer";
-import { ArrowLeft, Clapperboard, Loader2, Play, RefreshCw } from "lucide-react";
+import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
+import {
+  ArrowLeft,
+  Bookmark,
+  BookmarkCheck,
+  Clapperboard,
+  Loader2,
+  Play,
+  RefreshCw,
+} from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type SeasonRow = {
   id: string;
@@ -70,7 +79,20 @@ function formatDuration(value: number | null) {
   return `${Math.max(1, mins)} min`;
 }
 
+function formatPercent(value: number | null | undefined) {
+  if (!value || value <= 0) return null;
+  return `${value}%`;
+}
+
 export default function WebCatalogTitleClient({ titleId }: { titleId: string }) {
+  const {
+    user,
+    openAuthDialog,
+    toggleWatchlist,
+    isInWatchlist,
+    getProgress,
+    saveProgress,
+  } = useWebViewerAuth();
   const [detail, setDetail] = useState<TitleDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -79,6 +101,9 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
   const [resolvingPlayback, setResolvingPlayback] = useState(false);
   const [playbackError, setPlaybackError] = useState("");
   const [activePlayable, setActivePlayable] = useState<{ type: "movie" | "episode"; id: string } | null>(null);
+  const [playbackStartAtSec, setPlaybackStartAtSec] = useState<number>(0);
+  const [updatingWatchlist, setUpdatingWatchlist] = useState(false);
+  const lastSavedRef = useRef<Record<string, number>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -103,35 +128,41 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
     void load();
   }, [load]);
 
-  const resolvePlayback = useCallback(async (playableType: "movie" | "episode", playableId: string) => {
-    setResolvingPlayback(true);
-    setPlaybackError("");
+  const resolvePlayback = useCallback(
+    async (playableType: "movie" | "episode", playableId: string) => {
+      setResolvingPlayback(true);
+      setPlaybackError("");
 
-    try {
-      const response = await fetch("/api/web/catalog/playback-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playable_type: playableType,
-          playable_id: playableId,
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as PlaybackResponse | null;
-      if (!response.ok || !payload?.ok || !payload.playback_url) {
-        throw new Error(payload?.error || "Impossible de lancer la lecture.");
+      try {
+        const progress = getProgress(playableType, playableId);
+        setPlaybackStartAtSec(progress?.completed ? 0 : progress?.progress_sec ?? 0);
+
+        const response = await fetch("/api/web/catalog/playback-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            playable_type: playableType,
+            playable_id: playableId,
+          }),
+        });
+        const payload = (await response.json().catch(() => null)) as PlaybackResponse | null;
+        if (!response.ok || !payload?.ok || !payload.playback_url) {
+          throw new Error(payload?.error || "Impossible de lancer la lecture.");
+        }
+
+        setActivePlayable({ type: playableType, id: playableId });
+        setPlaybackKind(payload.source_kind ?? "file");
+        setPlaybackUrl(payload.playback_url);
+      } catch (err) {
+        setPlaybackUrl(null);
+        setPlaybackKind(null);
+        setPlaybackError(err instanceof Error ? err.message : "Impossible de lancer la lecture.");
+      } finally {
+        setResolvingPlayback(false);
       }
-
-      setActivePlayable({ type: playableType, id: playableId });
-      setPlaybackKind(payload.source_kind ?? "file");
-      setPlaybackUrl(payload.playback_url);
-    } catch (err) {
-      setPlaybackUrl(null);
-      setPlaybackKind(null);
-      setPlaybackError(err instanceof Error ? err.message : "Impossible de lancer la lecture.");
-    } finally {
-      setResolvingPlayback(false);
-    }
-  }, []);
+    },
+    [getProgress]
+  );
 
   const groupedEpisodes = useMemo(() => {
     const seasons = detail?.seasons ?? [];
@@ -157,6 +188,48 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
   }, [detail?.episodes, detail?.seasons]);
 
   const title = detail?.title;
+  const isSaved = title ? isInWatchlist(title.title_type, title.id) : false;
+  const movieProgress = title?.title_type === "movie" ? getProgress("movie", title.id) : null;
+
+  useEffect(() => {
+    lastSavedRef.current = {};
+  }, [activePlayable?.id, activePlayable?.type]);
+
+  const handlePlaybackProgress = useCallback(
+    (snapshot: { currentTime: number; duration: number | null; ended: boolean }) => {
+      if (!activePlayable || !user) return;
+
+      const progressSec = Math.max(0, Math.floor(snapshot.currentTime || 0));
+      const durationSec = snapshot.duration ?? null;
+      const completed =
+        snapshot.ended || (durationSec ? progressSec >= Math.max(1, durationSec - 5) : false);
+      const key = `${activePlayable.type}:${activePlayable.id}`;
+      const lastPersisted = lastSavedRef.current[key] ?? 0;
+
+      if (!completed && progressSec < 5) return;
+      if (!completed && Math.abs(progressSec - lastPersisted) < 15) return;
+
+      lastSavedRef.current[key] = progressSec;
+      void saveProgress({
+        playableType: activePlayable.type,
+        playableId: activePlayable.id,
+        progressSec,
+        durationSec,
+        completed,
+      });
+    },
+    [activePlayable, saveProgress, user]
+  );
+
+  const handleToggleWatchlist = useCallback(async () => {
+    if (!title) return;
+    setUpdatingWatchlist(true);
+    try {
+      await toggleWatchlist(title.title_type, title.id);
+    } finally {
+      setUpdatingWatchlist(false);
+    }
+  }, [title, toggleWatchlist]);
 
   return (
     <main className="min-h-[calc(100dvh-73px)] bg-[#030303] text-white">
@@ -170,14 +243,25 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
             Retour au catalogue
           </Link>
 
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-white transition hover:bg-white/[0.08]"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Actualiser
-          </button>
+          <div className="flex items-center gap-2">
+            {!user ? (
+              <button
+                type="button"
+                onClick={() => openAuthDialog("login")}
+                className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                Connexion
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-white transition hover:bg-white/[0.08]"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Actualiser
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -216,7 +300,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                 <div className="flex flex-col justify-between gap-6">
                   <div>
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                      {title.title_type === "movie" ? "Film" : "Série"}
+                      {title.title_type === "movie" ? "Film" : "Serie"}
                     </p>
                     <h1 className="mt-3 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white">
                       {title.title}
@@ -233,6 +317,11 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                       {title.original_language ? (
                         <span className="rounded-full border border-white/10 px-3 py-1">{title.original_language}</span>
                       ) : null}
+                      {movieProgress?.percent_complete ? (
+                        <span className="rounded-full border border-white/10 px-3 py-1">
+                          Progression {formatPercent(movieProgress.percent_complete)}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 
@@ -244,15 +333,40 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                         className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-black transition hover:bg-slate-200"
                       >
                         <Play className="h-4 w-4" />
-                        Lire le film
+                        {movieProgress && movieProgress.progress_sec > 30 && !movieProgress.completed
+                          ? "Reprendre le film"
+                          : "Lire le film"}
                       </button>
                     ) : null}
+
+                    <button
+                      type="button"
+                      disabled={updatingWatchlist}
+                      onClick={() => void handleToggleWatchlist()}
+                      className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 px-5 text-sm text-slate-200 transition hover:bg-white/[0.05] disabled:opacity-60"
+                    >
+                      {updatingWatchlist ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : isSaved ? (
+                        <BookmarkCheck className="h-4 w-4" />
+                      ) : (
+                        <Bookmark className="h-4 w-4" />
+                      )}
+                      {isSaved ? "Dans ma liste" : "Ajouter a ma liste"}
+                    </button>
+
                     {title.title_type === "series" ? (
                       <span className="inline-flex h-11 items-center rounded-full border border-white/10 px-5 text-sm text-slate-300">
-                        {detail.episodes?.length || 0} épisodes disponibles
+                        {detail.episodes?.length || 0} episodes disponibles
                       </span>
                     ) : null}
                   </div>
+
+                  {!user ? (
+                    <p className="text-xs text-slate-500">
+                      Connectez-vous pour synchroniser votre progression et votre liste.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -274,6 +388,8 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                     controls
                     autoPlay
                     muted={false}
+                    startAtSec={playbackStartAtSec}
+                    onPlaybackProgress={handlePlaybackProgress}
                     className="h-full w-full"
                   />
                 </div>
@@ -282,7 +398,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
             {resolvingPlayback ? (
               <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
-                Résolution de la lecture en cours…
+                Resolution de la lecture en cours...
               </div>
             ) : null}
 
@@ -290,7 +406,9 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
               <section className="space-y-5">
                 <div className="flex items-center gap-2">
                   <Clapperboard className="h-4 w-4 text-slate-400" />
-                  <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">Saisons et épisodes</h2>
+                  <h2 className="font-[var(--font-we-display)] text-2xl font-semibold text-white">
+                    Saisons et episodes
+                  </h2>
                 </div>
 
                 <div className="space-y-4">
@@ -307,52 +425,62 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                       </div>
 
                       <div className="mt-5 space-y-3">
-                        {episodes.map((episode) => (
-                          <div
-                            key={episode.id}
-                            className="flex flex-col gap-4 rounded-[22px] border border-white/10 bg-black/40 p-4 lg:flex-row lg:items-center lg:justify-between"
-                          >
-                            <div className="flex min-w-0 items-start gap-4">
-                              <div className="hidden h-16 w-28 shrink-0 overflow-hidden rounded-2xl bg-black sm:block">
-                                {episode.thumbnail_url || episode.poster_url ? (
-                                  <div
-                                    className="h-full w-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url('${episode.thumbnail_url || episode.poster_url}')` }}
-                                  />
-                                ) : null}
+                        {episodes.map((episode) => {
+                          const episodeProgress = getProgress("episode", episode.id);
+                          return (
+                            <div
+                              key={episode.id}
+                              className="flex flex-col gap-4 rounded-[22px] border border-white/10 bg-black/40 p-4 lg:flex-row lg:items-center lg:justify-between"
+                            >
+                              <div className="flex min-w-0 items-start gap-4">
+                                <div className="hidden h-16 w-28 shrink-0 overflow-hidden rounded-2xl bg-black sm:block">
+                                  {episode.thumbnail_url || episode.poster_url ? (
+                                    <div
+                                      className="h-full w-full bg-cover bg-center"
+                                      style={{ backgroundImage: `url('${episode.thumbnail_url || episode.poster_url}')` }}
+                                    />
+                                  ) : null}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm text-slate-500">Episode {episode.episode_number}</p>
+                                  <p className="mt-1 text-base font-semibold text-white">{episode.title}</p>
+                                  <p className="mt-2 text-sm text-slate-400">
+                                    {episode.synopsis || "Disponible en lecture web."}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-sm text-slate-500">Épisode {episode.episode_number}</p>
-                                <p className="mt-1 text-base font-semibold text-white">{episode.title}</p>
-                                <p className="mt-2 text-sm text-slate-400">
-                                  {episode.synopsis || "Disponible en lecture web."}
-                                </p>
-                              </div>
-                            </div>
 
-                            <div className="flex flex-wrap items-center gap-3">
-                              {episode.duration_sec ? (
-                                <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
-                                  {formatDuration(episode.duration_sec)}
-                                </span>
-                              ) : null}
-                              {episode.has_playback ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void resolvePlayback("episode", episode.id)}
-                                  className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-black transition hover:bg-slate-200"
-                                >
-                                  <Play className="h-4 w-4" />
-                                  Lire
-                                </button>
-                              ) : (
-                                <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-500">
-                                  Lecture indisponible
-                                </span>
-                              )}
+                              <div className="flex flex-wrap items-center gap-3">
+                                {episode.duration_sec ? (
+                                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+                                    {formatDuration(episode.duration_sec)}
+                                  </span>
+                                ) : null}
+                                {episodeProgress?.percent_complete ? (
+                                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+                                    {formatPercent(episodeProgress.percent_complete)}
+                                  </span>
+                                ) : null}
+                                {episode.has_playback ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void resolvePlayback("episode", episode.id)}
+                                    className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-black transition hover:bg-slate-200"
+                                  >
+                                    <Play className="h-4 w-4" />
+                                    {episodeProgress && episodeProgress.progress_sec > 30 && !episodeProgress.completed
+                                      ? "Reprendre"
+                                      : "Lire"}
+                                  </button>
+                                ) : (
+                                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-500">
+                                    Lecture indisponible
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
