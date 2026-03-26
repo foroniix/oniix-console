@@ -146,20 +146,54 @@ function SectionHeader({
         <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white">
           {title}
         </h2>
-        {detail ? <p className="mt-2 text-sm text-slate-400">{detail}</p> : null}
+        {detail ? <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p> : null}
       </div>
       {action}
     </div>
   );
 }
 
-function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-[28px] border border-white/10 bg-white/[0.035] p-5">
+    <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm text-slate-500">{detail}</p>
+      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
     </div>
+  );
+}
+
+function QuickAccessCard({
+  href,
+  eyebrow,
+  title,
+  detail,
+  icon,
+}: {
+  href: string;
+  eyebrow: string;
+  title: string;
+  detail: string;
+  icon: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-5 transition hover:border-white/18 hover:bg-white/[0.08]"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{eyebrow}</p>
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/25 text-slate-200">
+          {icon}
+        </span>
+      </div>
+      <h3 className="mt-3 text-xl font-semibold text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
+      <div className="mt-4 inline-flex items-center text-sm text-slate-200">
+        Ouvrir
+        <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
+      </div>
+    </Link>
   );
 }
 
@@ -170,14 +204,14 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
   return (
     <Link
       href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/"}
-      className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(4,4,4,0.98))] transition hover:border-white/18 hover:bg-white/[0.05]"
+      className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,14,24,0.98),rgba(4,7,12,0.98))] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[16/10] bg-black">
         <div
           className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
           style={{ backgroundImage: `url('${artwork}')` }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02),rgba(0,0,0,0.88))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02),rgba(2,6,12,0.9))]" />
         <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
           <Radio className="h-3.5 w-3.5 text-red-400" />
           En direct
@@ -188,7 +222,7 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
           </div>
           <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{category}</p>
           <h3 className="mt-2 line-clamp-2 text-xl font-semibold text-white">{lane.channel.name}</h3>
-          <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-300">
             {lane.now?.title || lane.live_stream?.title || "Direct disponible maintenant"}
           </p>
         </div>
@@ -210,14 +244,14 @@ function ReplayCard({ replay }: { replay: ReplayItem }) {
   return (
     <Link
       href={`/we/replays/${replay.id}`}
-      className="group overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
+      className="group overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
     >
       <div className="relative aspect-[16/10] bg-black">
         <div
           className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
           style={{ backgroundImage: `url('${artwork}')` }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.9))]" />
         <div className="absolute bottom-4 left-4 right-4">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{replay.channel.name || "Replay"}</p>
           <h3 className="mt-2 line-clamp-2 text-lg font-semibold text-white">{replay.title}</h3>
@@ -241,14 +275,14 @@ function ContinueReplayCard({
   return (
     <Link
       href={item.href}
-      className="group overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.03] transition hover:border-white/18 hover:bg-white/[0.05]"
+      className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] transition hover:border-white/18 hover:bg-white/[0.06]"
     >
       <div className="relative aspect-[16/10] bg-black">
         <div
           className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
           style={{ backgroundImage: `url('${artwork}')` }}
         />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
         {item.percent_complete ? (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
             <div
@@ -351,42 +385,61 @@ export default function WebLiveHomeClient() {
     [filteredGrid]
   );
 
+  const universeCount = Math.max(0, categories.length - 1);
+  const continueCardTitle =
+    replayContinueWatching.length > 0 ? "Reprendre vos replays" : "Voir les replays recents";
+  const continueCardHref = replayContinueWatching.length > 0 ? replayContinueWatching[0].href : "#replays";
+  const continueCardDetail =
+    replayContinueWatching.length > 0
+      ? "Retrouvez votre progression et revenez directement au bon point."
+      : "Accedez aux derniers programmes publics disponibles en rattrapage.";
+
   return (
     <main className="min-h-[calc(100dvh-76px)] text-white">
-      <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <section className="grid gap-4 xl:grid-cols-[1.22fr_0.78fr]">
-          <div className="relative overflow-hidden rounded-[38px] border border-white/10 bg-black p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
+      <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+        <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+          <div className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
             <div
-              className="absolute inset-0 bg-cover bg-center opacity-30"
+              className="absolute inset-0 bg-cover bg-center opacity-24"
               style={{ backgroundImage: `url('${PHOTO_WALL}')` }}
             />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.96),rgba(0,0,0,0.74),rgba(0,0,0,0.92))]" />
-            <div className="relative flex h-full flex-col justify-between gap-10">
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.78),rgba(3,5,9,0.96))]" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
+
+            <div className="relative flex h-full flex-col justify-between gap-8">
               <div className="space-y-6">
                 <OniixLogo size="md" subtitle={undefined} showMark={false} className="text-white" />
-                <div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Espace public web
+                <div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                  Plateforme publique Oniix
                 </div>
                 <div>
                   <h1 className="max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                    Un vrai espace de streaming pour le live, les replays et le catalogue.
+                    Le direct, le replay et le catalogue dans une interface claire.
                   </h1>
-                  <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">
-                    Visionnage desktop, acces direct aux chaines et bascule immediate vers les films et les series.
+                  <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+                    Oniix organise l&apos;espace public comme un produit de lecture: acces rapide au live, reprise de
+                    visionnage et bascule propre vers la VOD.
                   </p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+                  {["Desktop first", "Connexion optionnelle", "Lecture continue"].map((item) => (
+                    <span key={item} className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+                      {item}
+                    </span>
+                  ))}
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3">
                 <Link
                   href={featured?.live_stream?.id ? `/we/${featured.live_stream.id}` : "#live-now"}
-                  className="inline-flex h-12 items-center rounded-full bg-white px-5 text-sm font-medium text-black transition hover:bg-slate-200"
+                  className="inline-flex h-12 items-center rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
                 >
                   Ouvrir le direct
                 </Link>
                 <Link
                   href="/we/catalog"
-                  className="inline-flex h-12 items-center rounded-full border border-white/10 px-5 text-sm text-slate-200 transition hover:bg-white/[0.05] hover:text-white"
+                  className="inline-flex h-12 items-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
                 >
                   Explorer le catalogue
                 </Link>
@@ -399,137 +452,135 @@ export default function WebLiveHomeClient() {
                   Actualiser
                 </button>
               </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <MetricCard
+                  label="Chaines live"
+                  value={loading ? "--" : String(grid.length)}
+                  detail="Disponibles maintenant sur le portail public"
+                />
+                <MetricCard
+                  label="Replays"
+                  value={loading ? "--" : String(replays.length)}
+                  detail="Programmes rattrapables publies sur le web"
+                />
+                <MetricCard
+                  label="Univers"
+                  value={loading ? "--" : String(universeCount)}
+                  detail="Bouquets editoriaux pour orienter la navigation"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            <Link
-              href="/we/catalog"
-              className="group relative overflow-hidden rounded-[30px] border border-white/10 bg-black p-6 transition hover:border-white/18"
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-28 transition duration-700 group-hover:scale-[1.04]"
-                style={{ backgroundImage: `url('${PHOTO_FIELD}')` }}
-              />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42),rgba(0,0,0,0.92))]" />
-              <div className="relative flex h-full flex-col justify-end">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Catalogue</p>
-                <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
-                  Films, series, collections
-                </h2>
+          <div className="grid gap-4">
+            {loading ? (
+              <div className="flex min-h-[25rem] items-center justify-center rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))]">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
               </div>
-            </Link>
+            ) : featured ? (
+              <Link
+                href={featured.live_stream?.id ? `/we/${featured.live_stream.id}` : "/"}
+                className="group relative overflow-hidden rounded-[34px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,12,20,0.96),rgba(3,5,9,0.98))] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.32)]"
+              >
+                <div
+                  className="absolute inset-0 bg-cover bg-center opacity-34 transition duration-700 group-hover:scale-[1.04]"
+                  style={{ backgroundImage: `url('${featured.live_stream?.poster || featured.now?.poster || PHOTO_TOWER}')` }}
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.35),rgba(3,5,9,0.94))]" />
 
-            <Link
-              href="#replays"
-              className="group relative overflow-hidden rounded-[30px] border border-white/10 bg-black p-6 transition hover:border-white/18"
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-28 transition duration-700 group-hover:scale-[1.04]"
-                style={{ backgroundImage: `url('${PHOTO_TOWER}')` }}
-              />
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.42),rgba(0,0,0,0.92))]" />
-              <div className="relative flex h-full flex-col justify-end">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">Replays</p>
-                <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
-                  Rattrapage et reprise de lecture
-                </h2>
-              </div>
-            </Link>
-          </div>
-        </section>
-
-        {loading ? (
-          <div className="flex min-h-[48vh] items-center justify-center rounded-[34px] border border-white/10 bg-white/[0.03]">
-            <Loader2 className="h-8 w-8 animate-spin text-white" />
-          </div>
-        ) : error ? (
-          <div className="rounded-[28px] border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-100">
-            {error}
-          </div>
-        ) : (
-          <>
-            {featured ? (
-              <section className="grid gap-5 xl:grid-cols-[1.32fr_0.68fr]">
-                <Link
-                  href={featured.live_stream?.id ? `/we/${featured.live_stream.id}` : "/"}
-                  className="group relative overflow-hidden rounded-[38px] border border-white/10 bg-[linear-gradient(135deg,#0b0b0b,#030303)] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]"
-                >
-                  <div
-                    className="absolute inset-0 bg-cover bg-center opacity-35 transition duration-700 group-hover:scale-[1.04]"
-                    style={{ backgroundImage: `url('${featured.live_stream?.poster || featured.now?.poster || PHOTO_WALL}')` }}
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,2,2,0.98),rgba(2,2,2,0.78),rgba(2,2,2,0.96))]" />
-
-                  <div className="relative flex h-full flex-col justify-between gap-10">
-                    <div className="space-y-6">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
-                        <Radio className="h-3.5 w-3.5 text-red-400" />
-                        {normalizeLiveCategory(featured.channel)}
-                      </div>
-
+                <div className="relative flex h-full flex-col justify-between gap-10">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-200">
+                      <Radio className="h-3.5 w-3.5 text-red-400" />
+                      En direct maintenant
+                    </div>
+                    <div className="mt-5 flex items-center gap-3">
+                      <ChannelLogoBadge name={featured.channel.name} logoUrl={featured.channel.logo} size="md" />
                       <div>
-                        <div className="mb-4 flex items-center gap-3">
-                          <ChannelLogoBadge
-                            name={featured.channel.name}
-                            logoUrl={featured.channel.logo}
-                            size="md"
-                          />
-                          <p className="text-sm text-slate-400">{featured.channel.name}</p>
-                        </div>
-                        <h1 className="mt-3 max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                          {featured.live_stream?.title || featured.now?.title || featured.channel.name}
-                        </h1>
-                        <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                          {featured.now?.title
-                            ? `En cours: ${featured.now.title}`
-                            : "Le direct est disponible instantanement depuis votre navigateur."}
+                        <p className="text-sm text-slate-300">{featured.channel.name}</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                          {normalizeLiveCategory(featured.channel)}
                         </p>
                       </div>
                     </div>
+                    <h2 className="mt-5 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
+                      {featured.live_stream?.title || featured.now?.title || featured.channel.name}
+                    </h2>
+                    <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
+                      {featured.now?.title
+                        ? `En cours: ${featured.now.title}`
+                        : "Lecture live disponible immediatement depuis votre navigateur."}
+                    </p>
+                  </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="inline-flex h-12 items-center rounded-full bg-white px-5 text-sm font-medium text-black transition group-hover:bg-slate-200">
-                        Ouvrir le direct
-                      </span>
-                      <span className="inline-flex h-12 items-center rounded-full border border-white/10 px-5 text-sm text-slate-300">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[22px] border border-white/10 bg-black/25 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Maintenant</p>
+                      <p className="mt-2 text-base font-semibold text-white">
+                        {featured.now?.title || featured.live_stream?.title || "Direct actif"}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-black/25 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Ensuite</p>
+                      <p className="mt-2 text-base font-semibold text-white">
                         {featured.next?.title
                           ? `${formatClock(featured.next.starts_at)} - ${featured.next.title}`
                           : "Suite a venir"}
-                      </span>
+                      </p>
                     </div>
                   </div>
-                </Link>
-
-                <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
-                  <StatCard
-                    label="Chaines live"
-                    value={String(filteredGrid.length)}
-                    detail="Disponibles maintenant sur le portail public"
-                  />
-                  <StatCard
-                    label="Univers"
-                    value={String(Math.max(1, categorySummary.length))}
-                    detail="Sport, actualites, divertissement et plus"
-                  />
-                  <Link
-                    href="/we/catalog"
-                    className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 transition hover:border-white/18 hover:bg-white/[0.07]"
-                  >
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Catalogue</p>
-                    <p className="mt-3 text-lg font-semibold text-white">Films, series et collections</p>
-                    <p className="mt-2 text-sm text-slate-400">Basculer vers l espace VOD</p>
-                  </Link>
                 </div>
-              </section>
-            ) : null}
+              </Link>
+            ) : (
+              <div className="rounded-[34px] border border-dashed border-white/12 bg-white/[0.03] p-6 text-sm leading-7 text-slate-400">
+                Aucun direct public n&apos;est encore disponible. Le portail reste pret pour afficher les chaines des
+                qu&apos;elles sont publiees.
+              </div>
+            )}
 
-            <section className="rounded-[30px] border border-white/10 bg-white/[0.025] p-5">
-              <SectionHeader
-                eyebrow="Bouquets"
-                title="Par univers"
-                detail="Filtrez rapidement les chaines par ligne editoriale."
+            <div className="grid gap-4 sm:grid-cols-2">
+              <QuickAccessCard
+                href="/we/catalog"
+                eyebrow="Catalogue"
+                title="Films, series et collections"
+                detail="Basculer vers l espace VOD sans perdre la coherence du parcours."
+                icon={<Tv2 className="h-4 w-4" />}
               />
+              <QuickAccessCard
+                href={continueCardHref}
+                eyebrow={replayContinueWatching.length > 0 ? "Reprise" : "Replays"}
+                title={continueCardTitle}
+                detail={continueCardDetail}
+                icon={<PlayCircle className="h-4 w-4" />}
+              />
+            </div>
+          </div>
+        </section>
+
+        {error ? (
+          <div className="rounded-[28px] border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-100">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="flex min-h-[22vh] items-center justify-center rounded-[32px] border border-white/10 bg-white/[0.03]">
+            <Loader2 className="h-7 w-7 animate-spin text-white" />
+          </div>
+        ) : (
+          <>
+            <section className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <SectionHeader
+                  eyebrow="Bouquets"
+                  title="Par univers"
+                  detail="Filtrez rapidement les chaines et les replays publics par ligne editoriale."
+                />
+                <div className="inline-flex h-11 items-center rounded-full border border-white/10 bg-black/20 px-4 text-sm text-slate-300">
+                  {filteredGrid.length} chaine(s) visibles
+                </div>
+              </div>
               <div className="mt-5 flex flex-wrap gap-2">
                 {categories.map((category) => {
                   const active = activeCategory === category;
@@ -540,7 +591,7 @@ export default function WebLiveHomeClient() {
                       onClick={() => setActiveCategory(category)}
                       className={`inline-flex h-11 items-center rounded-full border px-4 text-sm transition ${
                         active
-                          ? "border-white/14 bg-white text-black"
+                          ? "border-white/14 bg-white text-slate-950"
                           : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
                       }`}
                     >
@@ -569,12 +620,12 @@ export default function WebLiveHomeClient() {
             <section id="live-now" className="space-y-5">
               <SectionHeader
                 eyebrow="Directs"
-                title="Maintenant a l'antenne"
+                title="Maintenant a l antenne"
                 detail="Un acces desktop simple pour regarder les chaines actives."
                 action={
                   <Link
                     href="/we/catalog"
-                    className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                    className="inline-flex h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
                   >
                     <Tv2 className="mr-2 h-4 w-4" />
                     Ouvrir le catalogue
@@ -593,27 +644,46 @@ export default function WebLiveHomeClient() {
               ) : null}
             </section>
 
-            <section id="replays" className="grid gap-5 xl:grid-cols-[0.88fr_1.12fr]">
-              <div className="rounded-[30px] border border-white/10 bg-white/[0.03] p-5">
+            <section id="replays" className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+              <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
                 <SectionHeader
                   eyebrow="Selection"
-                  title="Vue d'ensemble"
-                  detail="Le portail se concentre sur le direct, le replay et le catalogue."
+                  title="Ce que propose l espace public"
+                  detail="La surface reste volontairement compacte: live, replay et catalogue."
                 />
                 <div className="mt-5 space-y-3">
-                  <div className="rounded-[22px] border border-white/10 bg-black/30 p-4">
+                  <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                     <div className="flex items-center gap-2 text-white">
                       <Sparkles className="h-4 w-4 text-slate-400" />
-                      <p className="text-sm font-medium">Visionnage desktop</p>
+                      <p className="text-sm font-medium">Visionnage clair</p>
                     </div>
-                    <p className="mt-2 text-sm text-slate-400">
-                      Navigation rapide entre live, grille, replays et catalogue.
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      Une home orientee lecture, avec entree directe sur les chaines actives.
                     </p>
                   </div>
+                  <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                    <div className="flex items-center gap-2 text-white">
+                      <PlayCircle className="h-4 w-4 text-slate-400" />
+                      <p className="text-sm font-medium">Reprise continue</p>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      Progression et rattrapage integres sans detour de navigation.
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                    <div className="flex items-center gap-2 text-white">
+                      <Tv2 className="h-4 w-4 text-slate-400" />
+                      <p className="text-sm font-medium">Passage vers la VOD</p>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">
+                      Le catalogue reste accessible comme une extension naturelle du direct.
+                    </p>
+                  </div>
+
                   {categorySummary.map(([category, count]) => (
                     <div
                       key={category}
-                      className="flex items-center justify-between rounded-[18px] border border-white/10 bg-black/30 px-4 py-3"
+                      className="flex items-center justify-between rounded-[18px] border border-white/10 bg-black/20 px-4 py-3"
                     >
                       <span className="text-sm text-white">{category}</span>
                       <span className="text-sm text-slate-400">{count} chaine(s)</span>
@@ -622,7 +692,7 @@ export default function WebLiveHomeClient() {
                 </div>
               </div>
 
-              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(10,10,10,0.96),rgba(3,3,3,0.98))] p-5">
+              <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,12,20,0.96),rgba(3,5,9,0.98))] p-5">
                 <SectionHeader
                   eyebrow="Replays"
                   title="Selection recente"

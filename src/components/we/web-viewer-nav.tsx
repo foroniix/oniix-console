@@ -20,18 +20,24 @@ export function WebViewerNav() {
   const displayName = user?.full_name?.trim() || user?.email?.split("@")[0] || "Profil";
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/8 bg-black/72 backdrop-blur-2xl">
-      <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-4 rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,10,18,0.94),rgba(3,5,9,0.92))] px-4 py-3 shadow-[0_22px_70px_rgba(0,0,0,0.34)] backdrop-blur-2xl">
         <div className="flex items-center gap-3">
           <Link href="/" className="shrink-0">
             <OniixLogo size="sm" subtitle={undefined} />
           </Link>
-          <div className="hidden rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400 lg:inline-flex">
-            Streaming web
+          <div className="hidden items-center gap-3 lg:flex">
+            <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-300">
+              Portail public
+            </div>
+            <div className="inline-flex items-center gap-2 text-xs text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.65)]" />
+              Live, replay et VOD dans une seule interface
+            </div>
           </div>
         </div>
 
-        <nav className="hidden items-center gap-2 md:flex">
+        <nav className="hidden items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1 md:flex">
           {NAV_ITEMS.map((item) => {
             const active =
               item.href === "/#replays"
@@ -45,8 +51,8 @@ export function WebViewerNav() {
                 className={cn(
                   "inline-flex h-10 items-center rounded-full border px-4 text-sm font-medium transition",
                   active
-                    ? "border-white/14 bg-white text-black"
-                    : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/18 hover:bg-white/[0.07] hover:text-white"
+                    ? "border-white/14 bg-white text-slate-950 shadow-[0_8px_30px_rgba(255,255,255,0.16)]"
+                    : "border-transparent bg-transparent text-slate-300 hover:border-white/12 hover:bg-white/[0.06] hover:text-white"
                 )}
               >
                 {item.label}
@@ -58,7 +64,7 @@ export function WebViewerNav() {
         <div className="flex items-center gap-2">
           <Link
             href="/"
-            className="hidden h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white xl:inline-flex"
+            className="hidden h-10 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white xl:inline-flex"
           >
             <Tv2 className="mr-2 h-4 w-4" />
             En direct
@@ -69,7 +75,7 @@ export function WebViewerNav() {
               <>
                 <Link
                   href="/we/catalog#watchlist"
-                  className="hidden h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white lg:inline-flex"
+                  className="hidden h-10 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white lg:inline-flex"
                 >
                   <PlayCircle className="mr-2 h-4 w-4" />
                   Ma liste{watchlist.length > 0 ? ` (${watchlist.length})` : ""}
@@ -80,7 +86,7 @@ export function WebViewerNav() {
                 <button
                   type="button"
                   onClick={() => void logout()}
-                  className="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-medium text-black transition hover:bg-slate-200"
+                  className="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
                 >
                   Deconnexion
                 </button>
@@ -90,21 +96,21 @@ export function WebViewerNav() {
                 <button
                   type="button"
                   onClick={() => openAuthDialog("signup")}
-                  className="hidden h-10 rounded-full border border-white/10 px-4 text-sm font-medium text-slate-300 transition hover:bg-white/[0.05] hover:text-white sm:inline-flex"
+                  className="hidden h-10 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-slate-300 transition hover:bg-white/[0.08] hover:text-white sm:inline-flex"
                 >
                   Inscription
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthDialog("login")}
-                  className="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-medium text-black transition hover:bg-slate-200"
+                  className="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
                 >
                   Connexion
                 </button>
               </>
             )
           ) : (
-            <span className="inline-flex h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-500">
+            <span className="inline-flex h-10 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Chargement
             </span>
