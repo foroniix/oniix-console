@@ -25,6 +25,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: buildUrl("/streaming"),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
+      url: buildUrl("/tv-live"),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: buildUrl("/films-series"),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: buildUrl("/sport-live"),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.75,
+    },
+    {
       url: buildUrl("/privacy"),
       lastModified: now,
       changeFrequency: "monthly",

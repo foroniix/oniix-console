@@ -23,21 +23,28 @@ const GOOGLE_SITE_VERIFICATION_TOKEN =
 export const metadata: Metadata = {
   metadataBase: new URL("https://oniix.space"),
   title: {
-    default: "Oniix | TV en direct, replays, films et series",
+    default: "Oniix | Streaming web, TV en direct, replays, films et series",
     template: "%s | Oniix",
   },
   description:
-    "Oniix diffuse des chaines TV en direct, des replays, des films et des series sur mobile et sur le web.",
+    "Oniix propose du streaming web avec TV en direct, replays, films, series et sport live sur mobile et navigateur.",
   applicationName: "Oniix",
   keywords: [
     "Oniix",
     "Oniix TV",
+    "streaming Oniix",
+    "streaming web",
     "Mobile TV",
     "plateforme OTT",
-    "chaînes TV",
+    "chaines TV",
     "TV en direct",
+    "live TV",
+    "sport en direct",
+    "streaming sport",
     "replays TV",
     "films et series",
+    "films en streaming",
+    "series en streaming",
     "programmation TV",
     "mobile streaming",
     "television web",
@@ -51,16 +58,16 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://oniix.space",
     siteName: "Oniix",
-    title: "Oniix | TV en direct, replays, films et series",
+    title: "Oniix | Streaming web, TV en direct, replays, films et series",
     description:
-      "Oniix diffuse des chaines TV en direct, des replays, des films et des series sur mobile et sur le web.",
+      "Oniix propose du streaming web avec TV en direct, replays, films, series et sport live sur mobile et navigateur.",
     locale: "fr_FR",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Oniix | TV en direct, replays, films et series",
+    title: "Oniix | Streaming web, TV en direct, replays, films et series",
     description:
-      "Oniix diffuse des chaines TV en direct, des replays, des films et des series sur mobile et sur le web.",
+      "Oniix propose du streaming web avec TV en direct, replays, films, series et sport live sur mobile et navigateur.",
   },
   verification: {
     google: GOOGLE_SITE_VERIFICATION_TOKEN,

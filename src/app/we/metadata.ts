@@ -19,6 +19,7 @@ export function buildWebMetadata(input: {
   description: string;
   path: string;
   image?: string | null;
+  keywords?: string[];
 }): Metadata {
   const imageUrl = clean(input.image);
   const canonicalUrl = absoluteUrl(input.path);
@@ -26,6 +27,7 @@ export function buildWebMetadata(input: {
   return {
     title: input.title,
     description: input.description,
+    keywords: input.keywords,
     alternates: {
       canonical: input.path,
     },
