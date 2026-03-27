@@ -10,6 +10,7 @@ import {
   Loader2,
   Play,
   RefreshCw,
+  Sparkles,
   Tv2,
 } from "lucide-react";
 import Link from "next/link";
@@ -72,6 +73,8 @@ type PlaybackResponse = {
   duration_sec?: number | null;
 };
 
+const PHOTO_WALL = "/branding/photography/rural-broadband-data-center.jpg";
+
 function formatDuration(value: number | null) {
   if (!value || value <= 0) return null;
   const hours = Math.floor(value / 3600);
@@ -87,6 +90,16 @@ function formatPercent(value: number | null | undefined) {
 
 function formatEpisodeLabel(episode: EpisodeRow) {
   return `Episode ${episode.episode_number}`;
+}
+
+function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
+    </div>
+  );
 }
 
 export default function WebCatalogTitleClient({ titleId }: { titleId: string }) {
@@ -194,6 +207,8 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
   const title = detail?.title;
   const isSaved = title ? isInWatchlist(title.title_type, title.id) : false;
   const movieProgress = title?.title_type === "movie" ? getProgress("movie", title.id) : null;
+  const episodeCount = detail?.episodes?.length || 0;
+  const readableDuration = formatDuration(detail?.movie_source?.duration_sec ?? null) || "--";
 
   useEffect(() => {
     lastSavedRef.current = {};
@@ -238,19 +253,19 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
   return (
     <main className="min-h-[calc(100dvh-76px)] text-white">
-      <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Link
               href="/we/catalog"
-              className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+              className="inline-flex h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour au catalogue
             </Link>
             <Link
               href="/"
-              className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+              className="inline-flex h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
             >
               <Tv2 className="mr-2 h-4 w-4" />
               TV
@@ -262,7 +277,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
               <button
                 type="button"
                 onClick={() => openAuthDialog("login")}
-                className="inline-flex h-11 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                className="inline-flex h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
               >
                 Connexion
               </button>
@@ -288,22 +303,18 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
           </div>
         ) : (
           <>
-            <div className="relative overflow-hidden rounded-[36px] border border-white/10 bg-[linear-gradient(120deg,#090909,#050505)] p-7">
-              {title.backdrop_url ? (
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-28"
-                  style={{ backgroundImage: `url('${title.backdrop_url}')` }}
-                />
-              ) : null}
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,3,3,0.96),rgba(3,3,3,0.72),rgba(3,3,3,0.94))]" />
+            <div className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-24"
+                style={{ backgroundImage: `url('${title.backdrop_url || title.poster_url || PHOTO_WALL}')` }}
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.78),rgba(3,5,9,0.96))]" />
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
 
-              <div className="relative grid gap-6 xl:grid-cols-[240px_1fr_16rem]">
-                <div className="overflow-hidden rounded-[30px] border border-white/10 bg-black">
+              <div className="relative grid gap-6 xl:grid-cols-[220px_1fr_15rem]">
+                <div className="overflow-hidden rounded-[30px] border border-white/10 bg-black/40">
                   {title.poster_url ? (
-                    <div
-                      className="aspect-[2/3] bg-cover bg-center"
-                      style={{ backgroundImage: `url('${title.poster_url}')` }}
-                    />
+                    <div className="aspect-[2/3] bg-cover bg-center" style={{ backgroundImage: `url('${title.poster_url}')` }} />
                   ) : (
                     <div className="flex aspect-[2/3] items-center justify-center text-sm text-slate-500">
                       Aucune affiche
@@ -313,29 +324,36 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
                 <div className="flex flex-col justify-between gap-6">
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                      <Sparkles className="h-3.5 w-3.5 text-sky-300" />
                       {title.title_type === "movie" ? "Film" : "Serie"}
-                    </p>
-                    <h1 className="mt-3 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                    </div>
+                    <h1 className="mt-4 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                       {title.title}
                     </h1>
                     {title.original_title && title.original_title !== title.title ? (
                       <p className="mt-2 text-sm text-slate-500">{title.original_title}</p>
                     ) : null}
-                    <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
+                    <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">
                       {title.long_synopsis || title.short_synopsis || "Disponible en lecture web."}
                     </p>
 
-                    <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-400">
-                      <span className="rounded-full border border-white/10 px-3 py-1">{title.release_year || "--"}</span>
+                    <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-300">
+                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+                        {title.release_year || "--"}
+                      </span>
                       {title.maturity_rating ? (
-                        <span className="rounded-full border border-white/10 px-3 py-1">{title.maturity_rating}</span>
+                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+                          {title.maturity_rating}
+                        </span>
                       ) : null}
                       {title.original_language ? (
-                        <span className="rounded-full border border-white/10 px-3 py-1">{title.original_language}</span>
+                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+                          {title.original_language}
+                        </span>
                       ) : null}
                       {movieProgress?.percent_complete ? (
-                        <span className="rounded-full border border-white/10 px-3 py-1">
+                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
                           Progression {formatPercent(movieProgress.percent_complete)}
                         </span>
                       ) : null}
@@ -347,7 +365,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                       <button
                         type="button"
                         onClick={() => void resolvePlayback("movie", title.id)}
-                        className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-black transition hover:bg-slate-200"
+                        className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
                       >
                         <Play className="h-4 w-4" />
                         {movieProgress && movieProgress.progress_sec > 30 && !movieProgress.completed
@@ -360,7 +378,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                       type="button"
                       disabled={updatingWatchlist}
                       onClick={() => void handleToggleWatchlist()}
-                      className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 px-5 text-sm text-slate-200 transition hover:bg-white/[0.05] disabled:opacity-60"
+                      className="inline-flex h-12 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] disabled:opacity-60"
                     >
                       {updatingWatchlist ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -374,41 +392,33 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                   </div>
 
                   {!user ? (
-                    <p className="text-xs text-slate-500">
-                      Connectez-vous pour synchroniser votre progression et votre liste.
+                    <p className="text-xs leading-6 text-slate-400">
+                      Connectez-vous pour synchroniser votre progression et votre liste entre les differentes surfaces
+                      Oniix.
                     </p>
                   ) : null}
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Lecture</p>
-                    <p className="mt-3 text-3xl font-semibold text-white">
-                      {title.title_type === "movie" ? (detail.movie_source ? "1" : "0") : detail.episodes?.length || 0}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      {title.title_type === "movie" ? "source disponible" : "episode(s)"}
-                    </p>
-                  </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Duree</p>
-                    <p className="mt-3 text-3xl font-semibold text-white">
-                      {formatDuration(detail.movie_source?.duration_sec ?? null) || "--"}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">lecture estimee</p>
-                  </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Etat</p>
-                    <p className="mt-3 text-lg font-semibold text-white">
-                      {title.title_type === "movie"
+                  <StatCard
+                    label="Lecture"
+                    value={title.title_type === "movie" ? (detail.movie_source ? "1" : "0") : String(episodeCount)}
+                    detail={title.title_type === "movie" ? "source disponible" : "episode(s) publie(s)"}
+                  />
+                  <StatCard label="Duree" value={readableDuration} detail="Estimation de lecture" />
+                  <StatCard
+                    label="Etat"
+                    value={
+                      title.title_type === "movie"
                         ? detail.movie_source
-                          ? "Pret a lire"
-                          : "Sans source"
-                        : (detail.episodes?.length || 0) > 0
-                          ? "Disponible"
-                          : "A completer"}
-                    </p>
-                  </div>
+                          ? "Pret"
+                          : "Vide"
+                        : episodeCount > 0
+                          ? "Publie"
+                          : "A completer"
+                    }
+                    detail="Disponibilite de la fiche publique"
+                  />
                 </div>
               </div>
             </div>
@@ -419,29 +429,54 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
               </div>
             ) : null}
 
-            {playbackUrl ? (
-              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#050505]">
-                <div className="aspect-video bg-black">
-                  <HlsPlayer
-                    streamId={activePlayable?.id || title.id}
-                    src={playbackUrl}
-                    sourceKind={playbackKind ?? undefined}
-                    poster={title.backdrop_url || title.poster_url || undefined}
-                    controls
-                    autoPlay
-                    muted={false}
-                    startAtSec={playbackStartAtSec}
-                    onPlaybackProgress={handlePlaybackProgress}
-                    className="h-full w-full"
-                  />
+            {playbackUrl || resolvingPlayback ? (
+              <section className="grid gap-5 xl:grid-cols-[1.28fr_0.72fr]">
+                <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#05070b] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
+                  <div className="aspect-video bg-black">
+                    {playbackUrl ? (
+                      <HlsPlayer
+                        streamId={activePlayable?.id || title.id}
+                        src={playbackUrl}
+                        sourceKind={playbackKind ?? undefined}
+                        poster={title.backdrop_url || title.poster_url || undefined}
+                        controls
+                        autoPlay
+                        muted={false}
+                        startAtSec={playbackStartAtSec}
+                        onPlaybackProgress={handlePlaybackProgress}
+                        className="h-full w-full"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                        Resolution de la lecture en cours...
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : null}
 
-            {resolvingPlayback ? (
-              <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
-                Resolution de la lecture en cours...
-              </div>
+                <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Session</p>
+                  <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
+                    Lecture active
+                  </h2>
+                  <div className="mt-5 space-y-3">
+                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Contenu</p>
+                      <p className="mt-2 text-base font-semibold text-white">
+                        {activePlayable?.type === "episode" ? "Episode" : "Film"}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Point de depart</p>
+                      <p className="mt-2 text-base font-semibold text-white">{playbackStartAtSec}s</p>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-slate-300">
+                      La lecture reste placee au centre. Les informations secondaires et les episodes restent a cote,
+                      sans encombrer l ecran principal.
+                    </div>
+                  </div>
+                </div>
+              </section>
             ) : null}
 
             {title.title_type === "series" ? (
@@ -451,20 +486,26 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                   <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
                     Saisons et episodes
                   </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">
+                    Une navigation simple par saison, avec lecture episode par episode sans casser le parcours.
+                  </p>
                 </div>
 
                 <div className="space-y-4">
                   {groupedEpisodes.map(({ season, episodes }) => (
-                    <div key={season.id} className="rounded-[30px] border border-white/10 bg-white/[0.03] p-5">
-                      <div className="flex items-center justify-between gap-4">
+                    <div
+                      key={season.id}
+                      className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5"
+                    >
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold text-white">
+                          <h3 className="text-xl font-semibold text-white">
                             {season.season_number > 0 ? `Saison ${season.season_number}` : "Collection"}
                             {season.title ? ` - ${season.title}` : ""}
                           </h3>
-                          {season.synopsis ? <p className="mt-1 text-sm text-slate-400">{season.synopsis}</p> : null}
+                          {season.synopsis ? <p className="mt-2 text-sm leading-6 text-slate-400">{season.synopsis}</p> : null}
                         </div>
-                        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+                        <span className="inline-flex h-10 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300">
                           {episodes.length} episode(s)
                         </span>
                       </div>
@@ -475,7 +516,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                           return (
                             <div
                               key={episode.id}
-                              className="grid gap-4 rounded-[24px] border border-white/10 bg-black/35 p-4 lg:grid-cols-[8rem_1fr_auto]"
+                              className="grid gap-4 rounded-[26px] border border-white/10 bg-black/20 p-4 lg:grid-cols-[9rem_1fr_auto]"
                             >
                               <div className="overflow-hidden rounded-[18px] bg-black">
                                 {episode.thumbnail_url || episode.poster_url ? (
@@ -500,12 +541,12 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
                               <div className="flex flex-wrap items-center gap-3 lg:flex-col lg:items-end">
                                 {episode.duration_sec ? (
-                                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+                                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-400">
                                     {formatDuration(episode.duration_sec)}
                                   </span>
                                 ) : null}
                                 {episodeProgress?.percent_complete ? (
-                                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+                                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-400">
                                     {formatPercent(episodeProgress.percent_complete)}
                                   </span>
                                 ) : null}
@@ -513,7 +554,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                                   <button
                                     type="button"
                                     onClick={() => void resolvePlayback("episode", episode.id)}
-                                    className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-black transition hover:bg-slate-200"
+                                    className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
                                   >
                                     <Play className="h-4 w-4" />
                                     {episodeProgress && episodeProgress.progress_sec > 30 && !episodeProgress.completed
@@ -521,7 +562,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                                       : "Lire"}
                                   </button>
                                 ) : (
-                                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-500">
+                                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-500">
                                     Lecture indisponible
                                   </span>
                                 )}

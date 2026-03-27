@@ -12,6 +12,7 @@ import {
   Loader2,
   Radio,
   RefreshCw,
+  Tv2,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -98,8 +99,8 @@ function formatDuration(value: number | null) {
   return `${Math.max(1, mins)} min`;
 }
 
-function normalizeLiveCategory(channel: GridChannel["channel"]) {
-  const raw = `${channel.category ?? ""} ${channel.name ?? ""}`.trim().toLowerCase();
+function normalizeLiveCategory(channel: GridChannel["channel"] | null | undefined) {
+  const raw = `${channel?.category ?? ""} ${channel?.name ?? ""}`.trim().toLowerCase();
   if (!raw) return "General";
   if (raw.includes("sport") || raw.includes("foot") || raw.includes("ball") || raw.includes("racing")) {
     return "Sport";
@@ -124,9 +125,19 @@ function normalizeLiveCategory(channel: GridChannel["channel"]) {
   ) {
     return "Actualites";
   }
-  const source = (channel.category ?? "").trim();
+  const source = (channel?.category ?? "").trim();
   if (!source) return "General";
   return source.charAt(0).toUpperCase() + source.slice(1);
+}
+
+function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
+    </div>
+  );
 }
 
 export default function ViewerClient({ streamId }: { streamId: string }) {
@@ -300,59 +311,123 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
 
   return (
     <main className="min-h-[calc(100dvh-76px)] text-white">
-      <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="grid gap-4 rounded-[30px] border border-white/10 bg-white/[0.03] p-5 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-              <Radio className="h-3.5 w-3.5 text-red-400" />
-              {activeReplay ? "Replay web" : normalizeLiveCategory(activeLane?.channel ?? { id: "", tenant_id: null, name: "", logo: null, category: null, slug: null })}
-            </div>
-            {!activeReplay && activeLane?.channel ? (
-              <div className="mt-4 flex items-center gap-3">
-                <ChannelLogoBadge
-                  name={activeLane.channel.name}
-                  logoUrl={activeLane.channel.logo}
-                  size="md"
-                />
-                <p className="text-sm text-slate-400">{activeLane.channel.name}</p>
+      <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+        <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+          <div className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-24"
+              style={{
+                backgroundImage: `url('${activeReplay?.poster || activeLane?.live_stream?.poster || activeLane?.now?.poster || ""}')`,
+              }}
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.78),rgba(3,5,9,0.96))]" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
+
+            <div className="relative flex h-full flex-col justify-between gap-8">
+              <div className="space-y-5">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+                  <Radio className="h-3.5 w-3.5 text-red-400" />
+                  {activeReplay ? "Replay web" : `Live ${normalizeLiveCategory(activeLane?.channel)}`}
+                </div>
+
+                {!activeReplay && activeLane?.channel ? (
+                  <div className="flex items-center gap-3">
+                    <ChannelLogoBadge name={activeLane.channel.name} logoUrl={activeLane.channel.logo} size="md" />
+                    <div>
+                      <p className="text-sm text-slate-300">{activeLane.channel.name}</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        {normalizeLiveCategory(activeLane.channel)}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div>
+                  <h1 className="max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                    {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Streaming live"}
+                  </h1>
+                  <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
+                    {activeReplay
+                      ? activeReplay.synopsis || "Replay disponible en lecture web."
+                      : activeLane?.now?.title || "Direct desktop en cours"}
+                  </p>
+                </div>
               </div>
-            ) : null}
-            <h1 className="mt-4 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
-              {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Streaming live"}
-            </h1>
-            <p className="mt-2 text-sm text-slate-400">
-              {activeReplay
-                ? activeReplay.channel.name || "Replay"
-                : activeLane?.now?.title || "Direct desktop en cours"}
-            </p>
+
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/"
+                  className="inline-flex h-12 items-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
+                >
+                  Retour TV
+                </Link>
+                <Link
+                  href="/we/catalog"
+                  className="inline-flex h-12 items-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
+                >
+                  <Tv2 className="mr-2 h-4 w-4" />
+                  Catalogue
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void loadPortal(true);
+                    if (activeStreamId) void resolvePlayback(activeStreamId, liveSessionId);
+                  }}
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm text-white transition hover:bg-white/[0.08]"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing || resolvingPlayback ? "animate-spin" : ""}`} />
+                  Actualiser
+                </button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <StatCard
+                  label="Chaines"
+                  value={loading ? "--" : String(grid.length)}
+                  detail="Disponibles dans l environnement public"
+                />
+                <StatCard
+                  label="Replays lies"
+                  value={loading ? "--" : String(activeReplaysForChannel.length)}
+                  detail="Associes a la chaine active"
+                />
+                <StatCard
+                  label="Suite"
+                  value={activeLane?.next?.title ? formatClock(activeLane.next.starts_at) : "--:--"}
+                  detail={activeLane?.next?.title || "A venir"}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
-            >
-              Retour TV
-            </Link>
-            <Link
-              href="/we/catalog"
-              className="inline-flex h-10 items-center rounded-full border border-white/10 px-4 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
-            >
-              Catalogue
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                void loadPortal(true);
-                if (activeStreamId) void resolvePlayback(activeStreamId, liveSessionId);
-              }}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-white transition hover:bg-white/[0.08]"
-            >
-              <RefreshCw className={`h-4 w-4 ${(refreshing || resolvingPlayback) ? "animate-spin" : ""}`} />
-              Actualiser
-            </button>
+          <div className="rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-5">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Contexte actif</p>
+            <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
+              {activeReplay ? "Lecture replay" : activeLane?.channel.name || "Selection active"}
+            </h2>
+            <div className="mt-5 space-y-3">
+              <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">En cours</p>
+                <p className="mt-2 text-base font-semibold text-white">
+                  {activeReplay?.title || activeLane?.now?.title || "Aucun programme en cours"}
+                </p>
+              </div>
+              <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">A suivre</p>
+                <p className="mt-2 text-base font-semibold text-white">{activeLane?.next?.title || "--"}</p>
+              </div>
+              <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Categorie</p>
+                <p className="mt-2 text-base font-semibold text-white">{normalizeLiveCategory(activeLane?.channel)}</p>
+              </div>
+              <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-slate-300">
+                Le viewer reste centre sur la lecture, avec une navigation laterale compacte pour changer de chaine,
+                consulter la grille ou ouvrir un replay.
+              </div>
+            </div>
           </div>
-        </header>
+        </section>
 
         {loading ? (
           <div className="flex min-h-[42vh] items-center justify-center rounded-[30px] border border-white/10 bg-white/[0.03]">
@@ -369,7 +444,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
         ) : (
           <div className="grid gap-6 xl:grid-cols-[1.34fr_0.92fr]">
             <section className="space-y-5">
-              <div className="overflow-hidden rounded-[30px] border border-white/10 bg-[#050505] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
+              <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#05070b] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
                 <div className="aspect-video bg-black">
                   {playbackSrc ? (
                     <HlsPlayer
@@ -403,7 +478,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                   <button
                     type="button"
                     onClick={() => setMuted((prev) => !prev)}
-                    className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 px-4 text-sm text-slate-200 transition hover:bg-white/[0.05]"
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08]"
                   >
                     {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                     {muted ? "Activer le son" : "Couper le son"}
@@ -415,8 +490,8 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 <button
                   type="button"
                   onClick={() => setTab("live")}
-                  className={`h-10 rounded-2xl text-sm font-medium transition ${
-                    tab === "live" ? "bg-white text-black" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                  className={`h-11 rounded-2xl text-sm font-medium transition ${
+                    tab === "live" ? "bg-white text-slate-950" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
                   }`}
                 >
                   Direct
@@ -424,8 +499,8 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 <button
                   type="button"
                   onClick={() => setTab("grid")}
-                  className={`h-10 rounded-2xl text-sm font-medium transition ${
-                    tab === "grid" ? "bg-white text-black" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                  className={`h-11 rounded-2xl text-sm font-medium transition ${
+                    tab === "grid" ? "bg-white text-slate-950" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
                   }`}
                 >
                   Grille
@@ -433,8 +508,10 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 <button
                   type="button"
                   onClick={() => setTab("replays")}
-                  className={`h-10 rounded-2xl text-sm font-medium transition ${
-                    tab === "replays" ? "bg-white text-black" : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                  className={`h-11 rounded-2xl text-sm font-medium transition ${
+                    tab === "replays"
+                      ? "bg-white text-slate-950"
+                      : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
                   }`}
                 >
                   Replays
@@ -454,11 +531,12 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                         disabled={!laneStreamId}
                         onClick={() => {
                           if (!laneStreamId) return;
+                          setTab("live");
                           setActiveReplayId(null);
                           setActiveStreamId(laneStreamId);
                           setLiveSessionId(null);
                         }}
-                        className={`overflow-hidden rounded-[26px] border text-left transition ${
+                        className={`overflow-hidden rounded-[28px] border text-left transition ${
                           isActive
                             ? "border-white/18 bg-white/[0.08]"
                             : "border-white/10 bg-white/[0.03] hover:border-white/18 hover:bg-white/[0.05]"
@@ -471,18 +549,18 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                               style={{ backgroundImage: `url('${lane.live_stream?.poster || lane.now?.poster}')` }}
                             />
                           ) : null}
-                          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
-                        <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
-                          <Radio className="h-3.5 w-3.5 text-red-400" />
-                          {normalizeLiveCategory(lane.channel)}
-                        </div>
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <div className="mb-3">
-                            <ChannelLogoBadge name={lane.channel.name} logoUrl={lane.channel.logo} size="sm" />
+                          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
+                          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
+                            <Radio className="h-3.5 w-3.5 text-red-400" />
+                            {normalizeLiveCategory(lane.channel)}
                           </div>
-                          <h3 className="text-lg font-semibold text-white">{lane.channel.name}</h3>
-                          <p className="mt-2 line-clamp-2 text-sm text-slate-300">
-                            {lane.now?.title || lane.live_stream?.title || "Direct disponible"}
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <div className="mb-3">
+                              <ChannelLogoBadge name={lane.channel.name} logoUrl={lane.channel.logo} size="sm" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-white">{lane.channel.name}</h3>
+                            <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-300">
+                              {lane.now?.title || lane.live_stream?.title || "Direct disponible"}
                             </p>
                           </div>
                         </div>
@@ -496,7 +574,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               ) : null}
 
               {tab === "grid" ? (
-                <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
                   <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white">
                     <CalendarClock className="h-4 w-4 text-slate-400" />
                     Grille de diffusion
@@ -505,7 +583,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     {(activeLane?.slots ?? []).slice(0, 12).map((slot) => (
                       <div
                         key={slot.id}
-                        className="flex items-start justify-between gap-4 rounded-[22px] border border-white/10 bg-black/45 px-4 py-3"
+                        className="flex items-start justify-between gap-4 rounded-[22px] border border-white/10 bg-black/20 px-4 py-3"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-white">{slot.title}</p>
@@ -532,7 +610,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       key={replay.id}
                       type="button"
                       onClick={() => setActiveReplayId(replay.id)}
-                      className={`overflow-hidden rounded-[26px] border text-left transition ${
+                      className={`overflow-hidden rounded-[28px] border text-left transition ${
                         activeReplayId === replay.id
                           ? "border-white/18 bg-white/[0.08]"
                           : "border-white/10 bg-white/[0.03] hover:border-white/18 hover:bg-white/[0.05]"
@@ -545,7 +623,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                             style={{ backgroundImage: `url('${replay.poster}')` }}
                           />
                         ) : null}
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.9))]" />
+                        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
                         <div className="absolute bottom-4 left-4 right-4">
                           <h3 className="line-clamp-2 text-lg font-semibold text-white">{replay.title}</h3>
                         </div>
@@ -565,39 +643,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
             </section>
 
             <aside className="space-y-5">
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Contexte</p>
-                <div className="mt-2 flex items-center gap-3">
-                  {activeLane?.channel ? (
-                    <ChannelLogoBadge
-                      name={activeLane.channel.name}
-                      logoUrl={activeLane.channel.logo}
-                      size="md"
-                    />
-                  ) : null}
-                  <h2 className="font-[var(--font-we-display)] text-xl font-semibold text-white">
-                    {activeLane?.channel.name || "Selection active"}
-                  </h2>
-                </div>
-                <div className="mt-5 space-y-3 text-sm text-slate-400">
-                  <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">En cours</p>
-                    <p className="mt-1 text-white">{activeLane?.now?.title || "Aucun programme en cours"}</p>
-                  </div>
-                  <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">A suivre</p>
-                    <p className="mt-1 text-white">{activeLane?.next?.title || "--"}</p>
-                  </div>
-                  <div className="rounded-[18px] border border-white/10 bg-black/35 px-4 py-3">
-                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Categorie</p>
-                    <p className="mt-1 text-white">
-                      {activeLane ? normalizeLiveCategory(activeLane.channel) : "General"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
                 <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Selection rapide</p>
                 <div className="mt-4 grid gap-2">
                   {grid.map((lane) => {
@@ -617,7 +663,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                         className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left text-sm transition ${
                           laneStreamId === activeStreamId && !activeReplayId
                             ? "border-white/18 bg-white/[0.08] text-white"
-                            : "border-white/10 bg-black/35 text-slate-400 hover:border-white/18 hover:text-white"
+                            : "border-white/10 bg-black/20 text-slate-400 hover:border-white/18 hover:text-white"
                         }`}
                       >
                         <div className="flex min-w-0 items-center gap-3">
@@ -633,7 +679,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 </div>
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-5">
+              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <Clapperboard className="h-4 w-4 text-slate-400" />
                   <p className="text-sm font-semibold text-white">Replays lies</p>
@@ -650,7 +696,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       className={`w-full rounded-[18px] border px-4 py-3 text-left text-sm transition ${
                         activeReplayId === replay.id
                           ? "border-white/18 bg-white/[0.08] text-white"
-                          : "border-white/10 bg-black/35 text-slate-400 hover:border-white/18 hover:text-white"
+                          : "border-white/10 bg-black/20 text-slate-400 hover:border-white/18 hover:text-white"
                       }`}
                     >
                       <p className="line-clamp-2 font-medium">{replay.title}</p>
@@ -664,6 +710,30 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       Aucun replay lie a cette chaine.
                     </p>
                   ) : null}
+                </div>
+              </div>
+
+              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Lecture</p>
+                <div className="mt-4 space-y-3 text-sm text-slate-400">
+                  <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Mode</p>
+                    <p className="mt-1 text-white">{activeReplay ? "Replay" : "Direct live"}</p>
+                  </div>
+                  <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Programme</p>
+                    <p className="mt-1 text-white">{activeLane?.now?.title || activeReplay?.title || "--"}</p>
+                  </div>
+                  <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Progression replay</p>
+                    <p className="mt-1 text-white">
+                      {activeReplayProgress?.percent_complete
+                        ? `${activeReplayProgress.percent_complete}%`
+                        : activeReplayProgress?.progress_sec
+                          ? `${activeReplayProgress.progress_sec}s`
+                          : "--"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </aside>
