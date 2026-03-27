@@ -18,6 +18,9 @@ const PUBLIC_PATH_PREFIXES = [
 ];
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
+  "/api/web/auth/login",
+  "/api/web/auth/me",
+  "/api/web/auth/logout",
   "/api/web/auth/signup",
   "/api/web/live",
   "/api/web/catalog",
@@ -163,14 +166,6 @@ export function proxy(request: NextRequest) {
   }
 
   if (pathname === "/console/login" || pathname === "/console/signup") {
-    if (cookie) {
-      return applyIndexingHeaders(
-        withSecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url))),
-        pathname,
-        isPublicPath,
-        isPublicApiPath
-      );
-    }
     return applyIndexingHeaders(withSecurityHeaders(NextResponse.next()), pathname, isPublicPath, isPublicApiPath);
   }
 

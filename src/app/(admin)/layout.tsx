@@ -6,6 +6,7 @@ import { ConsoleIdentityProvider } from "@/components/layout/console-identity";
 import { PageTitleSync } from "@/components/layout/page-title-sync";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import { requireConsoleAccess } from "@/lib/console-access";
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +20,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  await requireConsoleAccess("/console/login");
+
   return (
     <div className="relative h-screen overflow-hidden bg-[#04070d]">
       <a

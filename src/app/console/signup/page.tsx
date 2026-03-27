@@ -1,4 +1,5 @@
 import SignupPage from "@/app/signup/page";
+import { redirectIfConsoleAuthenticated } from "@/lib/console-access";
 
 export const metadata = {
   title: "Inscription console | Oniix",
@@ -9,6 +10,7 @@ export const metadata = {
   },
 };
 
-export default function ConsoleSignupPage() {
+export default async function ConsoleSignupPage() {
+  await redirectIfConsoleAuthenticated();
   return <SignupPage />;
 }

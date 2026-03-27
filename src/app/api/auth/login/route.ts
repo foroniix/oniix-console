@@ -4,6 +4,7 @@ import { supabaseAnon } from "../../_utils/supabase";
 import { setAuthCookies } from "../../_utils/cookies";
 import { parseJson } from "../../_utils/validate";
 import { enforceRateLimit, getRateLimitConfig } from "../../_utils/rate-limit";
+import { hasConsoleAccess } from "@/lib/console-access";
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -39,11 +40,30 @@ export async function POST(req: Request) {
     const refresh = data.session?.refresh_token;
     if (!access || !refresh) return jsonError("Session introuvable.", 500);
 
+    const appMetadata = (data.user?.app_metadata ?? {}) as Record<string, unknown>;
+    const role = typeof appMetadata.role === "string" ? appMetadata.role : null;
+    const tenantId = typeof appMetadata.tenant_id === "string" ? appMetadata.tenant_id : null;
+
+    if (
+      !data.user ||
+      !(await hasConsoleAccess({
+        accessToken: access,
+        userId: data.user.id,
+        tenantId,
+        role,
+        user: data.user,
+      }))
+    ) {
+      return jsonError("Ce compte n'a pas acces a la console multi-tenant.", 403);
+    }
+
     const res = NextResponse.json({ ok: true }, { status: 200 });
     setAuthCookies(res, access, refresh);
     return res;
-  } catch (e: any) {
-    console.error("Login error", { error: e?.message });
+  } catch (error: unknown) {
+    console.error("Login error", {
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
     return jsonError("Une erreur est survenue.", 500);
   }
 }

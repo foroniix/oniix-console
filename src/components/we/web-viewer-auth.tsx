@@ -442,7 +442,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
 
   const hydrate = React.useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/me", { cache: "no-store" });
+      const response = await fetch("/api/web/auth/me", { cache: "no-store" });
       if (response.status === 401) {
         setUser(null);
         resetLibrary();
@@ -480,7 +480,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
     async ({ email, password }: { email: string; password: string }) => {
       setIsAuthenticating(true);
       try {
-        const response = await fetch("/api/auth/login", {
+        const response = await fetch("/api/web/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
@@ -548,7 +548,7 @@ export function WebViewerAuthProvider({ children }: { children: React.ReactNode 
 
   const logout = React.useCallback(async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/web/auth/logout", { method: "POST" });
     } catch (error) {
       console.error("web_viewer_logout_failed", error);
     } finally {
