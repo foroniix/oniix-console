@@ -78,7 +78,7 @@ export function ConsoleLoginScreen() {
   };
 
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-[#090909] text-white">
+    <main className="relative min-h-dvh overflow-hidden bg-[#06080d] text-white">
       <div className="absolute inset-0">
         {AUTH_SLIDES.map((slide, index) => (
           <div
@@ -96,25 +96,28 @@ export function ConsoleLoginScreen() {
             />
           </div>
         ))}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,6,6,0.88)_0%,rgba(9,9,9,0.54)_42%,rgba(6,6,6,0.82)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,190,66,0.22),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(255,196,78,0.14),transparent_24%)]" />
-        <div className="oniix-auth-sweep absolute inset-y-0 right-[12%] w-[28rem] bg-[linear-gradient(90deg,transparent,rgba(255,212,96,0.09),transparent)] blur-3xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#f2cb63]/40 to-transparent" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(6,10,16,0.9)_0%,rgba(6,10,16,0.58)_42%,rgba(6,10,16,0.84)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(122,183,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_22%)]" />
+        <div className="oniix-auth-sweep absolute inset-y-0 right-[12%] w-[28rem] bg-[linear-gradient(90deg,transparent,rgba(122,183,255,0.08),transparent)] blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#7ab7ff]/35 to-transparent" />
       </div>
 
       <div className="relative flex min-h-dvh flex-col">
         <div className="flex flex-1 items-center px-4 py-8 sm:px-6 lg:px-10">
           <div className="mx-auto flex w-full max-w-[1480px] justify-center lg:justify-end">
-            <section className="w-full max-w-[432px] overflow-hidden rounded-[34px] border border-white/12 bg-[linear-gradient(180deg,rgba(15,15,15,0.76),rgba(8,8,8,0.82))] shadow-[0_42px_120px_rgba(0,0,0,0.46)] backdrop-blur-[22px]">
+            <section className="w-full max-w-[432px] overflow-hidden rounded-[34px] border border-white/12 bg-[linear-gradient(180deg,rgba(12,19,29,0.78),rgba(7,11,18,0.84))] shadow-[0_42px_120px_rgba(0,0,0,0.34)] backdrop-blur-[22px]">
               <div className="px-7 pb-6 pt-7 sm:px-8">
                 <OniixLogo size="md" subtitle={undefined} showMark={false} />
-                <div className="mt-5 h-px bg-gradient-to-r from-[#f2cb63]/60 via-white/12 to-transparent" />
+                <div className="mt-5 h-px bg-gradient-to-r from-[#7ab7ff]/60 via-white/12 to-transparent" />
               </div>
 
               <div className="px-7 pb-8 pt-1 sm:px-8">
                 <h1 className="text-[2rem] font-semibold tracking-[-0.05em] text-white">
                   Connexion
                 </h1>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  Accès à la console opérateur.
+                </p>
 
                 <form onSubmit={submit} className="mt-7 space-y-4">
                   <Field icon={Mail}>
@@ -124,7 +127,7 @@ export function ConsoleLoginScreen() {
                       onChange={(event) => setEmail(event.target.value)}
                       placeholder="Email"
                       autoFocus
-                      className="h-12 rounded-[18px] border-white/10 bg-[rgba(16,16,16,0.72)] pl-11 text-white placeholder:text-[#9a9a9a] focus-visible:border-[#f2cb63]/40 focus-visible:ring-[#f2cb63]/18"
+                      className="h-12 rounded-[18px] border-white/10 bg-[rgba(10,16,25,0.72)] pl-11 text-white placeholder:text-slate-500 focus-visible:border-[#7ab7ff]/40 focus-visible:ring-[#7ab7ff]/18"
                     />
                   </Field>
 
@@ -134,7 +137,7 @@ export function ConsoleLoginScreen() {
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       placeholder="Mot de passe"
-                      className="h-12 rounded-[18px] border-white/10 bg-[rgba(16,16,16,0.72)] pl-11 text-white placeholder:text-[#9a9a9a] focus-visible:border-[#f2cb63]/40 focus-visible:ring-[#f2cb63]/18"
+                      className="h-12 rounded-[18px] border-white/10 bg-[rgba(10,16,25,0.72)] pl-11 text-white placeholder:text-slate-500 focus-visible:border-[#7ab7ff]/40 focus-visible:ring-[#7ab7ff]/18"
                     />
                   </Field>
 
@@ -147,7 +150,7 @@ export function ConsoleLoginScreen() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="h-12 w-full rounded-[18px] border-[#f2cb63]/24 bg-[linear-gradient(180deg,#f2d06e,#d6ab32)] text-[#15110a] shadow-[0_18px_42px_rgba(214,171,50,0.28)] hover:brightness-105"
+                    className="h-12 w-full rounded-[18px] border-[#8ebeff]/12 bg-[linear-gradient(180deg,#f7fbff,#d7e9ff)] text-[#09203a] shadow-[0_18px_42px_rgba(79,143,255,0.2)] hover:brightness-105"
                   >
                     {isLoading ? <Loader2 className="size-4 animate-spin" /> : "Connexion"}
                   </Button>
@@ -155,7 +158,7 @@ export function ConsoleLoginScreen() {
 
                 <div className="mt-5 flex items-center justify-between gap-3 text-sm text-white/56">
                   <span>Espace tenant</span>
-                  <Link href="/console/signup" className="font-medium text-[#f2cb63] transition hover:text-[#ffe08e]">
+                  <Link href="/console/signup" className="font-medium text-[#cfe2ff] transition hover:text-white">
                     Créer un espace
                   </Link>
                 </div>

@@ -127,7 +127,7 @@ export default function StreamsPage() {
     <PageShell>
       <PageHeader
         title="Directs"
-        subtitle="Surveillez, lancez et qualifiez vos flux HLS depuis un cockpit unique."
+        subtitle="Supervisez les directs, leurs statuts et leurs points de reprise."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Directs" }]}
         icon={<RadioTower className="size-5" />}
         actions={

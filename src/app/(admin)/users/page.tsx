@@ -316,7 +316,7 @@ export default function UsersPage() {
       <PageShell>
         <PageHeader
           title="Équipe et accès"
-          subtitle="Invitations, rôles et gouvernance opérateur."
+          subtitle="Invitations, rôles et accès opérateur."
           breadcrumbs={[
             { label: "Oniix Console", href: "/dashboard" },
             { label: "Équipe" },
@@ -335,7 +335,7 @@ export default function UsersPage() {
     <PageShell>
       <PageHeader
         title="Équipe et accès"
-        subtitle="Invitez, révisez et sécurisez les accès opérateur depuis un poste unique."
+        subtitle="Invitations, rôles et accès opérateur."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Équipe" },
@@ -358,8 +358,8 @@ export default function UsersPage() {
       <KpiRow>
         <KpiCard label="Membres" value={stats.members} icon={<Shield className="size-4" />} hint={`${stats.admins} administrateur(s)`} loading={false} />
         <KpiCard label="Invitations" value={stats.invites} icon={<Mail className="size-4" />} hint={`${stats.pending} en attente`} tone="info" />
-        <KpiCard label="Expirées" value={stats.expired} hint="Liens à révoquer ou renvoyer" tone={stats.expired > 0 ? "warning" : "neutral"} />
-        <KpiCard label="Gouvernance" value="Actif" hint="Suppression, re-envoi et suivi des statuts" tone="success" />
+        <KpiCard label="Expirées" value={stats.expired} hint="Liens à traiter" tone={stats.expired > 0 ? "warning" : "neutral"} />
+        <KpiCard label="Cycle de vie" value="Actif" hint="Suppression, relance et suivi" tone="success" />
       </KpiRow>
 
       {error ? (
@@ -371,7 +371,7 @@ export default function UsersPage() {
       <Card>
         <CardHeader>
           <CardTitle>Pilotage des accès</CardTitle>
-          <CardDescription>Membres actifs, invitations et création de liens depuis la même surface.</CardDescription>
+          <CardDescription>{"Membres, invitations et création d'accès."}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AccessTab)} className="space-y-5">
@@ -402,7 +402,7 @@ export default function UsersPage() {
 
               <DataTableShell
                 title="Membres actifs"
-                description="Accès opérateur et rôles associés à votre espace."
+                description={"Rôles et accès actifs sur l'espace."}
                 isEmpty={membersSlice.length === 0}
                 emptyTitle="Aucun membre"
                 emptyDescription="Aucun compte ne correspond au filtre actuel."
@@ -479,7 +479,7 @@ export default function UsersPage() {
 
               <DataTableShell
                 title="Invitations"
-                description="Liens d’accès, statuts et actions de relance."
+                description="Liens, statuts et relances."
                 isEmpty={invitesSlice.length === 0}
                 emptyTitle="Aucune invitation"
                 emptyDescription="Aucune invitation ne correspond au filtre actuel."

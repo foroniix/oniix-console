@@ -114,7 +114,7 @@ export default function RevenuePage() {
     <PageShell>
       <PageHeader
         title="Revenus"
-        subtitle="Suivez la traction commerciale, la volumétrie transactionnelle et la valeur moyenne générée par votre console."
+        subtitle="Suivez les revenus, le volume transactionnel et la valeur moyenne."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Revenus" }]}
         icon={<Banknote className="size-5" />}
         actions={

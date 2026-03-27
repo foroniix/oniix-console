@@ -83,8 +83,8 @@ export default function Topbar() {
   }, [router]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/8 bg-[rgba(0,0,0,0.88)] backdrop-blur-2xl">
-      <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-30 px-4 pt-4 sm:px-6">
+      <div className="flex items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,13,21,0.94),rgba(5,8,14,0.94))] px-4 py-3 shadow-[0_22px_54px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="lg:hidden">

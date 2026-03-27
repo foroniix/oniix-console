@@ -198,7 +198,7 @@ export default function ChannelsPage() {
     <PageShell>
       <PageHeader
         title="Catalogue chaînes"
-        subtitle="Pilotage éditorial, readiness OTT et exposition des chaînes depuis une seule surface d’exploitation."
+        subtitle="Gérez les chaînes, le branding et la readiness HLS."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Catalogue" }, { label: "Chaînes TV" }]}
         icon={<Tv className="size-5" />}
         actions={

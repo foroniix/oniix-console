@@ -27,7 +27,7 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <header className={cn("console-hero px-6 py-5 sm:px-7 sm:py-6", className)}>
+    <header className={cn("console-hero px-6 py-6 sm:px-7 sm:py-7", className)}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/12" />
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-3.5">
@@ -50,14 +50,14 @@ export function PageHeader({
 
           <div className="flex items-start gap-4">
             {icon ? (
-              <span className="mt-0.5 inline-flex size-[3.1rem] shrink-0 items-center justify-center rounded-[22px] border border-white/10 bg-white/[0.04] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <span className="mt-0.5 inline-flex size-[3.1rem] shrink-0 items-center justify-center rounded-[22px] border border-white/10 bg-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 {icon}
               </span>
             ) : null}
             <div>
               <h1 className="text-[2rem] font-semibold tracking-[-0.045em] text-white sm:text-[2.15rem]">{title}</h1>
               {subtitle ? (
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300/88 sm:text-[0.94rem]">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:text-[0.94rem]">
                   {subtitle}
                 </p>
               ) : null}

@@ -214,7 +214,7 @@ export default function CampaignsPage() {
     <PageShell>
       <PageHeader
         title="Campagnes publicitaires"
-        subtitle="Pilotez les campagnes de monétisation, leur fenêtre de diffusion et leur priorisation opérationnelle."
+        subtitle="Pilotez les campagnes, leur fenêtre et leur priorisation."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Publicite", href: "/ads" },

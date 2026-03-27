@@ -98,7 +98,7 @@ export default function GeoBlockingPage() {
     <PageShell>
       <PageHeader
         title="Geo-blocage"
-        subtitle="Cadrez l exposition territoriale de vos flux et donnez une lecture claire des restrictions en production."
+        subtitle="Définissez l’exposition territoriale de vos flux."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Geo-blocage" }]}
         icon={<GlobeLock className="size-5" />}
         actions={

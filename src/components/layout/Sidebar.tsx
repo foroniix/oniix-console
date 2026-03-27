@@ -38,7 +38,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   className={cn(
                     "group relative flex items-center gap-3 rounded-[22px] border px-3.5 py-3 transition-all duration-200",
                     active
-                      ? "border-white/12 bg-[linear-gradient(180deg,rgba(20,20,20,0.96),rgba(8,8,8,0.96))] text-white shadow-[0_18px_34px_rgba(0,0,0,0.34)]"
+                      ? "border-white/12 bg-[linear-gradient(180deg,rgba(18,28,42,0.96),rgba(9,14,22,0.96))] text-white shadow-[0_18px_34px_rgba(0,0,0,0.24)]"
                       : "border-transparent text-slate-400 hover:border-white/8 hover:bg-white/[0.04] hover:text-white"
                   )}
                 >
@@ -110,7 +110,7 @@ function SidebarFooter() {
             {SUPPORT_EMAIL}
             <ArrowUpRight className="size-4" />
           </SupportMailLink>
-          <p className="mt-2 text-xs leading-5 text-slate-400">Incidents, accès, onboarding et besoins opérationnels.</p>
+          <p className="mt-2 text-xs leading-5 text-slate-400">Incidents, accès et demandes opérateur.</p>
         </div>
 
         <Button variant="outline" onClick={handleLogout} className="mt-4 w-full justify-start text-slate-200 hover:text-white">
@@ -124,18 +124,18 @@ function SidebarFooter() {
 
 export default function Sidebar() {
   return (
-    <aside className="relative hidden h-full w-[316px] shrink-0 flex-col overflow-hidden rounded-[32px] border border-white/8 bg-[linear-gradient(180deg,rgba(4,4,4,0.98),rgba(0,0,0,0.99))] shadow-[0_28px_72px_rgba(0,0,0,0.42)] lg:flex">
+    <aside className="relative hidden h-full w-[316px] shrink-0 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,13,21,0.98),rgba(4,7,12,0.99))] shadow-[0_28px_72px_rgba(0,0,0,0.28)] lg:flex">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.04),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.02),transparent_20%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(122,183,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.02),transparent_20%)]" />
       </div>
       <div className="relative border-b border-white/10 p-5">
         <Link href="/dashboard" className="block">
-          <span className="console-chip">Control room</span>
+          <span className="console-chip">Console</span>
           <div className="mt-4">
-            <OniixLogo size="md" subtitle="Opérations, programmation et revenus" />
+            <OniixLogo size="md" subtitle="Exploitation, catalogue et revenus" />
           </div>
           <p className="mt-3 max-w-xs text-sm leading-6 text-slate-400">
-            Poste de pilotage Oniix pour la diffusion, le catalogue et l&apos;exploitation.
+            Poste de pilotage pour la diffusion, le catalogue et l&apos;exploitation.
           </p>
         </Link>
       </div>

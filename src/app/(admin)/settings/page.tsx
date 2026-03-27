@@ -214,7 +214,7 @@ export default function SettingsPage() {
       <PageShell>
         <PageHeader
           title="Sécurité et paramètres"
-          subtitle="Chargement du poste opérateur, de l’espace actif et des secrets applicatifs."
+          subtitle="Chargement des paramètres opérateur."
           breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Paramètres" }]}
           icon={<Shield className="size-5" />}
         />
@@ -232,7 +232,7 @@ export default function SettingsPage() {
     <PageShell>
       <PageHeader
         title="Sécurité et paramètres"
-        subtitle="Compte opérateur, espace actif et secrets applicatifs dans une vue de gouvernance unique."
+        subtitle="Compte, espace et secrets applicatifs."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Paramètres" }]}
         icon={<Shield className="size-5" />}
         actions={

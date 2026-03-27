@@ -157,7 +157,7 @@ export default function CreativesPage() {
     <PageShell>
       <PageHeader
         title="Creatives"
-        subtitle="Centralisez les assets publicitaires reliés aux campagnes, avec contrôle d'activation et de destination."
+        subtitle="Centralisez les assets publicitaires et leur activation."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Publicite", href: "/ads" },

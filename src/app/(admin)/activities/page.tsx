@@ -233,7 +233,7 @@ export default function ActivitiesPage() {
     <PageShell>
       <PageHeader
         title="Activités"
-        subtitle="Journal d’audit des opérations menées dans la console, avec acteurs, cibles et horodatage."
+        subtitle="Journal d’audit des actions opérateur."
         breadcrumbs={[{ label: "Oniix Console", href: "/dashboard" }, { label: "Activités" }]}
         icon={<ActivityIcon className="size-5" />}
         actions={

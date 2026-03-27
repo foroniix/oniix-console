@@ -18,8 +18,8 @@ type AuthFrameProps = {
 
 const TRUST_POINTS = [
   "Sessions sécurisées et cookies httpOnly",
-  "Tenancy et rôles appliqués côté backend",
-  "Invitations, workspaces et support consolidés",
+  "Rôles et tenancy appliqués côté backend",
+  "Support opérateur centralisé",
 ];
 
 const CONTROL_POINTS = [
@@ -53,7 +53,7 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               </div>
 
               <div className="mt-8">
-                <OniixLogo size="lg" subtitle="Console d'exploitation OTT" />
+                <OniixLogo size="lg" subtitle="Pilotage OTT multi-tenant" />
               </div>
 
               <div className="mt-8">
@@ -78,9 +78,9 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
                       Oniix Console
                     </span>
                     <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] text-emerald-200">
-                      Accès sécurisé
-                    </span>
-                  </div>
+                    Accès sécurisé
+                  </span>
+                </div>
                 </div>
 
                 <div className="space-y-4">
@@ -119,7 +119,7 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-6 text-sm text-slate-400">
                 <div className="inline-flex items-center gap-2">
                   <ShieldCheck className="size-4 text-[var(--brand-primary)]" />
-                  Accès opérateur et support plateforme
+                  Accès opérateur et support
                 </div>
                 <SupportMailLink className="font-medium text-slate-200 hover:text-[var(--brand-primary)]">
                   {SUPPORT_EMAIL}

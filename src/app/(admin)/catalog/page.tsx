@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Clapperboard,
   Edit3,
@@ -1284,7 +1285,7 @@ export default function CatalogPage() {
     <PageShell>
       <PageHeader
         title="Catalogue"
-        subtitle="Pilotez vos films, séries, saisons, épisodes et publications VOD dans un module distinct du live TV et du replay."
+        subtitle="Gérez les films, séries, saisons, épisodes et publications VOD."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Catalogue" },
@@ -1346,7 +1347,7 @@ export default function CatalogPage() {
             onRetry={() => void loadTitles(false)}
             isEmpty={!loading && !error && filteredTitles.length === 0}
             emptyTitle="Aucun titre éditorial"
-            emptyDescription="Commencez par créer vos premiers films ou séries avant d'ouvrir les saisons, épisodes et publications."
+            emptyDescription="Créez le premier titre pour ouvrir les saisons, épisodes et publications."
             emptyAction={<Button onClick={openCreateTitle}><Plus className="size-4" />Créer un titre</Button>}
           >
             <div className="divide-y divide-white/10">
@@ -1368,7 +1369,7 @@ export default function CatalogPage() {
                   >
                     <div className="relative hidden aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-[18px] border border-white/10 bg-white/[0.04] sm:block">
                       {posterUrl ? (
-                        <img src={posterUrl} alt={item.title} className="h-full w-full object-cover" />
+                        <Image src={posterUrl} alt={item.title} fill unoptimized sizes="64px" className="object-cover" />
                       ) : (
                         <div className="flex h-full items-center justify-center text-slate-500">
                           <ImageIcon className="size-5" />
@@ -1422,20 +1423,26 @@ export default function CatalogPage() {
             <Card>
               <div className="relative min-h-[220px] overflow-hidden border-b border-white/10">
                 {selectedTitleBackdropUrl ? (
-                  <img
+                  <Image
                     src={selectedTitleBackdropUrl}
                     alt={selectedTitle.title}
-                    className="absolute inset-0 h-full w-full object-cover"
+                    fill
+                    unoptimized
+                    sizes="(min-width: 1024px) 60vw, 100vw"
+                    className="object-cover"
                   />
                 ) : null}
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,13,20,0.3),rgba(8,13,20,0.92))]" />
                 <div className="relative flex flex-col gap-6 p-6 lg:flex-row lg:items-end">
                   <div className="relative aspect-[2/3] w-32 shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04] shadow-[0_20px_50px_rgba(0,0,0,0.28)]">
                     {selectedTitlePosterUrl ? (
-                      <img
+                      <Image
                         src={selectedTitlePosterUrl}
                         alt={selectedTitle.title}
-                        className="h-full w-full object-cover"
+                        fill
+                        unoptimized
+                        sizes="128px"
+                        className="object-cover"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-slate-500">
@@ -1458,7 +1465,7 @@ export default function CatalogPage() {
                       <div>
                         <div className="text-3xl font-semibold tracking-tight text-white">{selectedTitle.title}</div>
                       <div className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                        {selectedTitle.short_synopsis || "Ajoutez un résumé éditorial court pour alimenter le catalogue, le mobile et les vitrines partenaires."}
+                        {selectedTitle.short_synopsis || "Ajoutez un résumé court pour le catalogue et les vitrines."}
                       </div>
                     </div>
                   </div>
@@ -1572,7 +1579,7 @@ export default function CatalogPage() {
                 <TabsContent value="structure" className="space-y-6">
                   <DataTableShell
                     title="Saisons"
-                    description="Structurez la série avant la publication détaillée."
+                    description="Organisation éditoriale de la série."
                     loading={workspaceLoading}
                     error={workspaceError}
                     onRetry={() => void loadWorkspace(selectedTitle, false)}
@@ -1613,13 +1620,13 @@ export default function CatalogPage() {
 
                   <DataTableShell
                     title="Épisodes"
-                    description="Préparez la diffusion VOD épisode par épisode."
+                    description="Parcours épisode par épisode."
                     loading={workspaceLoading}
                     error={workspaceError}
                     onRetry={() => void loadWorkspace(selectedTitle, false)}
                     isEmpty={!workspaceLoading && !workspaceError && episodes.length === 0}
                     emptyTitle="Aucun épisode"
-                    emptyDescription="Ajoutez vos premiers épisodes pour ouvrir la publication détaillée."
+                    emptyDescription="Ajoutez les premiers épisodes."
                     emptyAction={<Button onClick={() => openCreateEpisode()}><Plus className="size-4" />Nouvel épisode</Button>}
                     footer={<div className="flex justify-end"><Button onClick={() => openCreateEpisode()}><Plus className="size-4" />Ajouter un épisode</Button></div>}
                   >
@@ -1679,13 +1686,13 @@ export default function CatalogPage() {
               <TabsContent value="visuals" className="space-y-6">
                 <DataTableShell
                   title="Visuels du titre"
-                  description="Gérez posters, backdrops, miniatures et logos du catalogue."
+                  description="Posters, backdrops, miniatures et logos."
                   loading={loading}
                   error={error}
                   onRetry={() => void loadTitles(false)}
                   isEmpty={!loading && !error && mediaAssets.filter((asset) => asset.owner_type === "title" && asset.owner_id === selectedTitle.id).length === 0}
                   emptyTitle="Aucun visuel"
-                  emptyDescription="Ajoutez un poster, une miniature ou un backdrop pour professionnaliser la fiche titre et le mobile."
+                  emptyDescription="Ajoutez les visuels principaux du titre."
                   emptyAction={<Button onClick={() => openCreateMediaAsset("poster")}><Plus className="size-4" />Ajouter un visuel</Button>}
                   footer={<div className="flex justify-end"><Button onClick={() => openCreateMediaAsset("poster")}><Plus className="size-4" />Nouveau visuel</Button></div>}
                 >
@@ -1705,10 +1712,13 @@ export default function CatalogPage() {
                         <Card key={assetType} className="overflow-hidden border-white/10 bg-white/[0.03]">
                           <div className="relative aspect-video overflow-hidden border-b border-white/10 bg-black/20">
                             {previewUrl ? (
-                              <img
+                              <Image
                                 src={previewUrl}
                                 alt={asset.alt_text || selectedTitle.title}
-                                className="h-full w-full object-cover"
+                                fill
+                                unoptimized
+                                sizes="(min-width: 1280px) 20vw, (min-width: 768px) 33vw, 100vw"
+                                className="object-cover"
                               />
                             ) : (
                               <div className="flex h-full items-center justify-center text-slate-500">
@@ -1762,13 +1772,13 @@ export default function CatalogPage() {
               <TabsContent value="sources" className="space-y-6">
                 <DataTableShell
                   title="Sources de lecture"
-                  description="Rattachez un flux HLS, DASH ou un fichier direct à un film ou à un épisode."
+                  description="Sources HLS, DASH et fichiers liés au titre."
                   loading={workspaceLoading}
                   error={workspaceError}
                   onRetry={() => void loadWorkspace(selectedTitle, false)}
                   isEmpty={!workspaceLoading && !workspaceError && relatedPlaybackSources.length === 0}
                   emptyTitle="Aucune source de lecture"
-                  emptyDescription="Ajoutez une URL source pour préparer le playback VOD sur le mobile et les futures vitrines."
+                  emptyDescription="Ajoutez une source de lecture."
                   emptyAction={<Button onClick={() => openCreatePlaybackSource()}><Plus className="size-4" />Ajouter une source</Button>}
                   footer={<div className="flex justify-end"><Button onClick={() => openCreatePlaybackSource()}><Plus className="size-4" />Nouvelle source</Button></div>}
                 >
@@ -1843,13 +1853,13 @@ export default function CatalogPage() {
               <TabsContent value="publications" className="space-y-6">
                 <DataTableShell
                   title="Publications"
-                  description="Pilotez la visibilité, la fenêtre et la vitrine de distribution."
+                  description="Visibilité, fenêtre et distribution."
                   loading={workspaceLoading}
                   error={workspaceError}
                   onRetry={() => void loadWorkspace(selectedTitle, false)}
                   isEmpty={!workspaceLoading && !workspaceError && relatedPublications.length === 0}
                   emptyTitle="Aucune publication"
-                  emptyDescription="Créez une première publication pour exposer ce contenu dans l'application mobile ou une vitrine partenaire."
+                  emptyDescription="Créez la première publication du contenu."
                   emptyAction={<Button onClick={() => openCreatePublication()}><Plus className="size-4" />Créer une publication</Button>}
                   footer={<div className="flex justify-end"><Button onClick={() => openCreatePublication()}><Plus className="size-4" />Nouvelle publication</Button></div>}
                 >
@@ -2004,7 +2014,7 @@ export default function CatalogPage() {
                 <CardHeader className="space-y-1 pb-4">
                   <CardTitle className="text-base text-white">Synopsis et promesse éditoriale</CardTitle>
                   <CardDescription>
-                    Le résumé court alimente les listes. Le synopsis long prépare la fiche détail et les partenaires.
+                    Résumé court pour les listes. Synopsis long pour la fiche.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
@@ -2034,7 +2044,7 @@ export default function CatalogPage() {
         <DialogContent className="max-w-2xl max-h-[88vh] overflow-hidden p-0">
           <DialogHeader className="border-b border-white/10 px-6 pb-4 pt-6">
             <DialogTitle>{editingSeason ? "Modifier la saison" : "Créer une saison"}</DialogTitle>
-            <DialogDescription>Structurez la série avant la publication détaillée.</DialogDescription>
+            <DialogDescription>Organisation éditoriale de la série.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[calc(88vh-10rem)] overflow-y-auto px-6 py-5">
             <div className="grid gap-4 md:grid-cols-2">
@@ -2052,7 +2062,7 @@ export default function CatalogPage() {
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>Synopsis</Label>
-                <Textarea value={seasonForm.synopsis} onChange={(event) => setSeasonForm((current) => ({ ...current, synopsis: event.target.value }))} placeholder="Résumé saisonnier pour les pages détail." />
+                <Textarea value={seasonForm.synopsis} onChange={(event) => setSeasonForm((current) => ({ ...current, synopsis: event.target.value }))} placeholder="Résumé de saison." />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>Statut éditorial</Label>
@@ -2278,10 +2288,13 @@ export default function CatalogPage() {
               <Card className="overflow-hidden border-white/10 bg-white/[0.03]">
                 <div className="relative aspect-[3/4] overflow-hidden border-b border-white/10 bg-black/20">
                   {(mediaAssetPreviewUrl ?? resolveCatalogMediaUrl(mediaAssetForm.source_url)) ? (
-                    <img
+                    <Image
                       src={mediaAssetPreviewUrl ?? resolveCatalogMediaUrl(mediaAssetForm.source_url) ?? ""}
                       alt={mediaAssetForm.alt_text || selectedTitle?.title || "Visuel"}
-                      className="h-full w-full object-cover"
+                      fill
+                      unoptimized
+                      sizes="(min-width: 1024px) 320px, 100vw"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-slate-500">

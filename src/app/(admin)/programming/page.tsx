@@ -20,7 +20,7 @@ export default function ProgrammingPage() {
     <PageShell>
       <PageHeader
         title="Programmation"
-        subtitle="Gérez votre catalogue éditorial, planifiez les diffusions TV et publiez les replays."
+        subtitle="Planifiez la grille, les slots et les replays."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Programmation" },

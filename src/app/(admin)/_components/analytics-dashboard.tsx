@@ -526,18 +526,17 @@ export default function AnalyticsDashboard() {
               Pilotage audience
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Lecture unifiée de l&apos;audience, de l&apos;engagement et du direct multi-chaînes pour piloter la plateforme
-              sans angle mort produit ou operationnel.
+              Vue consolidée de l&apos;audience, du visionnage et du direct multi-chaînes.
             </p>
             <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
-                {activeChannelId ? `Filtre - ${selectedChannel?.name ?? "Chaîne sélectionnée"}` : "Vue d'ensemble multi-chaînes"}
+                {activeChannelId ? `Filtre - ${selectedChannel?.name ?? "Chaîne sélectionnée"}` : "Vue d'ensemble"}
               </div>
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
-                Role - {role}
+                Rôle - {role}
               </div>
               <div className="rounded-full border border-slate-200/80 bg-white/75 px-4 py-2 dark:border-white/10 dark:bg-white/[0.05]">
-                Dernière synchro - {formatSyncClock(snapshot?.asOf ?? lastLoadedAt)}
+                Synchro - {formatSyncClock(snapshot?.asOf ?? lastLoadedAt)}
               </div>
             </div>
           </div>
@@ -654,11 +653,11 @@ export default function AnalyticsDashboard() {
             <div>
               <CardTitle className="text-xl text-slate-950 dark:text-white">Acquisition et engagement</CardTitle>
               <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
-                Lecture consolidee de la tendance d&apos;audience et de l&apos;intensite d&apos;usage.
+                Tendance d&apos;audience et intensité d&apos;usage.
               </CardDescription>
             </div>
             <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
-              {formatNumber(data.kpi.totalEvents)} événements
+                  {formatNumber(data.kpi.totalEvents)} événements
             </Badge>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -717,9 +716,9 @@ export default function AnalyticsDashboard() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <CardTitle className="text-xl text-slate-950 dark:text-white">Centre live</CardTitle>
-                <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
-                  Vue unifiee web + mobile sur la fenetre glissante live.
-                </CardDescription>
+              <CardDescription className="mt-1 text-slate-600 dark:text-slate-300">
+                Vue web + mobile sur la fenêtre live.
+              </CardDescription>
               </div>
               <Badge className={cn("border", liveMeta.className)}>{liveMeta.label}</Badge>
             </div>
@@ -783,7 +782,7 @@ export default function AnalyticsDashboard() {
           <CardHeader>
             <CardTitle className="text-xl text-slate-950 dark:text-white">Sources de lecture</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-300">
-              Repartition des sessions et du temps de visionnage par plateforme.
+              Répartition des sessions et du temps de visionnage par plateforme.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -884,7 +883,7 @@ export default function AnalyticsDashboard() {
           <CardHeader>
             <CardTitle className="text-xl text-slate-950 dark:text-white">Signal recent</CardTitle>
             <CardDescription className="text-slate-600 dark:text-slate-300">
-              Activité récente, sessions live et synthèse opérateur.
+              Activité récente et signaux clés.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">

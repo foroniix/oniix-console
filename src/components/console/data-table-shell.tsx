@@ -43,7 +43,7 @@ export function DataTableShell({
       {loading ? (
         <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm text-slate-400">
           <Loader2 className="size-4 animate-spin" />
-          Chargement...
+          Chargement des données...
         </div>
       ) : error ? (
         <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 px-4 text-center">

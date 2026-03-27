@@ -11,8 +11,9 @@ export function PageShell({ children, className }: PageShellProps) {
   return (
     <div className={cn("console-page relative isolate animate-in fade-in-0 duration-300", className)}>
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.035),transparent_18%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.025),transparent_20%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(122,183,255,0.06),transparent_18%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.025),transparent_20%)]" />
         <div className="console-ambient-line left-[14%] top-[4.5rem] w-[22%]" />
+        <div className="absolute right-[8%] top-[9rem] h-40 w-40 rounded-full bg-sky-400/[0.05] blur-[90px]" />
       </div>
       {children}
     </div>

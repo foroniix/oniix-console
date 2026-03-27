@@ -262,7 +262,7 @@ export default function TenantsPage() {
     <PageShell>
       <PageHeader
         title="Portefeuille éditeurs"
-        subtitle="Provisionnement des organisations, bootstrap des premiers assets et niveau de mise en service par tenant."
+        subtitle="Provisionnement, premiers assets et niveau d'activation par tenant."
         breadcrumbs={[
           { label: "Oniix Console", href: "/dashboard" },
           { label: "Superadmin" },
@@ -356,7 +356,7 @@ export default function TenantsPage() {
 
       <DataTableShell
         title="Portefeuille multi-éditeur"
-        description="Lecture portefeuille, owner principal et niveau de mise en service par organisation."
+        description="Vue portefeuille, owner principal et niveau d'activation."
         loading={loading}
         error={items.length === 0 ? loadError || undefined : undefined}
         onRetry={() => void load(true, search)}

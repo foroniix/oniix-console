@@ -210,9 +210,7 @@ export default function NotificationCenter() {
           ) : notifications.length === 0 ? (
             <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 text-sm text-slate-400">
               <p className="font-medium text-white">Aucune notification pour le moment.</p>
-              <p className="mt-2">
-                Les incidents, validations et actions prioritaires remonteront ici.
-              </p>
+              <p className="mt-2">Les événements prioritaires apparaîtront ici.</p>
               <SupportMailLink className="mt-4 inline-flex text-sm font-medium text-[var(--brand-primary)] hover:text-white">
                 Contacter le support
               </SupportMailLink>
@@ -300,7 +298,7 @@ export default function NotificationCenter() {
 
         <div className="px-5 py-4 text-xs text-slate-500">
           <p className="font-medium text-white">Besoin d&apos;aide ?</p>
-          <p className="mt-1">Le support Oniix reste disponible pour les incidents, accès et demandes d&apos;onboarding.</p>
+          <p className="mt-1">Le support Oniix traite les incidents, accès et demandes opérateur.</p>
           <SupportMailLink className="mt-3 inline-flex text-sm font-medium text-[var(--brand-primary)] hover:text-white">
             support@oniix.space
           </SupportMailLink>

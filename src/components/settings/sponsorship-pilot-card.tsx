@@ -242,7 +242,7 @@ export function SponsorshipPilotCard() {
           Pilote Celtiis Bénin
         </CardTitle>
         <CardDescription>
-          Configuration initiale du sponsoring data pour le premier partenariat télécom Oniix.
+          Paramétrage du pilote sponsoring data Celtiis.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -328,7 +328,7 @@ export function SponsorshipPilotCard() {
                   <div>
                     <p className="text-sm font-semibold text-white">Activer une policy pilote</p>
                     <p className="text-sm text-slate-400">
-                      Ciblez une chaîne complète ou un direct particulier du tenant actif.
+                      Ciblez une chaîne complète ou un direct du tenant actif.
                     </p>
                   </div>
                 </div>
@@ -425,7 +425,7 @@ export function SponsorshipPilotCard() {
                     <div>
                       <p className="text-sm font-semibold text-white">Cadre pilote</p>
                       <p className="text-sm text-slate-400">
-                        Paramètres de build et d’exploitation à aligner avant go-live.
+                        Points de contrôle avant activation.
                       </p>
                     </div>
                   </div>
@@ -462,7 +462,7 @@ export function SponsorshipPilotCard() {
                 <div>
                   <p className="text-sm font-semibold text-white">Policies actives et historiques</p>
                   <p className="text-sm text-slate-400">
-                    Trace visible du périmètre Celtiis pour l’espace actif.
+                    Périmètre Celtiis appliqué à l’espace actif.
                   </p>
                 </div>
                 <Badge variant="secondary">{data.policies.length} policy(s)</Badge>

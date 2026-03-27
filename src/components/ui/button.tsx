@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border-[#8ebeff]/10 bg-[linear-gradient(180deg,#7ab7ff,#4f8fff)] text-[#04111f] shadow-[0_16px_30px_rgba(79,143,255,0.28)] hover:-translate-y-px hover:brightness-105",
+          "border-[#8ebeff]/10 bg-[linear-gradient(180deg,#f7fbff,#d7e9ff)] text-[#09203a] shadow-[0_14px_28px_rgba(79,143,255,0.18)] hover:-translate-y-px hover:border-[#b8d7ff]/20 hover:bg-[linear-gradient(180deg,#ffffff,#e1efff)]",
         destructive:
-          "border-rose-500/30 bg-rose-500/14 text-rose-100 hover:bg-rose-500/20 focus-visible:ring-rose-500/16",
+          "border-rose-500/25 bg-rose-500/12 text-rose-100 hover:bg-rose-500/18 focus-visible:ring-rose-500/16",
         outline:
-          "border-white/10 bg-white/[0.04] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-[#406489] hover:bg-white/[0.08]",
+          "border-white/10 bg-white/[0.04] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-white/16 hover:bg-white/[0.08]",
         secondary:
-          "border-white/8 bg-white/[0.07] text-slate-100 hover:bg-white/[0.11]",
+          "border-white/10 bg-white/[0.08] text-slate-100 hover:bg-white/[0.12]",
         ghost:
           "border-transparent bg-transparent text-slate-300 hover:bg-white/[0.06] hover:text-white",
         link: "border-transparent px-0 text-[var(--brand-primary)] hover:text-white hover:underline",

@@ -929,7 +929,7 @@ export default function StreamDetailPage() {
             <Input value={geoProbe} onChange={(e) => setGeoProbe(e.target.value)} placeholder="FR"  />
             {geoResult ? <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3"><StatusBadge status={geoResult.status} /><p className="mt-2 text-sm text-slate-400">{geoResult.text}</p></div> : null}
             <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
-              Checklist de mise en service : manifest accessible, DRM OK, géoblocage vérifié, EPG publié.
+              {"Checklist d'activation : manifest accessible, DRM OK, géoblocage vérifié, EPG publié."}
             </div>
             <div className="rounded-[20px] border border-white/8 bg-white/[0.03] p-3 text-sm text-slate-400">
               Etat d&apos;edition : <span className="font-medium text-slate-100">{configDirty ? "Modifications non sauvegardees" : "A jour"}</span>
