@@ -14,7 +14,10 @@ type FilterBarProps = {
 
 export function FilterBar({ children, onReset, resetDisabled = false, className }: FilterBarProps) {
   return (
-    <section className={cn("console-toolbar flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between", className)}>
+    <section
+      aria-label="Barre de filtres"
+      className={cn("console-toolbar flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between", className)}
+    >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">{children}</div>
       {onReset ? (
         <Button type="button" variant="outline" onClick={onReset} disabled={resetDisabled}>

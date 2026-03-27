@@ -22,6 +22,12 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="relative h-screen overflow-hidden bg-[#04070d]">
+      <a
+        href="#console-content"
+        className="sr-only absolute left-4 top-4 z-[70] rounded-[14px] bg-white px-3 py-2 text-sm font-semibold text-slate-950 focus:not-sr-only focus:outline-none focus:ring-2 focus:ring-[#7ab7ff]"
+      >
+        Aller au contenu
+      </a>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_0%,rgba(122,183,255,0.14),transparent_24%),radial-gradient(circle_at_90%_10%,rgba(255,255,255,0.05),transparent_16%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,#07101b_0%,#050912_44%,#04060a_100%)]" />
         <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:120px_120px] [mask-image:linear-gradient(180deg,rgba(0,0,0,0.45),transparent_90%)]" />
@@ -39,7 +45,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/12" />
             <Topbar />
-            <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5 xl:px-7">
+            <main
+              id="console-content"
+              tabIndex={-1}
+              className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 focus:outline-none sm:px-6 sm:pb-6 sm:pt-5 xl:px-7"
+            >
               <div className="mx-auto w-full max-w-[1320px] space-y-6 lg:space-y-7">
                 {children}
                 <ConsoleFooter compact />

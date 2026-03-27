@@ -42,14 +42,27 @@ function Button({
   variant,
   size,
   asChild = false,
+  title,
+  "aria-label": ariaLabel,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
   }) {
   const Comp = asChild ? Slot : "button";
+  const resolvedAriaLabel =
+    ariaLabel ??
+    ((size === "icon" || size === "icon-sm" || size === "icon-lg") && typeof title === "string" ? title : undefined);
 
-  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+  return (
+    <Comp
+      data-slot="button"
+      title={title}
+      aria-label={resolvedAriaLabel}
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  );
 }
 
 export { Button, buttonVariants };

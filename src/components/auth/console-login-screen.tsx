@@ -37,7 +37,7 @@ function Field({
 }) {
   return (
     <div className="relative">
-      <Icon className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#f1d06d]/70" />
+      <Icon className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#7ab7ff]/72" />
       {children}
     </div>
   );
@@ -122,9 +122,12 @@ export function ConsoleLoginScreen() {
                 <form onSubmit={submit} className="mt-7 space-y-4">
                   <Field icon={Mail}>
                     <Input
+                      name="email"
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
+                      autoComplete="email"
+                      aria-label="Adresse e-mail"
                       placeholder="Email"
                       autoFocus
                       className="h-12 rounded-[18px] border-white/10 bg-[rgba(10,16,25,0.72)] pl-11 text-white placeholder:text-slate-500 focus-visible:border-[#7ab7ff]/40 focus-visible:ring-[#7ab7ff]/18"
@@ -133,16 +136,19 @@ export function ConsoleLoginScreen() {
 
                   <Field icon={Lock}>
                     <Input
+                      name="password"
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
+                      autoComplete="current-password"
+                      aria-label="Mot de passe"
                       placeholder="Mot de passe"
                       className="h-12 rounded-[18px] border-white/10 bg-[rgba(10,16,25,0.72)] pl-11 text-white placeholder:text-slate-500 focus-visible:border-[#7ab7ff]/40 focus-visible:ring-[#7ab7ff]/18"
                     />
                   </Field>
 
                   {error ? (
-                    <div className="rounded-[18px] border border-rose-500/24 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                    <div role="alert" className="rounded-[18px] border border-rose-500/24 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
                       {error}
                     </div>
                   ) : null}

@@ -54,7 +54,7 @@ export default function ProgrammingPage() {
         >
           <div className="flex items-center justify-between gap-3">
             <span>{vm.feedback.message}</span>
-            <button className="text-xs opacity-80 hover:opacity-100" onClick={vm.clearFeedback}>
+            <button type="button" className="text-xs opacity-80 hover:opacity-100" onClick={vm.clearFeedback}>
               Fermer
             </button>
           </div>

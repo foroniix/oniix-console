@@ -18,7 +18,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pb-6 pt-6">
+    <nav aria-label="Navigation principale de la console" className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 pb-6 pt-6">
       {NAV_SECTIONS.map((section) => (
         <div key={section.title} className="space-y-3">
           <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -35,6 +35,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-[22px] border px-3.5 py-3 transition-all duration-200",
                     active

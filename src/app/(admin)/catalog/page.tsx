@@ -1317,7 +1317,14 @@ export default function CatalogPage() {
           <FilterBar onReset={resetFilters} resetDisabled={!query && typeFilter === "all" && statusFilter === "all"}>
             <div className="relative min-w-[240px] flex-1">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher par titre, slug ou titre original" className="pl-11" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                aria-label="Rechercher un titre du catalogue"
+                placeholder="Rechercher par titre, slug ou titre original"
+                className="pl-11"
+              />
             </div>
             <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as "all" | CatalogTitleType)}>
               <SelectTrigger className="min-w-[180px]"><SelectValue placeholder="Tous les types" /></SelectTrigger>
@@ -1365,6 +1372,7 @@ export default function CatalogPage() {
                     key={item.id}
                     type="button"
                     onClick={() => setSelectedTitleId(item.id)}
+                    aria-pressed={selected}
                     className={`flex w-full items-start gap-4 px-5 py-4 text-left transition ${selected ? "bg-[var(--brand-primary)]/10 ring-1 ring-inset ring-[var(--brand-primary)]/25" : "hover:bg-white/[0.03]"}`}
                   >
                     <div className="relative hidden aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-[18px] border border-white/10 bg-white/[0.04] sm:block">

@@ -259,6 +259,7 @@ export default function CampaignsPage() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                aria-label="Rechercher une campagne"
                 placeholder="Rechercher par nom ou type"
                 className="pl-9"
               />

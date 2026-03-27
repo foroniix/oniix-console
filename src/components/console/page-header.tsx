@@ -32,7 +32,7 @@ export function PageHeader({
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-3.5">
           {breadcrumbs.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            <nav aria-label="Fil d'Ariane" className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               {breadcrumbs.map((item, index) => (
                 <span key={`${item.label}-${index}`} className="inline-flex items-center gap-1.5">
                   {index > 0 ? <ChevronRight className="size-3.5" /> : null}
@@ -45,7 +45,7 @@ export function PageHeader({
                   )}
                 </span>
               ))}
-            </div>
+            </nav>
           ) : null}
 
           <div className="flex items-start gap-4">

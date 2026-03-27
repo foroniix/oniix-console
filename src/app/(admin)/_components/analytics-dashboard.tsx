@@ -553,6 +553,7 @@ export default function AnalyticsDashboard() {
                       key={option.value}
                       type="button"
                       onClick={() => setPeriod(option.value)}
+                      aria-pressed={period === option.value}
                       className={cn(
                         "flex-1 rounded-xl px-3 py-2 text-sm font-medium transition",
                         period === option.value

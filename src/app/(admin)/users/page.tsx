@@ -391,6 +391,7 @@ export default function UsersPage() {
                       setQMembers(event.target.value);
                       setMembersPage(1);
                     }}
+                    aria-label="Rechercher un membre"
                     placeholder="Rechercher un membre par e-mail ou rôle"
                     className="pl-11"
                   />
@@ -468,6 +469,7 @@ export default function UsersPage() {
                       setQInvites(event.target.value);
                       setInvitesPage(1);
                     }}
+                    aria-label="Rechercher une invitation"
                     placeholder="Rechercher une invitation"
                     className="pl-11"
                   />

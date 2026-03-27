@@ -209,11 +209,12 @@ export function useLiveStatsRealtime(
     };
 
     audioIntervalRef.current = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
       setStats((prev) => ({
         ...prev,
         audioLevel: Math.floor(Math.random() * 50) + 30,
       }));
-    }, 100);
+    }, 160);
 
     void initQualityStream();
 

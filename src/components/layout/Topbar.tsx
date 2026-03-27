@@ -87,7 +87,7 @@ export default function Topbar() {
       <div className="flex items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(8,13,21,0.94),rgba(5,8,14,0.94))] px-4 py-3 shadow-[0_22px_54px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="lg:hidden">
+            <Button variant="outline" size="icon" className="lg:hidden" title="Ouvrir la navigation">
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
@@ -117,8 +117,10 @@ export default function Topbar() {
         <form onSubmit={onSearchSubmit} className="relative ml-auto hidden w-full max-w-[480px] lg:block">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
           <Input
+            type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            aria-label="Rechercher une page ou une action"
             placeholder="Rechercher une page ou une action"
             className="h-11 pl-10 pr-16"
           />
@@ -137,7 +139,7 @@ export default function Topbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="hidden sm:inline-flex">
+              <Button variant="outline" size="icon" className="hidden sm:inline-flex" title="Ouvrir les actions rapides">
                 <Plus className="size-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -166,7 +168,11 @@ export default function Topbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-11 gap-2 rounded-[18px] px-2 text-slate-100 hover:text-white sm:px-3">
+              <Button
+                variant="ghost"
+                aria-label="Ouvrir le menu utilisateur"
+                className="h-11 gap-2 rounded-[18px] px-2 text-slate-100 hover:text-white sm:px-3"
+              >
                 <Avatar className="size-9 border border-white/10">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt={displayName} /> : null}
                   <AvatarFallback className="bg-white/[0.08] text-white">{buildInitials(displayName, email)}</AvatarFallback>

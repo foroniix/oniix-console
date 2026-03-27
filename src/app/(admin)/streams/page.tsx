@@ -153,7 +153,13 @@ export default function StreamsPage() {
 
       <FilterBar onReset={resetFilters} resetDisabled={!query && statusFilter === "ALL" && channelFilter === "ALL"}>
         <div className="min-w-[220px] flex-1">
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher un flux par nom, ID ou URL" />
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label="Rechercher un flux"
+            placeholder="Rechercher un flux par nom, ID ou URL"
+          />
         </div>
 
         <Select value={channelFilter} onValueChange={setChannelFilter}>

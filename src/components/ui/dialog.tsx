@@ -58,10 +58,11 @@ function DialogContent({
         {showCloseButton ? (
           <DialogPrimitive.Close
             data-slot="dialog-close"
+            aria-label="Fermer"
             className="absolute right-4 top-4 rounded-[14px] border border-transparent p-1.5 text-slate-400 opacity-80 outline-none transition hover:border-white/10 hover:bg-white/[0.06] hover:text-white focus-visible:border-[#7ab7ff]/40 focus-visible:ring-[4px] focus-visible:ring-[#7ab7ff]/18 disabled:pointer-events-none"
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">Fermer</span>
           </DialogPrimitive.Close>
         ) : null}
       </DialogPrimitive.Content>

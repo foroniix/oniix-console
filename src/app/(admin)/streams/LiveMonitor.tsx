@@ -6,13 +6,10 @@ import {
   Activity,
   AlertTriangle,
   Eye,
-  Maximize2,
-  MoreVertical,
-  RefreshCcw,
   Signal,
   Volume2
 } from "lucide-react";
-import { useLiveStatsRealtime } from "../streams/useLiveStatsRealtime"; // Assurez-vous que le chemin est bon
+import { useLiveStatsRealtime } from "../streams/useLiveStatsRealtime";
 
 interface LiveMonitorProps {
   streams: Stream[];
@@ -40,11 +37,8 @@ export default function LiveMonitor({ streams }: LiveMonitorProps) {
 
 function StreamCard({ stream }: { stream: Stream }) {
   const isLive = stream.status === "LIVE";
-  
-  // Connexion au Hook Realtime
   const stats = useLiveStatsRealtime(stream.id, isLive);
 
-  // Calcul de la couleur de sante
   const healthColor = {
     Excellent: "bg-emerald-500 text-white",
     Good: "bg-emerald-600 text-white",
@@ -54,24 +48,20 @@ function StreamCard({ stream }: { stream: Stream }) {
 
   return (
     <div className="group relative bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden shadow-lg hover:border-zinc-600 transition-all duration-300">
-      
-      {/* --- HEADER OVERLAY (Visible au survol) --- */}
-      <div className="absolute top-0 left-0 right-0 z-20 p-3 flex justify-between items-start bg-gradient-to-b from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className="absolute top-0 left-0 right-0 z-20 p-3 flex items-start justify-between bg-gradient-to-b from-black/90 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <div className="flex items-center gap-2">
-           <Badge variant="outline" className="bg-black/40 border-white/10 text-white backdrop-blur-md font-normal">
-             {stream.title}
-           </Badge>
-           {/* Badge de Sante dynamique */}
-           <Badge className={`${healthColor} h-5 px-1.5 text-[10px] hover:${healthColor} transition-colors`}>
-             {isLive ? `${stats.fps} FPS` : 'OFF'}
-           </Badge>
+          <Badge variant="outline" className="bg-black/40 border-white/10 text-white backdrop-blur-md font-normal">
+            {stream.title}
+          </Badge>
+          <Badge className={`${healthColor} h-5 px-1.5 text-[10px]`}>
+            {isLive ? `${stats.fps} FPS` : "OFF"}
+          </Badge>
         </div>
-        <button className="p-1.5 hover:bg-white/10 rounded text-white transition-colors">
-          <MoreVertical className="w-4 h-4" />
-        </button>
+        <div className="rounded border border-white/10 bg-black/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300 backdrop-blur-md">
+          {stream.id.slice(0, 6)}
+        </div>
       </div>
 
-      {/* --- VIDEO AREA --- */}
       <div className="aspect-video bg-zinc-900 relative flex items-center justify-center overflow-hidden">
         {!isLive ? (
           <div className="flex flex-col items-center text-rose-500/80 animate-pulse">
@@ -80,10 +70,11 @@ function StreamCard({ stream }: { stream: Stream }) {
           </div>
         ) : (
           <>
-            {/* Image de fond simulee (ou <video> reelle plus tard) */}
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity grayscale hover:grayscale-0"></div>
-            
-            {/* Compteur Viewers (Overlay permanent discret) */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.22),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.14),transparent_26%),linear-gradient(135deg,rgba(6,10,16,0.98),rgba(16,24,39,0.9))]" />
+            <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:22px_22px]" />
+            <div className="absolute left-4 top-4 rounded border border-white/10 bg-black/35 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300 backdrop-blur-sm">
+              Live preview
+            </div>
             <div className="absolute bottom-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-black/60 backdrop-blur-sm rounded border border-white/5 text-[10px] text-zinc-300 font-mono shadow-sm">
                <Eye className="w-3 h-3 text-indigo-400" />
                {stats.viewers.toLocaleString()}
@@ -92,27 +83,21 @@ function StreamCard({ stream }: { stream: Stream }) {
         )}
       </div>
 
-      {/* --- FOOTER CONTROLS --- */}
       <div className="bg-zinc-900/80 backdrop-blur border-t border-zinc-800 p-3 flex items-center justify-between">
-        
-        {/* Vumetre Audio Connecte */}
         <div className="flex items-center gap-2">
            <Volume2 className={`w-4 h-4 transition-colors ${stats.audioLevel > 10 ? 'text-zinc-200' : 'text-zinc-600'}`} />
            <div className="flex gap-0.5 items-end h-4 w-16">
              {[...Array(8)].map((_, i) => (
                <AudioBar 
                  key={i} 
-                 index={i} 
-                 // La barre s'active si le niveau audio global depasse un certain seuil proportionnel
+                  index={i} 
                  active={isLive && stats.audioLevel > (i * 12)} 
-                 // Ajoute un peu de chaos aleatoire local pour faire realiste
                  chaos={stats.audioLevel > 0} 
                />
              ))}
            </div>
         </div>
 
-        {/* Donnees Techniques (Bitrate) */}
         <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
           <div className="flex items-center gap-1.5">
             <Signal className={`w-3 h-3 ${stats.health === 'Excellent' ? 'text-emerald-500' : 'text-zinc-600'}`} />
@@ -120,9 +105,11 @@ function StreamCard({ stream }: { stream: Stream }) {
               {stats.formattedBitrate}
             </span>
           </div>
-          <div className="flex gap-1 border-l border-zinc-800 pl-3">
-             <RefreshCcw className="w-4 h-4 hover:text-white cursor-pointer transition-colors hover:rotate-180 duration-500" />
-             <Maximize2 className="w-4 h-4 hover:text-white cursor-pointer transition-colors ml-2" />
+          <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-3">
+            <AlertTriangle className={`w-3 h-3 ${stats.errors > 0 ? 'text-rose-400' : 'text-zinc-600'}`} />
+            <span className={stats.errors > 0 ? "text-rose-200" : "text-zinc-500"}>
+              {stats.errors} err
+            </span>
           </div>
         </div>
       </div>
@@ -132,17 +119,13 @@ function StreamCard({ stream }: { stream: Stream }) {
 
 // Composant AudioBar ameliore pour reagir aux donnees
 function AudioBar({ index, active, chaos }: { index: number, active: boolean, chaos: boolean }) {
-  // On genere une hauteur de base selon l'index (les premieres barres sont plus hautes)
-  // + une variation si "chaos" est actif
-  
   return (
     <div 
       className={`w-1.5 rounded-[1px] transition-all duration-150 ease-out ${
         active ? 'bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.5)]' : 'bg-zinc-800'
       }`}
       style={{
-        // Si actif, hauteur aleatoire pour simuler la voix/musique. Si inactif, 2px.
-        height: active ? `${30 + Math.random() * 70}%` : '2px', 
+        height: active ? `${28 + index * 7 + (chaos ? 6 : 0)}%` : `${2 + Math.min(index, 2)}px`,
       }}
     />
   );

@@ -165,6 +165,7 @@ export default function GeoBlockingPage() {
                     key={candidate}
                     type="button"
                     onClick={() => setMode(candidate)}
+                    aria-pressed={selected}
                     className={`rounded-[24px] border p-4 text-left transition ${
                       selected
                         ? "border-[var(--brand-primary)]/35 bg-[var(--brand-primary)]/10"
@@ -214,8 +215,10 @@ export default function GeoBlockingPage() {
           <FilterBar onReset={resetFilter} resetDisabled={!query}>
             <div className="min-w-[220px] flex-1">
               <Input
+                type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                aria-label="Rechercher un territoire"
                 placeholder="Rechercher par nom ou code ISO"
               />
             </div>

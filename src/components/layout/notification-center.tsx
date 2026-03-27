@@ -120,6 +120,7 @@ export default function NotificationCenter() {
   React.useEffect(() => {
     void loadNotifications(false);
     const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       void loadNotifications(true);
     }, 45_000);
     return () => window.clearInterval(timer);
@@ -129,6 +130,17 @@ export default function NotificationCenter() {
     if (!open) return;
     void loadNotifications(true);
   }, [loadNotifications, open]);
+
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadNotifications(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [loadNotifications]);
 
   const markOne = React.useCallback(
     async (id: string) => {
@@ -172,10 +184,13 @@ export default function NotificationCenter() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative hidden sm:inline-flex">
+        <Button variant="outline" size="icon" className="relative hidden sm:inline-flex" title="Ouvrir les notifications">
           <Bell className="size-4" />
           {unreadCount > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            <span
+              aria-live="polite"
+              className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+            >
               {unreadBadge}
             </span>
           ) : null}
@@ -203,12 +218,12 @@ export default function NotificationCenter() {
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {loading ? (
-            <div className="flex min-h-[220px] items-center justify-center text-sm text-slate-400">
+            <div role="status" className="flex min-h-[220px] items-center justify-center text-sm text-slate-400">
               <Loader2 className="mr-2 size-4 animate-spin" />
               Chargement des notifications...
             </div>
           ) : notifications.length === 0 ? (
-            <div className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 text-sm text-slate-400">
+            <div role="status" className="rounded-[24px] border border-white/8 bg-white/[0.03] p-5 text-sm text-slate-400">
               <p className="font-medium text-white">Aucune notification pour le moment.</p>
               <p className="mt-2">Les événements prioritaires apparaîtront ici.</p>
               <SupportMailLink className="mt-4 inline-flex text-sm font-medium text-[var(--brand-primary)] hover:text-white">
