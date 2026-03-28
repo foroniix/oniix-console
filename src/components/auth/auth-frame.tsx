@@ -17,15 +17,15 @@ type AuthFrameProps = {
 };
 
 const TRUST_POINTS = [
-  "Sessions sécurisées et cookies httpOnly",
-  "Rôles et tenancy appliqués côté backend",
-  "Support opérateur centralisé",
+  "Connexion securisee",
+  "Equipe et permissions",
+  "Support Oniix centralise",
 ];
 
 const CONTROL_POINTS = [
-  { label: "Accès", value: "Espaces et rôles" },
-  { label: "Pilotage", value: "Chaînes et directs" },
-  { label: "Analytics", value: "Web et mobile" },
+  { label: "Organisation", value: "Espace administrateur" },
+  { label: "Diffusion", value: "Chaines et directs" },
+  { label: "Catalogue", value: "Films et series" },
 ];
 
 export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFrameProps) {
@@ -37,14 +37,17 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
         <div className="absolute bottom-[-14%] left-[30%] h-[320px] w-[320px] rounded-full bg-[#1f3b66]/20 blur-[140px]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[1560px] items-center px-4 py-6 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-[1560px] items-start px-4 py-6 sm:px-6 lg:px-8 xl:items-center">
         <div className="w-full space-y-6">
-          <div className="grid w-full gap-6 lg:grid-cols-[1.06fr_0.94fr]">
-            <section className="hidden rounded-[36px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,21,31,0.92),rgba(10,16,24,0.9))] p-8 shadow-[0_34px_100px_rgba(0,0,0,0.34)] backdrop-blur-2xl lg:flex lg:flex-col">
+          <div className="grid w-full gap-6 xl:grid-cols-[1.04fr_0.96fr]">
+            <section className="hidden rounded-[36px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,21,31,0.92),rgba(10,16,24,0.9))] p-8 shadow-[0_34px_100px_rgba(0,0,0,0.34)] backdrop-blur-2xl xl:flex xl:flex-col">
               <div className="flex items-center justify-between gap-4">
-                <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08]">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08]"
+                >
                   <ArrowLeft className="size-4" />
-                  Retour à l&apos;accueil
+                  Retour accueil
                 </Link>
 
                 <SupportMailLink className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08]">
@@ -53,12 +56,14 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               </div>
 
               <div className="mt-8">
-                <OniixLogo size="lg" subtitle="Pilotage OTT multi-tenant" />
+                <OniixLogo size="lg" subtitle="Administration streaming" />
               </div>
 
               <div className="mt-8">
                 <div className="console-chip">{eyebrow}</div>
-                <h1 className="mt-5 max-w-2xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-white">{title}</h1>
+                <h1 className="mt-5 max-w-2xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] text-white">
+                  {title}
+                </h1>
                 <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300">{subtitle}</p>
               </div>
 
@@ -75,19 +80,21 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
                   <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(8,12,18,0.12),rgba(8,12,18,0.72))]" />
                   <div className="absolute inset-x-4 top-4 flex items-center justify-between gap-3">
                     <span className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-white">
-                      Oniix Console
+                      Oniix
                     </span>
                     <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] text-emerald-200">
-                    Accès sécurisé
-                  </span>
-                </div>
+                      Acces securise
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="grid gap-3">
                     {CONTROL_POINTS.map((point) => (
                       <div key={point.label} className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{point.label}</div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          {point.label}
+                        </div>
                         <div className="mt-2 text-base font-semibold text-white">{point.value}</div>
                       </div>
                     ))}
@@ -107,7 +114,10 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
 
               <div className="mt-6 grid gap-3">
                 {TRUST_POINTS.map((point) => (
-                  <div key={point} className="flex items-start gap-3 rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                  <div
+                    key={point}
+                    className="flex items-start gap-3 rounded-[22px] border border-white/8 bg-white/[0.03] px-4 py-3"
+                  >
                     <span className="mt-0.5 inline-flex size-8 items-center justify-center rounded-[14px] bg-emerald-500/10 text-emerald-300">
                       <CheckCircle2 className="size-4" />
                     </span>
@@ -119,7 +129,7 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               <div className="mt-auto flex items-center justify-between border-t border-white/10 pt-6 text-sm text-slate-400">
                 <div className="inline-flex items-center gap-2">
                   <ShieldCheck className="size-4 text-[var(--brand-primary)]" />
-                  Accès opérateur et support
+                  Accompagnement Oniix
                 </div>
                 <SupportMailLink className="font-medium text-slate-200 hover:text-[var(--brand-primary)]">
                   {SUPPORT_EMAIL}
@@ -127,8 +137,8 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
               </div>
             </section>
 
-            <section className="flex items-center">
-              <div className="w-full rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,20,30,0.94),rgba(9,14,22,0.92))] p-6 shadow-[0_28px_82px_rgba(0,0,0,0.32)] backdrop-blur-2xl sm:p-8">
+            <section className="flex items-start xl:items-center">
+              <div className="w-full max-h-[calc(100dvh-3rem)] overflow-y-auto rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,20,30,0.94),rgba(9,14,22,0.92))] p-6 shadow-[0_28px_82px_rgba(0,0,0,0.32)] backdrop-blur-2xl sm:p-8">
                 <div className="mb-6 flex items-start justify-between gap-4">
                   <div>
                     <div className="console-chip">{eyebrow}</div>
@@ -136,7 +146,10 @@ export function AuthFrame({ eyebrow, title, subtitle, children, footer }: AuthFr
                     <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">{subtitle}</p>
                   </div>
 
-                  <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08] lg:hidden">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/[0.08] xl:hidden"
+                  >
                     <ArrowLeft className="size-4" />
                     Accueil
                   </Link>

@@ -47,9 +47,9 @@ const PASSWORD_RULES = [
 ] as const;
 
 const STEPS = [
-  { id: 1, label: "Organisation", hint: "Structure et perimetre" },
+  { id: 1, label: "Organisation", hint: "Activite et pays" },
   { id: 2, label: "Responsable", hint: "Compte principal" },
-  { id: 3, label: "Securite", hint: "Acces et validation" },
+  { id: 3, label: "Securite", hint: "Mot de passe et validation" },
 ] as const;
 
 function StepChip({
@@ -277,20 +277,20 @@ export default function SignupPage() {
 
   return (
     <AuthFrame
-      eyebrow="Onboarding tenant"
-      title="Creez votre espace operateur."
-      subtitle="Renseignez votre organisation, le responsable principal et le cadre de securite avant le provisionnement de la console."
+      eyebrow="Creation espace"
+      title="Creez votre organisation."
+      subtitle="Renseignez votre structure, le compte administrateur principal et les informations de lancement."
       footer={
         <div className="flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            Deja invite ou deja equipe ?{" "}
+            Vous avez deja un acces ?{" "}
             <Link href="/console/login" className="font-semibold text-[var(--brand-primary)] hover:text-white">
               Se connecter
             </Link>
           </p>
           <span className="inline-flex items-center gap-2 text-slate-400">
             <ShieldCheck className="size-4 text-[var(--brand-primary)]" />
-            Provisionnement controle
+            Acces securise
           </span>
         </div>
       }
@@ -305,11 +305,11 @@ export default function SignupPage() {
               <div className="mt-1 text-base font-semibold text-white">{STEPS[step - 1]?.label}</div>
             </div>
             <div className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1 text-xs uppercase tracking-[0.16em] text-slate-400">
-              Provisionnement tenant
+              Creation guidee
             </div>
           </div>
           <Progress value={progressValue} className="h-2 bg-white/8" />
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-3">
             {STEPS.map((entry) => (
               <StepChip key={entry.id} step={entry} active={step === entry.id} complete={step > entry.id} />
             ))}
@@ -317,14 +317,14 @@ export default function SignupPage() {
         </div>
 
         {step === 1 ? (
-          <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+          <div className="grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
             <div className="space-y-5">
-              <Field label="Organisation" icon={Building2} hint="Nom visible dans la console et les espaces de travail.">
+              <Field label="Organisation" icon={Building2} hint="Nom affiche dans votre espace.">
                 <Input
                   type="text"
                   value={orgName}
                   onChange={(event) => setOrgName(event.target.value)}
-                  placeholder="Nom de votre chaine, groupe ou plateforme"
+                  placeholder="Nom de votre chaine, groupe ou service"
                   required
                   className="pl-11"
                 />
@@ -373,8 +373,8 @@ export default function SignupPage() {
               </Field>
             </div>
 
-            <div className="space-y-4 rounded-[26px] border border-white/8 bg-white/[0.03] p-5">
-              <div className="text-sm font-semibold text-white">Apercu de l&apos;espace</div>
+            <div className="space-y-4 self-start rounded-[26px] border border-white/8 bg-white/[0.03] p-5 lg:sticky lg:top-0">
+              <div className="text-sm font-semibold text-white">Apercu organisation</div>
               <div className="rounded-[22px] border border-white/8 bg-white/[0.04] p-4">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Nom affiche</div>
                 <div className="mt-2 text-lg font-semibold text-white">{orgName.trim() || "Votre organisation"}</div>
@@ -394,7 +394,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <div className="rounded-[22px] border border-emerald-500/16 bg-emerald-500/10 p-4 text-sm leading-6 text-emerald-100">
-                  Un espace tenant dedie, un proprietaire initial et une base de controle d&apos;acces seront provisionnes.
+                  Un espace dedie et son acces principal seront crees des la validation.
                 </div>
               </div>
             </div>
@@ -402,10 +402,10 @@ export default function SignupPage() {
         ) : null}
 
         {step === 2 ? (
-          <div className="grid gap-5 xl:grid-cols-[1.06fr_0.94fr]">
+          <div className="grid gap-5 lg:grid-cols-[1.06fr_0.94fr]">
             <div className="space-y-5">
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field label="Responsable principal" icon={User2} hint="Ce compte devient le proprietaire initial de l'espace.">
+                <Field label="Responsable principal" icon={User2} hint="Ce compte gere l'espace des la premiere connexion.">
                   <Input
                     type="text"
                     value={fullName}
@@ -429,7 +429,7 @@ export default function SignupPage() {
               <Field
                 label="Email de reference"
                 icon={Mail}
-                hint="Un domaine professionnel facilite la gouvernance et la validation du compte."
+                hint="Un domaine professionnel facilite la validation et la confiance."
               >
                 <Input
                   type="email"
@@ -471,15 +471,15 @@ export default function SignupPage() {
               </Field>
             </div>
 
-            <div className="space-y-4 rounded-[26px] border border-white/8 bg-white/[0.03] p-5">
-              <div className="text-sm font-semibold text-white">Lecture de gouvernance</div>
+            <div className="space-y-4 self-start rounded-[26px] border border-white/8 bg-white/[0.03] p-5 lg:sticky lg:top-0">
+              <div className="text-sm font-semibold text-white">Compte principal</div>
               {!isProfessionalEmail && email ? (
                 <div className="rounded-[22px] border border-amber-500/18 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
-                  Un email personnel reste possible, mais un domaine professionnel renforce la credibilite du tenant et la gestion des acces.
+                  Un email personnel reste possible, mais un domaine professionnel renforce la credibilite de votre organisation.
                 </div>
               ) : (
                 <div className="rounded-[22px] border border-emerald-500/16 bg-emerald-500/10 p-4 text-sm leading-6 text-emerald-100">
-                  L&apos;adresse de reference servira de proprietaire initial pour l&apos;espace et les validations ulterieures.
+                  Cette adresse servira de compte administrateur principal pour l&apos;espace.
                 </div>
               )}
               <div className="grid gap-3">
@@ -500,10 +500,10 @@ export default function SignupPage() {
         ) : null}
 
         {step === 3 ? (
-          <div className="grid gap-5 xl:grid-cols-[1.04fr_0.96fr]">
+          <div className="grid gap-5 lg:grid-cols-[1.04fr_0.96fr]">
             <div className="space-y-5">
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field label="Mot de passe" icon={Lock} hint="Utilisez un secret unique pour la console multi-tenant.">
+                <Field label="Mot de passe" icon={Lock} hint="Utilisez un mot de passe unique et reserve a cet espace.">
                   <Input
                     type="password"
                     value={password}
@@ -553,12 +553,12 @@ export default function SignupPage() {
                   onChange={(event) => setAcceptedTerms(event.target.checked)}
                   className="mt-0.5 size-4 rounded border-white/15 bg-transparent text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
                 />
-                <span>J&apos;accepte les conditions d&apos;utilisation et le provisionnement securise de mon espace Oniix.</span>
+                <span>J&apos;accepte les conditions d&apos;utilisation et la creation securisee de mon espace Oniix.</span>
               </label>
             </div>
 
-            <div className="space-y-4 rounded-[26px] border border-white/8 bg-white/[0.03] p-5">
-              <div className="text-sm font-semibold text-white">Resume de provisionnement</div>
+            <div className="space-y-4 self-start rounded-[26px] border border-white/8 bg-white/[0.03] p-5 lg:sticky lg:top-0">
+              <div className="text-sm font-semibold text-white">Resume</div>
               <div className="grid gap-3">
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.03] p-4">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Organisation</div>
@@ -573,7 +573,7 @@ export default function SignupPage() {
                   <div className="mt-1 text-xs text-slate-400">{email.trim() || "Email a confirmer"}</div>
                 </div>
                 <div className="rounded-[22px] border border-emerald-500/16 bg-emerald-500/10 p-4 text-sm leading-6 text-emerald-100">
-                  L&apos;espace sera provisionne avec un proprietaire initial, une separation tenant dediee et un controle d&apos;acces backend.
+                  Votre espace sera cree avec un acces principal et une structure prete a l&apos;emploi.
                 </div>
               </div>
             </div>
@@ -594,7 +594,7 @@ export default function SignupPage() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs leading-6 text-slate-400">
-            L&apos;acces console n&apos;est accorde qu&apos;aux comptes tenant provisions.
+            Acces reserve aux organisations actives sur Oniix.
           </div>
           <div className="flex gap-3">
             {step > 1 ? (

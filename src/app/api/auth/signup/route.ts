@@ -143,7 +143,7 @@ export async function POST(req: Request) {
 
     if (!hasTenants || !hasMemberships) {
       await rollbackProvisioning(sbAdmin, user.id);
-      return jsonError("Provisionnement tenant indisponible. Contactez le support Oniix.", 503);
+      return jsonError("La creation d'organisation est indisponible pour le moment. Contactez le support Oniix.", 503);
     }
 
     const { data: tenantRow, error: tenantErr } = await sbAdmin
@@ -161,7 +161,7 @@ export async function POST(req: Request) {
         userId: user.id,
       });
       await rollbackProvisioning(sbAdmin, user.id);
-      return jsonError("Impossible de provisionner l'espace tenant.", 500);
+      return jsonError("Impossible de creer l'organisation.", 500);
     }
 
     const createdTenantId = tenantRow.id;
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
         tenantId: createdTenantId,
       });
       await rollbackProvisioning(sbAdmin, user.id, createdTenantId);
-      return jsonError("Impossible de finaliser le proprietaire initial du tenant.", 500);
+      return jsonError("Impossible de finaliser le compte administrateur principal.", 500);
     }
 
     if (hasProfiles) {
@@ -221,7 +221,7 @@ export async function POST(req: Request) {
         tenantId: createdTenantId,
       });
       await rollbackProvisioning(sbAdmin, user.id, createdTenantId);
-      return jsonError("Impossible de finaliser l'acces console pour ce tenant.", 500);
+      return jsonError("Impossible de finaliser l'acces a l'espace administrateur.", 500);
     }
 
     const { data: signInData, error: signInErr } = await sbAnon.auth.signInWithPassword({

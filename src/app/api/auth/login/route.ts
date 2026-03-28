@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         user: data.user,
       }))
     ) {
-      return jsonError("Ce compte n'a pas acces a la console multi-tenant.", 403);
+      return jsonError("Ce compte n'a pas acces a l'espace administrateur.", 403);
     }
 
     const res = NextResponse.json({ ok: true }, { status: 200 });
