@@ -3,6 +3,11 @@
 import HlsPlayer from "@/components/HlsPlayer";
 import { useWebPlaybackAnalytics } from "@/components/we/use-web-playback-analytics";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
+import { WEB_MEDIA_FALLBACKS } from "@/features/web-viewer/media/media.constants";
+import { MediaThumb } from "@/features/web-viewer/media/media-thumb";
+import { pickPosterArtwork, pickTitleStageArtwork } from "@/features/web-viewer/media/media.utils";
+import { Panel } from "@/features/web-viewer/ui/panel";
+import { StatCard } from "@/features/web-viewer/ui/stat-card";
 import {
   ArrowLeft,
   Bookmark,
@@ -73,8 +78,6 @@ type PlaybackResponse = {
   duration_sec?: number | null;
 };
 
-const PHOTO_WALL = "/branding/photography/rural-broadband-data-center.jpg";
-
 function formatDuration(value: number | null) {
   if (!value || value <= 0) return null;
   const hours = Math.floor(value / 3600);
@@ -90,16 +93,6 @@ function formatPercent(value: number | null | undefined) {
 
 function formatEpisodeLabel(episode: EpisodeRow) {
   return `Episode ${episode.episode_number}`;
-}
-
-function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
-    </div>
-  );
 }
 
 export default function WebCatalogTitleClient({ titleId }: { titleId: string }) {
@@ -228,12 +221,12 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
     if (activePlayable?.type !== "episode") return null;
     return (detail?.episodes ?? []).find((episode) => episode.id === activePlayable.id) ?? null;
   }, [activePlayable, detail?.episodes]);
-  const stageArtwork =
-    activeEpisode?.thumbnail_url ||
-    activeEpisode?.poster_url ||
-    title?.backdrop_url ||
-    title?.poster_url ||
-    PHOTO_WALL;
+  const stageArtwork = pickTitleStageArtwork({
+    episodeThumbnail: activeEpisode?.thumbnail_url,
+    episodePoster: activeEpisode?.poster_url,
+    titleBackdrop: title?.backdrop_url,
+    titlePoster: title?.poster_url,
+  });
   const stageSynopsis =
     activeEpisode?.synopsis || title?.long_synopsis || title?.short_synopsis || "Disponible en lecture web.";
   const stageTitle = activeEpisode?.title || title?.title || "Oniix";
@@ -356,7 +349,12 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                         Resolution de la lecture en cours...
                       </div>
                     ) : (
-                      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url('${stageArtwork}')` }} />
+                      <MediaThumb
+                        src={stageArtwork}
+                        fallbackSrc={WEB_MEDIA_FALLBACKS.hero}
+                        alt={stageTitle}
+                        className="h-full w-full"
+                      />
                     )}
 
                     <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,12,0.18),rgba(2,6,12,0.06),rgba(2,6,12,0.92))]" />
@@ -465,16 +463,16 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                   />
                 </div>
 
-                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                <Panel>
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Synopsis</p>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
                     {title.long_synopsis || title.short_synopsis || "Contenu disponible en lecture web sur Oniix."}
                   </p>
-                </div>
+                </Panel>
               </section>
 
               <aside className="space-y-5">
-                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                <Panel>
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Repere</p>
                   <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">{title.title}</h2>
                   {title.original_title && title.original_title !== title.title ? (
@@ -529,7 +527,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                       </div>
                     ) : null}
                   </div>
-                </div>
+                </Panel>
               </aside>
             </section>
 
@@ -545,10 +543,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
 
                 <div className="space-y-4">
                   {groupedEpisodes.map(({ season, episodes }) => (
-                    <div
-                      key={season.id}
-                      className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5"
-                    >
+                    <Panel key={season.id} className="rounded-[32px]">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div>
                           <h3 className="text-xl font-semibold text-white">
@@ -570,18 +565,14 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                               key={episode.id}
                               className="grid gap-4 rounded-[26px] border border-white/10 bg-black/20 p-4 lg:grid-cols-[9rem_1fr_auto]"
                             >
-                              <div className="overflow-hidden rounded-[18px] bg-black">
-                                {episode.thumbnail_url || episode.poster_url ? (
-                                  <div
-                                    className="aspect-[16/10] bg-cover bg-center"
-                                    style={{ backgroundImage: `url('${episode.thumbnail_url || episode.poster_url}')` }}
-                                  />
-                                ) : (
-                                  <div className="flex aspect-[16/10] items-center justify-center text-xs text-slate-500">
-                                    Episode
-                                  </div>
-                                )}
-                              </div>
+                              <MediaThumb
+                                src={pickPosterArtwork(episode.thumbnail_url, episode.poster_url)}
+                                fallbackSrc={WEB_MEDIA_FALLBACKS.poster}
+                                alt={episode.title}
+                                className="aspect-[16/10] rounded-[18px] bg-black"
+                                fallbackClassName="flex items-center justify-center text-xs text-slate-500"
+                                fallback="Episode"
+                              />
 
                               <div className="min-w-0">
                                 <p className="text-sm text-slate-500">{formatEpisodeLabel(episode)}</p>
@@ -623,7 +614,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                           );
                         })}
                       </div>
-                    </div>
+                    </Panel>
                   ))}
                 </div>
               </section>

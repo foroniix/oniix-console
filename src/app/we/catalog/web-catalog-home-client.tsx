@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -15,7 +14,10 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
-
+import { WEB_MEDIA_FALLBACKS } from "@/features/web-viewer/media/media.constants";
+import { MediaThumb } from "@/features/web-viewer/media/media-thumb";
+import { SectionHeader } from "@/features/web-viewer/ui/section-header";
+import { StatCard } from "@/features/web-viewer/ui/stat-card";
 type CatalogItem = {
   id: string;
   tenant_id: string;
@@ -44,12 +46,8 @@ type CatalogListResponse = {
   items?: CatalogItem[];
 };
 
-const PHOTO_WALL = "/branding/photography/rural-broadband-data-center.jpg";
-const PHOTO_FIELD = "/branding/photography/fiber-field-work.jpg";
-const PHOTO_TOWER = "/branding/photography/communications-tower.jpg";
-
 function getCatalogFallback(item: CatalogItem) {
-  return item.title_type === "movie" ? PHOTO_FIELD : PHOTO_WALL;
+  return item.title_type === "movie" ? WEB_MEDIA_FALLBACKS.poster : WEB_MEDIA_FALLBACKS.backdrop;
 }
 
 function formatPercent(value: number | null | undefined) {
@@ -57,47 +55,12 @@ function formatPercent(value: number | null | undefined) {
   return `${value}%`;
 }
 
-function SectionHeader({
-  eyebrow,
-  title,
-  detail,
-  action,
-}: {
-  eyebrow: string;
-  title: string;
-  detail?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{eyebrow}</p>
-        <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white">
-          {title}
-        </h2>
-        {detail ? <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p> : null}
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
-    </div>
-  );
-}
-
 function ContinueCard({
   item,
 }: {
   item: ReturnType<typeof useWebViewerAuth>["continueWatching"][number];
 }) {
-  const artwork = item.poster_url || PHOTO_FIELD;
+  const artwork = item.poster_url || WEB_MEDIA_FALLBACKS.poster;
 
   return (
     <Link
@@ -105,9 +68,12 @@ function ContinueCard({
       className="group overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-          style={{ backgroundImage: `url('${artwork}')` }}
+        <MediaThumb
+          src={artwork}
+          fallbackSrc={WEB_MEDIA_FALLBACKS.poster}
+          alt={item.title}
+          className="absolute inset-0"
+          imgClassName="transition duration-700 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
         {item.percent_complete ? (
@@ -139,7 +105,7 @@ function WatchlistCard({
 }: {
   item: ReturnType<typeof useWebViewerAuth>["watchlist"][number];
 }) {
-  const artwork = item.poster_url || PHOTO_TOWER;
+  const artwork = item.poster_url || WEB_MEDIA_FALLBACKS.live;
 
   return (
     <Link
@@ -147,9 +113,12 @@ function WatchlistCard({
       className="group overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
     >
       <div className="relative aspect-[4/5] bg-black">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-          style={{ backgroundImage: `url('${artwork}')` }}
+        <MediaThumb
+          src={artwork}
+          fallbackSrc={WEB_MEDIA_FALLBACKS.live}
+          alt={item.title}
+          className="absolute inset-0"
+          imgClassName="transition duration-700 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
         <div className="absolute bottom-4 left-4 right-4">
@@ -174,9 +143,12 @@ function CatalogCard({ item }: { item: CatalogItem }) {
       className="group overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-          style={{ backgroundImage: `url('${artwork}')` }}
+        <MediaThumb
+          src={artwork}
+          fallbackSrc={getCatalogFallback(item)}
+          alt={item.title}
+          className="absolute inset-0"
+          imgClassName="transition duration-700 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.9))]" />
         <div className="absolute left-4 top-4 inline-flex items-center rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
@@ -271,8 +243,14 @@ export default function WebCatalogHomeClient() {
           <div className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
             <div
               className="absolute inset-0 bg-cover bg-center opacity-24"
-              style={{ backgroundImage: `url('${featured?.backdrop_url || featured?.poster_url || PHOTO_WALL}')` }}
-            />
+            >
+              <MediaThumb
+                src={featured?.backdrop_url || featured?.poster_url || WEB_MEDIA_FALLBACKS.backdrop}
+                fallbackSrc={WEB_MEDIA_FALLBACKS.backdrop}
+                alt="Catalogue Oniix"
+                className="absolute inset-0"
+              />
+            </div>
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.78),rgba(3,5,9,0.96))]" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
 
@@ -381,8 +359,15 @@ export default function WebCatalogHomeClient() {
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-34 transition duration-700 group-hover:scale-[1.04]"
-                  style={{ backgroundImage: `url('${featured.backdrop_url || featured.poster_url || getCatalogFallback(featured)}')` }}
-                />
+                >
+                  <MediaThumb
+                    src={featured.backdrop_url || featured.poster_url || getCatalogFallback(featured)}
+                    fallbackSrc={getCatalogFallback(featured)}
+                    alt={featured.title}
+                    className="absolute inset-0 opacity-34"
+                    imgClassName="transition duration-700 group-hover:scale-[1.04]"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.35),rgba(3,5,9,0.94))]" />
 
                 <div className="relative flex h-full flex-col justify-between gap-10">

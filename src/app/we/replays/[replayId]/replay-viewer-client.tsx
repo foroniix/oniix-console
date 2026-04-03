@@ -3,6 +3,11 @@
 import HlsPlayer from "@/components/HlsPlayer";
 import { useWebPlaybackAnalytics } from "@/components/we/use-web-playback-analytics";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
+import { WEB_MEDIA_FALLBACKS } from "@/features/web-viewer/media/media.constants";
+import { MediaThumb } from "@/features/web-viewer/media/media-thumb";
+import { pickReplayArtwork } from "@/features/web-viewer/media/media.utils";
+import { Panel } from "@/features/web-viewer/ui/panel";
+import { StatCard } from "@/features/web-viewer/ui/stat-card";
 import {
   ArrowLeft,
   Clapperboard,
@@ -38,8 +43,6 @@ type ReplayDetailResponse = {
   related_replays?: ReplayDetail[];
 };
 
-const PHOTO_WALL = "/branding/photography/rural-broadband-data-center.jpg";
-
 function formatDuration(value: number | null) {
   if (!value || value <= 0) return null;
   const hours = Math.floor(value / 3600);
@@ -51,16 +54,6 @@ function formatDuration(value: number | null) {
 function formatPercent(value: number | null | undefined) {
   if (!value || value <= 0) return null;
   return `${value}%`;
-}
-
-function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
-    </div>
-  );
 }
 
 export default function ReplayViewerClient({ replayId }: { replayId: string }) {
@@ -210,9 +203,11 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                         className="h-full w-full"
                       />
                     ) : (
-                      <div
-                        className="h-full w-full bg-cover bg-center"
-                        style={{ backgroundImage: `url('${replay.poster || PHOTO_WALL}')` }}
+                      <MediaThumb
+                        src={pickReplayArtwork(replay.poster)}
+                        fallbackSrc={WEB_MEDIA_FALLBACKS.hero}
+                        alt={replay.title}
+                        className="h-full w-full"
                       />
                     )}
                     <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,12,0.18),rgba(2,6,12,0.06),rgba(2,6,12,0.92))]" />
@@ -272,16 +267,16 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                   />
                 </div>
 
-                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                <Panel>
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Synopsis</p>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
                     {replay.synopsis || "Ce replay est disponible en lecture web depuis le portail Oniix."}
                   </p>
-                </div>
+                </Panel>
               </section>
 
               <aside className="space-y-5">
-                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                <Panel>
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Repere</p>
                   <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
                     Session replay
@@ -305,10 +300,10 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                       </div>
                     ) : null}
                   </div>
-                </div>
+                </Panel>
 
                 {relatedReplays.length > 0 ? (
-                  <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                  <Panel>
                     <div className="mb-4 flex items-center gap-2">
                       <Clapperboard className="h-4 w-4 text-slate-400" />
                       <p className="text-sm font-semibold text-white">Replays lies</p>
@@ -320,18 +315,14 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                           href={`/we/replays/${item.id}`}
                           className="flex items-start gap-3 rounded-[18px] border border-white/10 bg-black/20 p-3 transition hover:border-white/20 hover:bg-black/35"
                         >
-                          <div className="h-16 w-24 shrink-0 overflow-hidden rounded-[12px] bg-black">
-                            {item.poster ? (
-                              <div
-                                className="h-full w-full bg-cover bg-center"
-                                style={{ backgroundImage: `url('${item.poster}')` }}
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                Replay
-                              </div>
-                            )}
-                          </div>
+                          <MediaThumb
+                            src={pickReplayArtwork(item.poster)}
+                            fallbackSrc={WEB_MEDIA_FALLBACKS.replay}
+                            alt={item.title}
+                            className="h-16 w-24 shrink-0 rounded-[12px]"
+                            fallbackClassName="flex items-center justify-center text-xs text-slate-500"
+                            fallback="Replay"
+                          />
                           <div className="min-w-0 flex-1">
                             <p className="line-clamp-2 text-sm font-medium text-white">{item.title}</p>
                             <p className="mt-1 text-xs text-slate-500">
@@ -342,10 +333,10 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                         </Link>
                       ))}
                     </div>
-                  </div>
+                  </Panel>
                 ) : null}
 
-                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                <Panel>
                   <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Parcours</p>
                   <div className="mt-4 space-y-3">
                     <Link
@@ -363,7 +354,7 @@ export default function ReplayViewerClient({ replayId }: { replayId: string }) {
                       <Tv2 className="h-4 w-4" />
                     </Link>
                   </div>
-                </div>
+                </Panel>
               </aside>
             </div>
           </>

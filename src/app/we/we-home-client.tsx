@@ -16,6 +16,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { OniixLogo } from "@/components/branding/oniix-logo";
 import { ChannelLogoBadge } from "@/components/we/channel-logo-badge";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
+import { WEB_MEDIA_FALLBACKS } from "@/features/web-viewer/media/media.constants";
+import { MediaThumb } from "@/features/web-viewer/media/media-thumb";
+import { SectionHeader } from "@/features/web-viewer/ui/section-header";
+import { StatCard } from "@/features/web-viewer/ui/stat-card";
 
 type GridSlot = {
   id: string;
@@ -73,10 +77,6 @@ type LivePortalResponse = {
 
 type WebCategory = "Tout" | string;
 
-const PHOTO_WALL = "/branding/photography/rural-broadband-data-center.jpg";
-const PHOTO_FIELD = "/branding/photography/fiber-field-work.jpg";
-const PHOTO_TOWER = "/branding/photography/communications-tower.jpg";
-
 function formatClock(value: string | null) {
   if (!value) return "--:--";
   const date = new Date(value);
@@ -128,41 +128,6 @@ function normalizeLiveCategory(channel: GridChannel["channel"]) {
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 
-function SectionHeader({
-  eyebrow,
-  title,
-  detail,
-  action,
-}: {
-  eyebrow: string;
-  title: string;
-  detail?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{eyebrow}</p>
-        <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white">
-          {title}
-        </h2>
-        {detail ? <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p> : null}
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
-    </div>
-  );
-}
-
 function QuickAccessCard({
   href,
   eyebrow,
@@ -199,7 +164,7 @@ function QuickAccessCard({
 
 function LiveLaneCard({ lane }: { lane: GridChannel }) {
   const category = normalizeLiveCategory(lane.channel);
-  const artwork = lane.live_stream?.poster || lane.now?.poster || PHOTO_TOWER;
+  const artwork = lane.live_stream?.poster || lane.now?.poster || WEB_MEDIA_FALLBACKS.live;
 
   return (
     <Link
@@ -207,9 +172,12 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
       className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,14,24,0.98),rgba(4,7,12,0.98))] transition hover:border-white/18 hover:bg-white/[0.05]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-          style={{ backgroundImage: `url('${artwork}')` }}
+        <MediaThumb
+          src={artwork}
+          fallbackSrc={WEB_MEDIA_FALLBACKS.live}
+          alt={lane.channel.name}
+          className="absolute inset-0"
+          imgClassName="transition duration-700 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.02),rgba(2,6,12,0.9))]" />
         <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
@@ -239,7 +207,7 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
 }
 
 function ReplayCard({ replay }: { replay: ReplayItem }) {
-  const artwork = replay.poster || PHOTO_FIELD;
+  const artwork = replay.poster || WEB_MEDIA_FALLBACKS.replay;
 
   return (
     <Link
@@ -247,9 +215,12 @@ function ReplayCard({ replay }: { replay: ReplayItem }) {
       className="group overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-          style={{ backgroundImage: `url('${artwork}')` }}
+        <MediaThumb
+          src={artwork}
+          fallbackSrc={WEB_MEDIA_FALLBACKS.replay}
+          alt={replay.title}
+          className="absolute inset-0"
+          imgClassName="transition duration-700 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.9))]" />
         <div className="absolute bottom-4 left-4 right-4">
@@ -270,7 +241,7 @@ function ContinueReplayCard({
 }: {
   item: ReturnType<typeof useWebViewerAuth>["replayContinueWatching"][number];
 }) {
-  const artwork = item.poster_url || PHOTO_WALL;
+  const artwork = item.poster_url || WEB_MEDIA_FALLBACKS.backdrop;
 
   return (
     <Link
@@ -278,9 +249,12 @@ function ContinueReplayCard({
       className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] transition hover:border-white/18 hover:bg-white/[0.06]"
     >
       <div className="relative aspect-[16/10] bg-black">
-        <div
-          className="absolute inset-0 bg-cover bg-center transition duration-700 group-hover:scale-[1.04]"
-          style={{ backgroundImage: `url('${artwork}')` }}
+        <MediaThumb
+          src={artwork}
+          fallbackSrc={WEB_MEDIA_FALLBACKS.backdrop}
+          alt={item.title}
+          className="absolute inset-0"
+          imgClassName="transition duration-700 group-hover:scale-[1.04]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
         {item.percent_complete ? (
@@ -400,9 +374,15 @@ export default function WebLiveHomeClient() {
         <section className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
           <div className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
             <div
-              className="absolute inset-0 bg-cover bg-center opacity-24"
-              style={{ backgroundImage: `url('${PHOTO_WALL}')` }}
-            />
+              className="absolute inset-0 opacity-24"
+            >
+              <MediaThumb
+                src={WEB_MEDIA_FALLBACKS.hero}
+                fallbackSrc={WEB_MEDIA_FALLBACKS.backdrop}
+                alt="Oniix hero"
+                className="absolute inset-0"
+              />
+            </div>
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.78),rgba(3,5,9,0.96))]" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
 
@@ -414,7 +394,7 @@ export default function WebLiveHomeClient() {
                 </div>
                 <div>
                   <h1 className="max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                    Le direct, les replays et la VOD au meme endroit.
+                    Le streaming à porté de tous
                   </h1>
                   <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
                     Accedez d abord aux chaines actives, reprenez vos programmes puis basculez vers le catalogue sans
@@ -454,17 +434,17 @@ export default function WebLiveHomeClient() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <MetricCard
+                <StatCard
                   label="Chaines live"
                   value={loading ? "--" : String(grid.length)}
                   detail="Disponibles maintenant sur le portail public"
                 />
-                <MetricCard
+                <StatCard
                   label="Replays"
                   value={loading ? "--" : String(replays.length)}
                   detail="Programmes rattrapables publies sur le web"
                 />
-                <MetricCard
+                <StatCard
                   label="Univers"
                   value={loading ? "--" : String(universeCount)}
                   detail="Bouquets editoriaux pour orienter la navigation"
@@ -483,9 +463,12 @@ export default function WebLiveHomeClient() {
                 href={featured.live_stream?.id ? `/we/${featured.live_stream.id}` : "/"}
                 className="group relative overflow-hidden rounded-[34px] border border-white/10 bg-[linear-gradient(135deg,rgba(8,12,20,0.96),rgba(3,5,9,0.98))] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.32)]"
               >
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-34 transition duration-700 group-hover:scale-[1.04]"
-                  style={{ backgroundImage: `url('${featured.live_stream?.poster || featured.now?.poster || PHOTO_TOWER}')` }}
+                <MediaThumb
+                  src={featured.live_stream?.poster || featured.now?.poster || WEB_MEDIA_FALLBACKS.live}
+                  fallbackSrc={WEB_MEDIA_FALLBACKS.live}
+                  alt={featured.channel.name}
+                  className="absolute inset-0 opacity-34"
+                  imgClassName="transition duration-700 group-hover:scale-[1.04]"
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,5,9,0.35),rgba(3,5,9,0.94))]" />
 

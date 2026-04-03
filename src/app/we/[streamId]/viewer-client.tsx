@@ -4,6 +4,11 @@ import HlsPlayer from "@/components/HlsPlayer";
 import { ChannelLogoBadge } from "@/components/we/channel-logo-badge";
 import { useWebPlaybackAnalytics } from "@/components/we/use-web-playback-analytics";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
+import { WEB_MEDIA_FALLBACKS } from "@/features/web-viewer/media/media.constants";
+import { MediaThumb } from "@/features/web-viewer/media/media-thumb";
+import { pickLiveArtwork, pickReplayArtwork } from "@/features/web-viewer/media/media.utils";
+import { Panel } from "@/features/web-viewer/ui/panel";
+import { StatCard } from "@/features/web-viewer/ui/stat-card";
 import { useStreamHeartbeat } from "@/lib/useStreamHeartbeat";
 import {
   ArrowLeft,
@@ -129,16 +134,6 @@ function normalizeLiveCategory(channel: GridChannel["channel"] | null | undefine
   const source = (channel?.category ?? "").trim();
   if (!source) return "General";
   return source.charAt(0).toUpperCase() + source.slice(1);
-}
-
-function StatCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
-    </div>
-  );
 }
 
 export default function ViewerClient({ streamId }: { streamId: string }) {
@@ -533,12 +528,13 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                         }`}
                       >
                         <div className="relative aspect-[16/10] bg-black">
-                          {lane.live_stream?.poster || lane.now?.poster ? (
-                            <div
-                              className="absolute inset-0 bg-cover bg-center"
-                              style={{ backgroundImage: `url('${lane.live_stream?.poster || lane.now?.poster}')` }}
-                            />
-                          ) : null}
+                          <MediaThumb
+                            src={pickLiveArtwork(lane.live_stream?.poster, lane.now?.poster)}
+                            fallbackSrc={WEB_MEDIA_FALLBACKS.live}
+                            alt={lane.channel.name}
+                            className="absolute inset-0"
+                            imgClassName="transition duration-700 group-hover:scale-[1.04]"
+                          />
                           <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
                           <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/65 px-3 py-1 text-[11px] font-medium text-white">
                             <Radio className="h-3.5 w-3.5 text-red-400" />
@@ -564,7 +560,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               ) : null}
 
               {tab === "grid" ? (
-                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                <Panel>
                   <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white">
                     <CalendarClock className="h-4 w-4 text-slate-400" />
                     Grille de diffusion
@@ -590,7 +586,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       </p>
                     )}
                   </div>
-                </div>
+                </Panel>
               ) : null}
 
               {tab === "replays" ? (
@@ -607,12 +603,13 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       }`}
                     >
                       <div className="relative aspect-[16/10] bg-black">
-                        {replay.poster ? (
-                          <div
-                            className="absolute inset-0 bg-cover bg-center"
-                            style={{ backgroundImage: `url('${replay.poster}')` }}
-                          />
-                        ) : null}
+                        <MediaThumb
+                          src={pickReplayArtwork(replay.poster)}
+                          fallbackSrc={WEB_MEDIA_FALLBACKS.replay}
+                          alt={replay.title}
+                          className="absolute inset-0"
+                          imgClassName="transition duration-700 group-hover:scale-[1.04]"
+                        />
                         <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,12,0.92))]" />
                         <div className="absolute bottom-4 left-4 right-4">
                           <h3 className="line-clamp-2 text-lg font-semibold text-white">{replay.title}</h3>
@@ -633,7 +630,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
             </section>
 
             <aside className="space-y-5">
-              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+              <Panel>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Maintenant</p>
                 <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
                   {activeReplay ? activeReplay.channel.name || "Replay" : activeLane?.channel.name || "Selection active"}
@@ -656,9 +653,9 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     <p className="mt-1 text-sm font-medium text-white">{normalizeLiveCategory(activeLane?.channel)}</p>
                   </div>
                 </div>
-              </div>
+              </Panel>
 
-              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+              <Panel>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Selection rapide</p>
                 <div className="mt-4 grid gap-2">
                   {grid.map((lane) => {
@@ -692,9 +689,9 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     );
                   })}
                 </div>
-              </div>
+              </Panel>
 
-              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+              <Panel>
                 <div className="mb-4 flex items-center gap-2">
                   <Clapperboard className="h-4 w-4 text-slate-400" />
                   <p className="text-sm font-semibold text-white">Replays lies</p>
@@ -726,7 +723,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                     </p>
                   ) : null}
                 </div>
-              </div>
+              </Panel>
             </aside>
           </div>
         )}
