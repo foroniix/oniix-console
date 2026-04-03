@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Space_Grotesk, Work_Sans } from "next/font/google";
 
+import { WebViewerFooter } from "@/components/we/web-viewer-footer";
 import { WebViewerNav } from "@/components/we/web-viewer-nav";
 import { WebViewerAuthProvider } from "@/components/we/web-viewer-auth";
 
@@ -31,9 +32,10 @@ export function WebViewerShell({ children }: { children: ReactNode }) {
       </div>
 
       <WebViewerAuthProvider>
-        <div className="relative z-10">
+        <div className="relative z-10 flex min-h-dvh flex-col">
           <WebViewerNav />
-          {children}
+          <div className="flex-1">{children}</div>
+          <WebViewerFooter />
         </div>
       </WebViewerAuthProvider>
     </div>

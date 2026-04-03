@@ -8,7 +8,6 @@ import { WEB_MEDIA_FALLBACKS } from "@/features/web-viewer/media/media.constants
 import { MediaThumb } from "@/features/web-viewer/media/media-thumb";
 import { pickLiveArtwork, pickReplayArtwork } from "@/features/web-viewer/media/media.utils";
 import { Panel } from "@/features/web-viewer/ui/panel";
-import { StatCard } from "@/features/web-viewer/ui/stat-card";
 import { useStreamHeartbeat } from "@/lib/useStreamHeartbeat";
 import {
   ArrowLeft,
@@ -150,6 +149,8 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
   const [refreshing, setRefreshing] = useState(false);
   const [resolvingPlayback, setResolvingPlayback] = useState(false);
   const [error, setError] = useState("");
+  const [playerError, setPlayerError] = useState<string | null>(null);
+  const [playbackNonce, setPlaybackNonce] = useState(0);
   const [muted, setMuted] = useState(true);
   const [tab, setTab] = useState<"live" | "grid" | "replays">("live");
   const lastReplaySaveRef = useRef<Record<string, number>>({});
@@ -278,6 +279,10 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
     lastReplaySaveRef.current = {};
   }, [activeReplayId]);
 
+  useEffect(() => {
+    setPlayerError(null);
+  }, [playbackSrc]);
+
   const handleReplayProgress = useCallback(
     (snapshot: { currentTime: number; duration: number | null; ended: boolean }) => {
       trackPlayback(snapshot);
@@ -304,6 +309,24 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
     },
     [activeReplay, saveProgress, trackPlayback, user]
   );
+
+  const handleRetryPlayback = useCallback(() => {
+    setPlayerError(null);
+    setPlaybackNonce((value) => value + 1);
+    if (!activeReplay && activeStreamId) {
+      void resolvePlayback(activeStreamId, null);
+    }
+  }, [activeReplay, activeStreamId, resolvePlayback]);
+
+  const activeTitle =
+    activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Direct";
+  const activeDetail = activeReplay
+    ? activeReplay.synopsis || activeReplay.channel.name || "Replay disponible."
+    : activeLane?.now?.title || "Lecture live disponible maintenant.";
+  const activeLabel = activeReplay ? "Replay" : "En direct";
+  const activeContext = activeReplay
+    ? activeReplay.channel.name || "Replay"
+    : activeLane?.channel.name || "Selection active";
 
   return (
     <main className="min-h-[calc(100dvh-76px)] text-white">
@@ -364,12 +387,13 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
             <p className="mt-2 text-xs text-red-200/80">{error}</p>
           </div>
         ) : (
-          <div className="grid gap-6 xl:grid-cols-[1.34fr_0.92fr]">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem]">
             <section className="space-y-5">
               <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#05070b] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
                 <div className="relative aspect-video bg-black">
                   {playbackSrc ? (
                     <HlsPlayer
+                      key={`${playbackSrc}:${activeReplay?.id ?? activeStreamId}:${playbackNonce}`}
                       streamId={heartbeatStreamId || activeStreamId}
                       src={playbackSrc}
                       poster={playbackPoster}
@@ -379,18 +403,22 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       className="h-full w-full"
                       startAtSec={playbackStartAtSec}
                       onPlaybackProgress={activeReplay ? handleReplayProgress : undefined}
+                      onErrorChange={setPlayerError}
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                      Aucune source lisible n&apos;est disponible pour ce contenu.
-                    </div>
+                    <MediaThumb
+                      src={playbackPoster || WEB_MEDIA_FALLBACKS.live}
+                      fallbackSrc={WEB_MEDIA_FALLBACKS.live}
+                      alt={activeTitle}
+                      className="h-full w-full"
+                    />
                   )}
 
-                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,12,0.18),rgba(2,6,12,0.05),rgba(2,6,12,0.92))]" />
-                  <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,12,0.1),rgba(2,6,12,0),rgba(2,6,12,0.55))]" />
+                  <div className="pointer-events-none absolute left-5 top-5 flex flex-wrap gap-2">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/55 px-3 py-1 text-[11px] font-medium text-white backdrop-blur">
                       {activeReplay ? <Clapperboard className="h-3.5 w-3.5 text-sky-300" /> : <Radio className="h-3.5 w-3.5 text-red-400" />}
-                      {activeReplay ? "Replay" : "Direct"}
+                      {activeLabel}
                     </div>
                     {activeLane?.channel ? (
                       <div className="inline-flex items-center rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-300 backdrop-blur">
@@ -398,78 +426,63 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       </div>
                     ) : null}
                   </div>
-
-                  <div className="absolute inset-x-0 bottom-0 p-5">
-                    {!activeReplay && activeLane?.channel ? (
-                      <div className="mb-4 flex items-center gap-3">
-                        <ChannelLogoBadge name={activeLane.channel.name} logoUrl={activeLane.channel.logo} size="md" />
-                        <div>
-                          <p className="text-sm text-slate-200">{activeLane.channel.name}</p>
-                          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                            {normalizeLiveCategory(activeLane.channel)}
-                          </p>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <p className="max-w-3xl font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                      {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Direct"}
-                    </p>
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                      {activeReplay
-                        ? activeReplay.synopsis || activeReplay.channel.name || "Replay disponible."
-                        : activeLane?.now?.title || "Lecture live disponible maintenant."}
-                    </p>
-                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 px-5 py-4">
-                  <div className="min-w-0">
-                    <p className="truncate font-[var(--font-we-display)] text-xl font-semibold text-white">
-                      {activeReplay?.title || activeLane?.live_stream?.title || activeLane?.channel.name || "Direct"}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {activeReplay ? "Replay" : "Direct"}
-                      {activeLane?.channel.name ? ` - ${activeLane.channel.name}` : ""}
-                    </p>
+                <div className="border-t border-white/10 px-5 py-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-3">
+                        {!activeReplay && activeLane?.channel ? (
+                          <ChannelLogoBadge name={activeLane.channel.name} logoUrl={activeLane.channel.logo} size="sm" />
+                        ) : null}
+                        <p className="text-sm text-slate-400">{activeContext}</p>
+                      </div>
+                      <p className="mt-3 max-w-4xl font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                        {activeTitle}
+                      </p>
+                      <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">{activeDetail}</p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleRetryPlayback}
+                        className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08]"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${resolvingPlayback ? "animate-spin" : ""}`} />
+                        Relancer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMuted((prev) => !prev)}
+                        className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08]"
+                      >
+                        {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                        {muted ? "Activer le son" : "Couper le son"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="hidden rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-slate-300 md:inline-flex">
-                      {activeLane?.next?.title
-                        ? `${formatClock(activeLane.next.starts_at)} - ${activeLane.next.title}`
-                        : activeReplay
-                          ? activeReplay.channel.name || "Replay"
-                          : "Suite a venir"}
+                </div>
+              </div>
+
+              {playerError ? (
+                <div className="rounded-[24px] border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-100">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 font-medium">
+                      <CircleAlert className="h-4 w-4" />
+                      Le flux n a pas pu demarrer correctement
                     </div>
                     <button
                       type="button"
-                      onClick={() => setMuted((prev) => !prev)}
-                      className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08]"
+                      onClick={handleRetryPlayback}
+                      className="inline-flex h-9 items-center rounded-full border border-red-200/20 bg-red-200/10 px-4 text-xs font-medium text-red-50 transition hover:bg-red-200/15"
                     >
-                      {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                      {muted ? "Activer le son" : "Couper le son"}
+                      Reessayer
                     </button>
                   </div>
+                  <p className="mt-2 text-xs text-red-100/80">{playerError}</p>
                 </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <StatCard
-                  label="Mode"
-                  value={activeReplay ? "Replay" : "Live"}
-                  detail={activeReplay ? "Lecture a la demande" : "Flux actif"}
-                />
-                <StatCard
-                  label="Replays"
-                  value={String(activeReplaysForChannel.length)}
-                  detail="Lies a la chaine active"
-                />
-                <StatCard
-                  label="Suite"
-                  value={activeLane?.next?.title ? formatClock(activeLane.next.starts_at) : "--:--"}
-                  detail={activeLane?.next?.title || "A venir"}
-                />
-              </div>
+              ) : null}
 
               <div className="grid grid-cols-3 gap-2 rounded-[24px] border border-white/10 bg-white/[0.03] p-2">
                 <button
@@ -629,35 +642,11 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               ) : null}
             </section>
 
-            <aside className="space-y-5">
-              <Panel>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Maintenant</p>
-                <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
-                  {activeReplay ? activeReplay.channel.name || "Replay" : activeLane?.channel.name || "Selection active"}
-                </h2>
-                <div className="mt-5 space-y-3">
-                  <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">En cours</p>
-                    <p className="mt-1 text-sm font-medium text-white">
-                      {activeReplay?.title || activeLane?.now?.title || activeLane?.live_stream?.title || "--"}
-                    </p>
-                  </div>
-                  <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">A suivre</p>
-                    <p className="mt-1 text-sm font-medium text-white">
-                      {activeLane?.next?.title || (activeReplay ? activeReplay.channel.name || "--" : "--")}
-                    </p>
-                  </div>
-                  <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Categorie</p>
-                    <p className="mt-1 text-sm font-medium text-white">{normalizeLiveCategory(activeLane?.channel)}</p>
-                  </div>
-                </div>
-              </Panel>
-
+            <aside className="space-y-5 xl:sticky xl:top-[6.5rem] xl:self-start">
               <Panel>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Selection rapide</p>
-                <div className="mt-4 grid gap-2">
+                <p className="mt-2 text-sm text-slate-400">Changez de chaine sans faire defiler toute la page.</p>
+                <div className="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
                   {grid.map((lane) => {
                     const laneStreamId = lane.live_stream?.id ?? "";
                     return (

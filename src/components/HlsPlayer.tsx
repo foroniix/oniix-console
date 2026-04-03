@@ -50,6 +50,11 @@ export default function HlsPlayer({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const appliedStartRef = useRef<string | null>(null);
+  const recoverAttemptRef = useRef<{ src: string; network: number; media: number }>({
+    src,
+    network: 0,
+    media: 0,
+  });
 
   const bitrateRef = useRef<number>(0);
   const errorCountRef = useRef<number>(0);
@@ -68,7 +73,12 @@ export default function HlsPlayer({
     onErrorChange?.(null);
     errorCountRef.current = 0;
     bitrateRef.current = 0;
+    recoverAttemptRef.current = { src, network: 0, media: 0 };
     const effectiveSourceKind = sourceKind ?? inferSourceKind(src);
+    const attemptPlay = () => {
+      if (!autoPlay) return;
+      video.play().catch(() => {});
+    };
 
     if (effectiveSourceKind === "dash") {
       onErrorChange?.("Lecture MPEG-DASH non supportee sur cette surface web.");
@@ -77,7 +87,7 @@ export default function HlsPlayer({
 
     if (effectiveSourceKind === "file") {
       video.src = src;
-      video.play().catch(() => {});
+      attemptPlay();
       return () => {
         video.pause();
         video.removeAttribute("src");
@@ -87,7 +97,7 @@ export default function HlsPlayer({
 
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
-      video.play().catch(() => {});
+      attemptPlay();
       return () => {
         video.pause();
         video.removeAttribute("src");
@@ -105,6 +115,9 @@ export default function HlsPlayer({
       hls.loadSource(src);
       hls.attachMedia(video);
 
+      hls.on(Hls.Events.MANIFEST_PARSED, attemptPlay);
+      hls.on(Hls.Events.MEDIA_ATTACHED, attemptPlay);
+
       hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
         const level = hls.levels[data.level];
         if (level?.bitrate) {
@@ -115,7 +128,24 @@ export default function HlsPlayer({
       hls.on(Hls.Events.ERROR, (_event, payload) => {
         errorCountRef.current += 1;
         if (!payload.fatal) return;
-        const message = "Erreur HLS fatale";
+
+        if (payload.type === Hls.ErrorTypes.NETWORK_ERROR && recoverAttemptRef.current.network < 1) {
+          recoverAttemptRef.current.network += 1;
+          hls.startLoad();
+          return;
+        }
+
+        if (payload.type === Hls.ErrorTypes.MEDIA_ERROR && recoverAttemptRef.current.media < 1) {
+          recoverAttemptRef.current.media += 1;
+          hls.recoverMediaError();
+          return;
+        }
+
+        const message =
+          payload.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR ||
+          payload.details === Hls.ErrorDetails.MANIFEST_PARSING_ERROR
+            ? "Impossible de charger le manifest HLS."
+            : "Le flux HLS a rencontre une erreur fatale.";
         setErrorToken({ src, message });
         onErrorChange?.(message);
         hls.destroy();
@@ -128,7 +158,7 @@ export default function HlsPlayer({
     }
 
     onErrorChange?.("Navigateur non supporte");
-  }, [onErrorChange, sourceKind, src]);
+  }, [autoPlay, onErrorChange, sourceKind, src]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -222,6 +252,7 @@ export default function HlsPlayer({
         <video
           ref={videoRef}
           poster={poster}
+          preload="metadata"
           controls={controls}
           muted={muted}
           playsInline
