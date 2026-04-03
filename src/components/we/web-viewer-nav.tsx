@@ -28,11 +28,11 @@ export function WebViewerNav() {
           </Link>
           <div className="hidden items-center gap-3 lg:flex">
             <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-300">
-              Portail public
+              TV & VOD
             </div>
             <div className="inline-flex items-center gap-2 text-xs text-slate-400">
               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.65)]" />
-              Live, replay et VOD dans une seule interface
+              Acces direct au live et au catalogue
             </div>
           </div>
         </div>

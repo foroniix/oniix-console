@@ -279,15 +279,14 @@ export default function WebCatalogHomeClient() {
             <div className="relative flex h-full flex-col justify-between gap-8">
               <div className="space-y-6">
                 <div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Catalogue Oniix
+                  VOD
                 </div>
                 <div>
                   <h1 className="max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                    Une VOD web plus claire, orientee lecture.
+                    Films, series et collections.
                   </h1>
                   <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                    Films, series et collections gardent une structure simple: trouver un titre, reprendre la lecture,
-                    puis naviguer sans friction entre detail et playback.
+                    Retrouvez les titres publies sur le web, reprenez la lecture et filtrez rapidement par type.
                   </p>
                 </div>
 
@@ -441,7 +440,7 @@ export default function WebCatalogHomeClient() {
                 <p className="mt-2 text-sm leading-6 text-slate-400">
                   {continueWatching.length > 0
                     ? "Retrouver vos titres en cours avec progression synchronisee."
-                    : "Le portail TV reste accessible depuis la meme navigation publique."}
+                    : "Revenir aux chaines et replays sans quitter le portail."}
                 </p>
                 <div className="mt-4 inline-flex items-center text-sm text-slate-200">
                   Ouvrir
@@ -461,7 +460,7 @@ export default function WebCatalogHomeClient() {
                 <p className="mt-2 text-sm leading-6 text-slate-400">
                   {watchlist.length > 0
                     ? `${watchlist.length} titre(s) enregistres pour y revenir plus tard.`
-                    : "Ajoutez des titres a votre liste pour construire votre parcours VOD."}
+                    : "Ajoutez des titres pour les retrouver rapidement."}
                 </p>
                 <div className="mt-4 inline-flex items-center text-sm text-slate-200">
                   Explorer
@@ -521,8 +520,8 @@ export default function WebCatalogHomeClient() {
             <section className="space-y-5">
               <SectionHeader
                 eyebrow="Films"
-                title="Selection cinema"
-                detail="Films disponibles sur le portail public."
+                title="Films"
+                detail="Disponibles maintenant sur le web."
                 action={
                   <div className="inline-flex h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300">
                     <PlayCircle className="mr-2 h-4 w-4" />
@@ -545,8 +544,8 @@ export default function WebCatalogHomeClient() {
             <section className="space-y-5">
               <SectionHeader
                 eyebrow="Series"
-                title="Collections episodiques"
-                detail="Series et saisons disponibles dans le catalogue web."
+                title="Series"
+                detail="Disponibles dans le catalogue web."
                 action={
                   <div className="inline-flex h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300">
                     <Clapperboard className="mr-2 h-4 w-4" />

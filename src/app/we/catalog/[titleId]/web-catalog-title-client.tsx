@@ -208,7 +208,38 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
   const isSaved = title ? isInWatchlist(title.title_type, title.id) : false;
   const movieProgress = title?.title_type === "movie" ? getProgress("movie", title.id) : null;
   const episodeCount = detail?.episodes?.length || 0;
+  const playableEpisodeCount = detail?.episodes?.filter((episode) => episode.has_playback).length || 0;
   const readableDuration = formatDuration(detail?.movie_source?.duration_sec ?? null) || "--";
+  const firstPlayableEpisode = useMemo(
+    () => (detail?.episodes ?? []).find((episode) => episode.has_playback) ?? null,
+    [detail?.episodes]
+  );
+  const resumeEpisode = useMemo(() => {
+    const episodes = detail?.episodes ?? [];
+    return (
+      episodes.find((episode) => {
+        if (!episode.has_playback) return false;
+        const progress = getProgress("episode", episode.id);
+        return Boolean(progress && progress.progress_sec > 30 && !progress.completed);
+      }) ?? firstPlayableEpisode
+    );
+  }, [detail?.episodes, firstPlayableEpisode, getProgress]);
+  const activeEpisode = useMemo(() => {
+    if (activePlayable?.type !== "episode") return null;
+    return (detail?.episodes ?? []).find((episode) => episode.id === activePlayable.id) ?? null;
+  }, [activePlayable, detail?.episodes]);
+  const stageArtwork =
+    activeEpisode?.thumbnail_url ||
+    activeEpisode?.poster_url ||
+    title?.backdrop_url ||
+    title?.poster_url ||
+    PHOTO_WALL;
+  const stageSynopsis =
+    activeEpisode?.synopsis || title?.long_synopsis || title?.short_synopsis || "Disponible en lecture web.";
+  const stageTitle = activeEpisode?.title || title?.title || "Oniix";
+  const stageProgress =
+    activePlayable?.type === "episode" && activePlayable.id ? getProgress("episode", activePlayable.id) : movieProgress;
+  const resumeEpisodeProgress = resumeEpisode ? getProgress("episode", resumeEpisode.id) : null;
 
   useEffect(() => {
     lastSavedRef.current = {};
@@ -303,136 +334,10 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
           </div>
         ) : (
           <>
-            <div className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)]">
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-24"
-                style={{ backgroundImage: `url('${title.backdrop_url || title.poster_url || PHOTO_WALL}')` }}
-              />
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.78),rgba(3,5,9,0.96))]" />
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
-
-              <div className="relative grid gap-6 xl:grid-cols-[220px_1fr_15rem]">
-                <div className="overflow-hidden rounded-[30px] border border-white/10 bg-black/40">
-                  {title.poster_url ? (
-                    <div className="aspect-[2/3] bg-cover bg-center" style={{ backgroundImage: `url('${title.poster_url}')` }} />
-                  ) : (
-                    <div className="flex aspect-[2/3] items-center justify-center text-sm text-slate-500">
-                      Aucune affiche
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col justify-between gap-6">
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                      <Sparkles className="h-3.5 w-3.5 text-sky-300" />
-                      {title.title_type === "movie" ? "Film" : "Serie"}
-                    </div>
-                    <h1 className="mt-4 font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                      {title.title}
-                    </h1>
-                    {title.original_title && title.original_title !== title.title ? (
-                      <p className="mt-2 text-sm text-slate-500">{title.original_title}</p>
-                    ) : null}
-                    <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">
-                      {title.long_synopsis || title.short_synopsis || "Disponible en lecture web."}
-                    </p>
-
-                    <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-300">
-                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-                        {title.release_year || "--"}
-                      </span>
-                      {title.maturity_rating ? (
-                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-                          {title.maturity_rating}
-                        </span>
-                      ) : null}
-                      {title.original_language ? (
-                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-                          {title.original_language}
-                        </span>
-                      ) : null}
-                      {movieProgress?.percent_complete ? (
-                        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-                          Progression {formatPercent(movieProgress.percent_complete)}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3">
-                    {title.title_type === "movie" && detail.movie_source ? (
-                      <button
-                        type="button"
-                        onClick={() => void resolvePlayback("movie", title.id)}
-                        className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
-                      >
-                        <Play className="h-4 w-4" />
-                        {movieProgress && movieProgress.progress_sec > 30 && !movieProgress.completed
-                          ? "Reprendre le film"
-                          : "Lire le film"}
-                      </button>
-                    ) : null}
-
-                    <button
-                      type="button"
-                      disabled={updatingWatchlist}
-                      onClick={() => void handleToggleWatchlist()}
-                      className="inline-flex h-12 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] disabled:opacity-60"
-                    >
-                      {updatingWatchlist ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : isSaved ? (
-                        <BookmarkCheck className="h-4 w-4" />
-                      ) : (
-                        <Bookmark className="h-4 w-4" />
-                      )}
-                      {isSaved ? "Dans ma liste" : "Ajouter a ma liste"}
-                    </button>
-                  </div>
-
-                  {!user ? (
-                    <p className="text-xs leading-6 text-slate-400">
-                      Connectez-vous pour synchroniser votre progression et votre liste entre les differentes surfaces
-                      Oniix.
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
-                  <StatCard
-                    label="Lecture"
-                    value={title.title_type === "movie" ? (detail.movie_source ? "1" : "0") : String(episodeCount)}
-                    detail={title.title_type === "movie" ? "source disponible" : "episode(s) publie(s)"}
-                  />
-                  <StatCard label="Duree" value={readableDuration} detail="Estimation de lecture" />
-                  <StatCard
-                    label="Etat"
-                    value={
-                      title.title_type === "movie"
-                        ? detail.movie_source
-                          ? "Pret"
-                          : "Vide"
-                        : episodeCount > 0
-                          ? "Publie"
-                          : "A completer"
-                    }
-                    detail="Disponibilite de la fiche publique"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {playbackError ? (
-              <div className="rounded-[24px] border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-100">
-                {playbackError}
-              </div>
-            ) : null}
-
-            {playbackUrl || resolvingPlayback ? (
-              <section className="grid gap-5 xl:grid-cols-[1.28fr_0.72fr]">
+            <section className="grid gap-6 xl:grid-cols-[1.32fr_0.9fr]">
+              <section className="space-y-5">
                 <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[#05070b] shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
-                  <div className="aspect-video bg-black">
+                  <div className="relative aspect-video bg-black">
                     {playbackUrl ? (
                       <HlsPlayer
                         streamId={activePlayable?.id || title.id}
@@ -446,38 +351,187 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                         onPlaybackProgress={handlePlaybackProgress}
                         className="h-full w-full"
                       />
-                    ) : (
+                    ) : resolvingPlayback ? (
                       <div className="flex h-full items-center justify-center text-sm text-slate-400">
                         Resolution de la lecture en cours...
                       </div>
+                    ) : (
+                      <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url('${stageArtwork}')` }} />
                     )}
+
+                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,12,0.18),rgba(2,6,12,0.06),rgba(2,6,12,0.92))]" />
+                    <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/55 px-3 py-1 text-[11px] font-medium text-white backdrop-blur">
+                        <Sparkles className="h-3.5 w-3.5 text-sky-300" />
+                        {title.title_type === "movie" ? "Film" : "Serie"}
+                      </div>
+                      {activeEpisode ? (
+                        <div className="inline-flex items-center rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-300 backdrop-blur">
+                          {formatEpisodeLabel(activeEpisode)}
+                        </div>
+                      ) : title.release_year ? (
+                        <div className="inline-flex items-center rounded-full border border-white/10 bg-black/45 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-300 backdrop-blur">
+                          {title.release_year}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 p-5">
+                      <p className="max-w-3xl font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                        {stageTitle}
+                      </p>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{stageSynopsis}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 px-5 py-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-[var(--font-we-display)] text-xl font-semibold text-white">{title.title}</p>
+                      <p className="text-sm text-slate-500">
+                        {title.title_type === "movie"
+                          ? readableDuration
+                          : `${episodeCount} episode(s) - ${playableEpisodeCount} lisible(s)`}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {title.title_type === "movie" && detail.movie_source ? (
+                        <button
+                          type="button"
+                          onClick={() => void resolvePlayback("movie", title.id)}
+                          className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+                        >
+                          <Play className="h-4 w-4" />
+                          {movieProgress && movieProgress.progress_sec > 30 && !movieProgress.completed ? "Reprendre" : "Lire"}
+                        </button>
+                      ) : null}
+                      {title.title_type === "series" && resumeEpisode ? (
+                        <button
+                          type="button"
+                          onClick={() => void resolvePlayback("episode", resumeEpisode.id)}
+                          className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-4 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+                        >
+                          <Play className="h-4 w-4" />
+                          {resumeEpisodeProgress && resumeEpisodeProgress.progress_sec > 30 && !resumeEpisodeProgress.completed
+                            ? "Reprendre l episode"
+                            : "Lire la serie"}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={updatingWatchlist}
+                        onClick={() => void handleToggleWatchlist()}
+                        className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-200 transition hover:bg-white/[0.08] disabled:opacity-60"
+                      >
+                        {updatingWatchlist ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isSaved ? (
+                          <BookmarkCheck className="h-4 w-4" />
+                        ) : (
+                          <Bookmark className="h-4 w-4" />
+                        )}
+                        {isSaved ? "Dans ma liste" : "Ajouter a ma liste"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Session</p>
-                  <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
-                    Lecture active
-                  </h2>
-                  <div className="mt-5 space-y-3">
-                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Contenu</p>
-                      <p className="mt-2 text-base font-semibold text-white">
-                        {activePlayable?.type === "episode" ? "Episode" : "Film"}
-                      </p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Point de depart</p>
-                      <p className="mt-2 text-base font-semibold text-white">{playbackStartAtSec}s</p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-black/20 p-4 text-sm leading-6 text-slate-300">
-                      La lecture reste placee au centre. Les informations secondaires et les episodes restent a cote,
-                      sans encombrer l ecran principal.
-                    </div>
+                {playbackError ? (
+                  <div className="rounded-[24px] border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-100">
+                    {playbackError}
                   </div>
+                ) : null}
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <StatCard
+                    label={title.title_type === "movie" ? "Lecture" : "Episodes"}
+                    value={
+                      title.title_type === "movie"
+                        ? detail.movie_source
+                          ? "Pret"
+                          : "Vide"
+                        : String(episodeCount)
+                    }
+                    detail={title.title_type === "movie" ? "Source disponible" : "Publies sur le web"}
+                  />
+                  <StatCard
+                    label={title.title_type === "movie" ? "Duree" : "Playback"}
+                    value={title.title_type === "movie" ? readableDuration : String(playableEpisodeCount)}
+                    detail={title.title_type === "movie" ? "Estimation de lecture" : "Episode(s) lisible(s)"}
+                  />
+                  <StatCard
+                    label="Progression"
+                    value={formatPercent(stageProgress?.percent_complete) || (stageProgress?.progress_sec ? "En cours" : "--")}
+                    detail="Synchronisee si vous etes connecte"
+                  />
+                </div>
+
+                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Synopsis</p>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
+                    {title.long_synopsis || title.short_synopsis || "Contenu disponible en lecture web sur Oniix."}
+                  </p>
                 </div>
               </section>
-            ) : null}
+
+              <aside className="space-y-5">
+                <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Repere</p>
+                  <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">{title.title}</h2>
+                  {title.original_title && title.original_title !== title.title ? (
+                    <p className="mt-2 text-sm text-slate-500">{title.original_title}</p>
+                  ) : null}
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {title.release_year ? (
+                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-slate-300">
+                        {title.release_year}
+                      </span>
+                    ) : null}
+                    {title.maturity_rating ? (
+                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-slate-300">
+                        {title.maturity_rating}
+                      </span>
+                    ) : null}
+                    {title.original_language ? (
+                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-slate-300">
+                        {title.original_language}
+                      </span>
+                    ) : null}
+                    {isSaved ? (
+                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-slate-300">
+                        Dans ma liste
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-5 space-y-3 text-sm text-slate-400">
+                    <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Lecture active</p>
+                      <p className="mt-1 text-white">
+                        {activeEpisode ? `${formatEpisodeLabel(activeEpisode)} - ${activeEpisode.title}` : title.title_type === "movie" ? "Film" : "Aucune"}
+                      </p>
+                    </div>
+                    <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Point de depart</p>
+                      <p className="mt-1 text-white">{playbackStartAtSec}s</p>
+                    </div>
+                    {title.title_type === "series" && resumeEpisode ? (
+                      <div className="rounded-[18px] border border-white/10 bg-black/20 px-4 py-3">
+                        <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Prochain episode</p>
+                        <p className="mt-1 text-white">
+                          {formatEpisodeLabel(resumeEpisode)} - {resumeEpisode.title}
+                        </p>
+                      </div>
+                    ) : null}
+                    {!user ? (
+                      <div className="rounded-[18px] border border-white/10 bg-black/20 p-4 text-xs leading-6 text-slate-400">
+                        Connectez-vous pour synchroniser votre progression et votre liste entre les surfaces Oniix.
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </aside>
+            </section>
 
             {title.title_type === "series" ? (
               <section className="space-y-5">
@@ -486,9 +540,7 @@ export default function WebCatalogTitleClient({ titleId }: { titleId: string }) 
                   <h2 className="mt-2 font-[var(--font-we-display)] text-2xl font-semibold text-white">
                     Saisons et episodes
                   </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Une navigation simple par saison, avec lecture episode par episode sans casser le parcours.
-                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-400">Choisissez une saison puis lancez un episode.</p>
                 </div>
 
                 <div className="space-y-4">

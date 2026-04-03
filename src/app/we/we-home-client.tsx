@@ -410,19 +410,19 @@ export default function WebLiveHomeClient() {
               <div className="space-y-6">
                 <OniixLogo size="md" subtitle={undefined} showMark={false} className="text-white" />
                 <div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
-                  Plateforme publique Oniix
+                  TV en direct
                 </div>
                 <div>
                   <h1 className="max-w-3xl font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                    Le direct, le replay et le catalogue dans une interface claire.
+                    Le direct, les replays et la VOD au meme endroit.
                   </h1>
                   <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                    Oniix organise l&apos;espace public comme un produit de lecture: acces rapide au live, reprise de
-                    visionnage et bascule propre vers la VOD.
+                    Accedez d abord aux chaines actives, reprenez vos programmes puis basculez vers le catalogue sans
+                    detour.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs text-slate-300">
-                  {["Desktop first", "Connexion optionnelle", "Lecture continue"].map((item) => (
+                  {["Chaines live", "Replays", "Catalogue"].map((item) => (
                     <span key={item} className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
                       {item}
                     </span>
@@ -575,7 +575,7 @@ export default function WebLiveHomeClient() {
                 <SectionHeader
                   eyebrow="Bouquets"
                   title="Par univers"
-                  detail="Filtrez rapidement les chaines et les replays publics par ligne editoriale."
+                  detail="Passez d un univers a l autre sans quitter la lecture."
                 />
                 <div className="inline-flex h-11 items-center rounded-full border border-white/10 bg-black/20 px-4 text-sm text-slate-300">
                   {filteredGrid.length} chaine(s) visibles
@@ -621,7 +621,7 @@ export default function WebLiveHomeClient() {
               <SectionHeader
                 eyebrow="Directs"
                 title="Maintenant a l antenne"
-                detail="Un acces desktop simple pour regarder les chaines actives."
+                detail="Les chaines actives et leurs programmes en cours."
                 action={
                   <Link
                     href="/we/catalog"
@@ -648,35 +648,35 @@ export default function WebLiveHomeClient() {
               <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-5">
                 <SectionHeader
                   eyebrow="Selection"
-                  title="Ce que propose l espace public"
-                  detail="La surface reste volontairement compacte: live, replay et catalogue."
+                  title="En un coup d oeil"
+                  detail="Trois usages clairs: regarder, reprendre, explorer."
                 />
                 <div className="mt-5 space-y-3">
                   <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                     <div className="flex items-center gap-2 text-white">
                       <Sparkles className="h-4 w-4 text-slate-400" />
-                      <p className="text-sm font-medium">Visionnage clair</p>
+                      <p className="text-sm font-medium">Direct prioritaire</p>
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-400">
-                      Une home orientee lecture, avec entree directe sur les chaines actives.
+                      La page d accueil met en avant les chaines disponibles maintenant.
                     </p>
                   </div>
                   <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                     <div className="flex items-center gap-2 text-white">
                       <PlayCircle className="h-4 w-4 text-slate-400" />
-                      <p className="text-sm font-medium">Reprise continue</p>
+                      <p className="text-sm font-medium">Reprise immediate</p>
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-400">
-                      Progression et rattrapage integres sans detour de navigation.
+                      Replays et progression restent accessibles depuis la meme surface.
                     </p>
                   </div>
                   <div className="rounded-[22px] border border-white/10 bg-black/20 p-4">
                     <div className="flex items-center gap-2 text-white">
                       <Tv2 className="h-4 w-4 text-slate-400" />
-                      <p className="text-sm font-medium">Passage vers la VOD</p>
+                      <p className="text-sm font-medium">Catalogue integre</p>
                     </div>
                     <p className="mt-2 text-sm leading-6 text-slate-400">
-                      Le catalogue reste accessible comme une extension naturelle du direct.
+                      Films et series prolongent naturellement le parcours de visionnage.
                     </p>
                   </div>
 

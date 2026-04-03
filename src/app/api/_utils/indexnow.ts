@@ -14,23 +14,11 @@ export function getIndexNowKeyLocation() {
 }
 
 export function buildCatalogIndexNowUrls(playableId: string) {
-  return [
-    absolute("/"),
-    absolute("/streaming"),
-    absolute("/films-series"),
-    absolute("/we/catalog"),
-    absolute(`/we/catalog/${playableId}`),
-  ];
+  return [absolute("/"), absolute("/we/catalog"), absolute(`/we/catalog/${playableId}`)];
 }
 
 export function buildReplayIndexNowUrls(replayId: string) {
-  return [
-    absolute("/"),
-    absolute("/streaming"),
-    absolute("/tv-live"),
-    absolute("/sport-live"),
-    absolute(`/we/replays/${replayId}`),
-  ];
+  return [absolute("/"), absolute(`/we/replays/${replayId}`)];
 }
 
 export async function notifyIndexNow(urls: string[]) {
