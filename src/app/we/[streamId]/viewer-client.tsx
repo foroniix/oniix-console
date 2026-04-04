@@ -484,6 +484,54 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                 </div>
               ) : null}
 
+              <section className="space-y-3 xl:hidden">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Chaines</p>
+                    <p className="mt-1 text-sm text-slate-300">Changer de direct sans quitter la lecture.</p>
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                    {grid.length} live
+                  </span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {grid.map((lane) => {
+                    const laneStreamId = lane.live_stream?.id ?? "";
+                    const active = laneStreamId === activeStreamId && !activeReplayId;
+
+                    return (
+                      <button
+                        key={lane.channel.id}
+                        type="button"
+                        disabled={!laneStreamId}
+                        onClick={() => {
+                          if (!laneStreamId) return;
+                          setTab("live");
+                          setActiveReplayId(null);
+                          setActiveStreamId(laneStreamId);
+                          setLiveSessionId(null);
+                        }}
+                        className={`min-w-[12rem] rounded-[22px] border px-4 py-3 text-left transition ${
+                          active
+                            ? "border-white/18 bg-white/[0.08] text-white"
+                            : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.05]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <ChannelLogoBadge name={lane.channel.name} logoUrl={lane.channel.logo} size="sm" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{lane.channel.name}</p>
+                            <p className="mt-1 truncate text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                              {normalizeLiveCategory(lane.channel)}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
               <div className="grid grid-cols-3 gap-2 rounded-[24px] border border-white/10 bg-white/[0.03] p-2">
                 <button
                   type="button"
@@ -642,7 +690,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
               ) : null}
             </section>
 
-            <aside className="space-y-5 xl:sticky xl:top-[6.5rem] xl:self-start">
+            <aside className="hidden space-y-5 xl:sticky xl:top-[6.5rem] xl:block xl:self-start">
               <Panel>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Selection rapide</p>
                 <p className="mt-2 text-sm text-slate-400">Changez de chaine sans faire defiler toute la page.</p>

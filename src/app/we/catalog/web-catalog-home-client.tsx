@@ -65,7 +65,7 @@ function ContinueCard({
   return (
     <Link
       href={`/we/catalog/${item.title_id}`}
-      className="group overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
+      className="group min-w-[82vw] snap-start overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06] md:min-w-0"
     >
       <div className="relative aspect-[16/10] bg-black">
         <MediaThumb
@@ -110,7 +110,7 @@ function WatchlistCard({
   return (
     <Link
       href={`/we/catalog/${item.title_id}`}
-      className="group overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
+      className="group min-w-[11rem] snap-start overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06] md:min-w-0"
     >
       <div className="relative aspect-[4/5] bg-black">
         <MediaThumb
@@ -140,7 +140,7 @@ function CatalogCard({ item }: { item: CatalogItem }) {
   return (
     <Link
       href={`/we/catalog/${item.id}`}
-      className="group overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
+      className="group min-w-[11rem] snap-start overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06] md:min-w-0"
     >
       <div className="relative aspect-[4/5] bg-black">
         <MediaThumb
@@ -235,7 +235,7 @@ export default function WebCatalogHomeClient() {
   return (
     <main className="min-h-[calc(100dvh-76px)] text-white">
       <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)] sm:p-8">
+        <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-5 shadow-[0_40px_120px_rgba(0,0,0,0.42)] sm:rounded-[40px] sm:p-8">
           <MediaThumb
             src={featured?.backdrop_url || featured?.poster_url || WEB_MEDIA_FALLBACKS.backdrop}
             fallbackSrc={WEB_MEDIA_FALLBACKS.backdrop}
@@ -246,16 +246,16 @@ export default function WebCatalogHomeClient() {
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.82),rgba(3,5,9,0.96))]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
 
-          <div className="relative flex flex-col gap-8">
+          <div className="relative flex flex-col gap-6 sm:gap-8">
             <div className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
               VOD
             </div>
 
             <div className="max-w-3xl">
-              <h1 className="font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              <h1 className="font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white sm:text-5xl">
                 Films et series, sans detour.
               </h1>
-              <p className="mt-4 text-base leading-7 text-slate-300">
+              <p className="mt-3 text-sm leading-7 text-slate-300 sm:mt-4 sm:text-base">
                 Recherchez, lancez, reprenez. Le catalogue web doit ressembler a une plateforme de visionnage, pas a
                 un dashboard.
               </p>
@@ -296,23 +296,23 @@ export default function WebCatalogHomeClient() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 href={featured ? `/we/catalog/${featured.id}` : "/we/catalog"}
-                className="inline-flex h-12 items-center rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
               >
                 Ouvrir la selection
               </Link>
               <Link
                 href="/"
-                className="inline-flex h-12 items-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
               >
                 Retour TV
               </Link>
               <button
                 type="button"
                 onClick={() => void load(true)}
-                className="inline-flex h-12 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm text-white transition hover:bg-white/[0.08]"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm text-white transition hover:bg-white/[0.08]"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                 Actualiser
@@ -326,7 +326,7 @@ export default function WebCatalogHomeClient() {
             ) : featured ? (
               <Link
                 href={`/we/catalog/${featured.id}`}
-                className="group max-w-4xl rounded-[30px] border border-white/10 bg-black/35 p-5 backdrop-blur-sm transition hover:border-white/18 hover:bg-black/45"
+                className="group max-w-4xl rounded-[26px] border border-white/10 bg-black/35 p-4 backdrop-blur-sm transition hover:border-white/18 hover:bg-black/45 sm:rounded-[30px] sm:p-5"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-white">
@@ -337,10 +337,10 @@ export default function WebCatalogHomeClient() {
                     {featured.title_type === "movie" ? "Film" : "Serie"}
                   </span>
                 </div>
-                <h2 className="mt-4 font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
+                <h2 className="mt-4 font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                   {featured.title}
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:leading-7">
                   {featured.short_synopsis || featured.long_synopsis || "Disponible en lecture web."}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-300">
@@ -378,7 +378,7 @@ export default function WebCatalogHomeClient() {
                   title="Continuer la lecture"
                   detail="Vos lectures en cours synchronisees sur le web."
                 />
-                <div className="grid gap-4 lg:grid-cols-3">
+                <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0">
                   {continueWatching.slice(0, 3).map((item) => (
                     <ContinueCard key={`${item.playable_type}:${item.playable_id}`} item={item} />
                   ))}
@@ -399,7 +399,7 @@ export default function WebCatalogHomeClient() {
                     </div>
                   }
                 />
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
                   {watchlist.slice(0, 8).map((item) => (
                     <WatchlistCard key={`${item.playable_type}:${item.playable_id}`} item={item} />
                   ))}
@@ -415,7 +415,7 @@ export default function WebCatalogHomeClient() {
                     title="Selection du moment"
                     detail="Les premiers titres a ouvrir sur le web."
                   />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-6">
                     {spotlight.map((item) => (
                       <CatalogCard key={item.id} item={item} />
                     ))}
@@ -439,7 +439,7 @@ export default function WebCatalogHomeClient() {
                       </div>
                     }
                   />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-6">
                     {movies.slice(0, 6).map((item) => (
                       <CatalogCard key={item.id} item={item} />
                     ))}
@@ -463,7 +463,7 @@ export default function WebCatalogHomeClient() {
                       </div>
                     }
                   />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3 xl:grid-cols-6">
                     {series.slice(0, 6).map((item) => (
                       <CatalogCard key={item.id} item={item} />
                     ))}
@@ -488,7 +488,7 @@ export default function WebCatalogHomeClient() {
                     </div>
                   }
                 />
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
                   {filteredItems.map((item) => (
                     <CatalogCard key={item.id} item={item} />
                   ))}

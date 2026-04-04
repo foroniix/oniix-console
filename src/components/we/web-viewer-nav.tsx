@@ -21,8 +21,8 @@ export function WebViewerNav() {
 
   return (
     <header className="sticky top-0 z-30 px-4 pt-3 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,10,18,0.94),rgba(3,5,9,0.92))] px-3 py-2.5 shadow-[0_18px_60px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-3 rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,10,18,0.94),rgba(3,5,9,0.92))] px-3 py-2.5 shadow-[0_18px_60px_rgba(0,0,0,0.3)] backdrop-blur-2xl md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center justify-between gap-3">
           <Link href="/" className="shrink-0">
             <OniixLogo size="sm" subtitle={undefined} showMark={false} />
           </Link>
@@ -57,7 +57,7 @@ export function WebViewerNav() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end md:self-auto">
           <Link
             href="/"
             className="hidden h-9 items-center rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm text-slate-300 transition hover:bg-white/[0.08] hover:text-white xl:inline-flex"
@@ -112,6 +112,30 @@ export function WebViewerNav() {
             </span>
           )}
         </div>
+
+        <nav className="flex gap-2 overflow-x-auto pb-1 md:hidden">
+          {NAV_ITEMS.map((item) => {
+            const active =
+              item.href === "/#replays"
+                ? pathname === "/"
+                : pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "inline-flex h-9 shrink-0 items-center rounded-full border px-4 text-sm font-medium transition",
+                  active
+                    ? "border-white/14 bg-white text-slate-950 shadow-[0_8px_30px_rgba(255,255,255,0.16)]"
+                    : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </header>
   );

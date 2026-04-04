@@ -132,7 +132,7 @@ function LiveLaneCard({ lane }: { lane: GridChannel }) {
   return (
     <Link
       href={lane.live_stream?.id ? `/we/${lane.live_stream.id}` : "/"}
-      className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,14,24,0.98),rgba(4,7,12,0.98))] transition hover:border-white/18 hover:bg-white/[0.05]"
+      className="group min-w-[82vw] snap-start overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,14,24,0.98),rgba(4,7,12,0.98))] transition hover:border-white/18 hover:bg-white/[0.05] md:min-w-0"
     >
       <div className="relative aspect-[16/10] bg-black">
         <MediaThumb
@@ -175,7 +175,7 @@ function ReplayCard({ replay }: { replay: ReplayItem }) {
   return (
     <Link
       href={`/we/replays/${replay.id}`}
-      className="group overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06]"
+      className="group min-w-[82vw] snap-start overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] transition hover:border-white/18 hover:bg-white/[0.06] md:min-w-0"
     >
       <div className="relative aspect-[16/10] bg-black">
         <MediaThumb
@@ -209,7 +209,7 @@ function ContinueReplayCard({
   return (
     <Link
       href={item.href}
-      className="group overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] transition hover:border-white/18 hover:bg-white/[0.06]"
+      className="group min-w-[82vw] snap-start overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] transition hover:border-white/18 hover:bg-white/[0.06] md:min-w-0"
     >
       <div className="relative aspect-[16/10] bg-black">
         <MediaThumb
@@ -313,7 +313,7 @@ export default function WebLiveHomeClient() {
   return (
     <main className="min-h-[calc(100dvh-76px)] text-white">
       <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-[40px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-7 shadow-[0_40px_120px_rgba(0,0,0,0.42)] sm:p-8">
+        <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-5 shadow-[0_40px_120px_rgba(0,0,0,0.42)] sm:rounded-[40px] sm:p-8">
           <MediaThumb
             src={featured?.live_stream?.poster || featured?.now?.poster || WEB_MEDIA_FALLBACKS.hero}
             fallbackSrc={WEB_MEDIA_FALLBACKS.hero}
@@ -324,41 +324,41 @@ export default function WebLiveHomeClient() {
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(3,5,9,0.98),rgba(3,5,9,0.82),rgba(3,5,9,0.96))]" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />
 
-          <div className="relative flex flex-col gap-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <OniixLogo size="md" subtitle={undefined} showMark={false} className="text-white" />
+            <div className="relative flex flex-col gap-6 sm:gap-8">
+              <div className="flex flex-wrap items-center gap-3">
+              <OniixLogo size="sm" subtitle={undefined} showMark={false} className="text-white" />
               <div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
                 TV en direct
               </div>
             </div>
 
             <div className="max-w-3xl">
-              <h1 className="font-[var(--font-we-display)] text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              <h1 className="font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white sm:text-5xl">
                 Direct, replays et VOD au meme endroit.
               </h1>
-              <p className="mt-4 text-base leading-7 text-slate-300">
+              <p className="mt-3 text-sm leading-7 text-slate-300 sm:mt-4 sm:text-base">
                 Ouvrez une chaine en direct, reprenez un replay puis basculez vers le catalogue sans passer par des
                 blocs de dashboard.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 href={featured?.live_stream?.id ? `/we/${featured.live_stream.id}` : "#live-now"}
-                className="inline-flex h-12 items-center rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition hover:bg-slate-100"
               >
                 Regarder maintenant
               </Link>
               <Link
                 href="/we/catalog"
-                className="inline-flex h-12 items-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08] hover:text-white"
               >
                 Explorer le catalogue
               </Link>
               <button
                 type="button"
                 onClick={() => void load(true)}
-                className="inline-flex h-12 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08]"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm text-slate-200 transition hover:bg-white/[0.08]"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                 Actualiser
@@ -369,10 +369,10 @@ export default function WebLiveHomeClient() {
               <div className="flex min-h-[12rem] items-center justify-center rounded-[30px] border border-white/10 bg-black/25 backdrop-blur-sm">
                 <Loader2 className="h-7 w-7 animate-spin text-white" />
               </div>
-            ) : featured ? (
+              ) : featured ? (
               <Link
                 href={featured.live_stream?.id ? `/we/${featured.live_stream.id}` : "/"}
-                className="group max-w-4xl rounded-[30px] border border-white/10 bg-black/35 p-5 backdrop-blur-sm transition hover:border-white/18 hover:bg-black/45"
+                className="group max-w-4xl rounded-[26px] border border-white/10 bg-black/35 p-4 backdrop-blur-sm transition hover:border-white/18 hover:bg-black/45 sm:rounded-[30px] sm:p-5"
               >
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
                   <div className="flex items-center gap-3">
@@ -392,10 +392,10 @@ export default function WebLiveHomeClient() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <h2 className="font-[var(--font-we-display)] text-3xl font-semibold tracking-tight text-white">
+                    <h2 className="font-[var(--font-we-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                       {featured.live_stream?.title || featured.now?.title || featured.channel.name}
                     </h2>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                    <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:leading-7">
                       {featured.now?.title
                         ? `En cours: ${featured.now.title}`
                         : "Lecture live disponible immediatement depuis votre navigateur."}
@@ -446,7 +446,7 @@ export default function WebLiveHomeClient() {
                   </div>
                 }
               />
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {categories.map((category) => {
                   const active = activeCategory === category;
                   return (
@@ -474,7 +474,7 @@ export default function WebLiveHomeClient() {
                   title="Continuer vos replays"
                   detail="Retrouvez votre lecture en cours sur le web."
                 />
-                <div className="grid gap-4 lg:grid-cols-3">
+                <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0">
                   {replayContinueWatching.slice(0, 3).map((item) => (
                     <ContinueReplayCard key={`replay:${item.playable_id}`} item={item} />
                   ))}
@@ -488,7 +488,7 @@ export default function WebLiveHomeClient() {
                 title="Maintenant a l antenne"
                 detail="Les chaines actives et leurs programmes en cours."
               />
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-2 md:overflow-visible md:pb-0 xl:grid-cols-3">
                 {filteredGrid.map((lane) => (
                   <LiveLaneCard key={lane.channel.id} lane={lane} />
                 ))}
@@ -515,7 +515,7 @@ export default function WebLiveHomeClient() {
                   </Link>
                 }
               />
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-2 md:overflow-visible md:pb-0 xl:grid-cols-3">
                 {filteredReplays.slice(0, 6).map((replay) => (
                   <ReplayCard key={replay.id} replay={replay} />
                 ))}
