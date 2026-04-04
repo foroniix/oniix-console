@@ -13,8 +13,8 @@ export function pickMediaUrl(...candidates: Array<string | null | undefined>) {
   return null;
 }
 
-export function pickLiveArtwork(streamPoster?: string | null, slotPoster?: string | null) {
-  return pickMediaUrl(streamPoster, slotPoster, WEB_MEDIA_FALLBACKS.live);
+export function pickLiveArtwork(slotPoster?: string | null, streamPoster?: string | null) {
+  return pickMediaUrl(slotPoster, streamPoster, WEB_MEDIA_FALLBACKS.live);
 }
 
 export function pickReplayArtwork(replayPoster?: string | null) {

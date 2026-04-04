@@ -16,6 +16,7 @@ import { ChannelLogoBadge } from "@/components/we/channel-logo-badge";
 import { useWebViewerAuth } from "@/components/we/web-viewer-auth";
 import { WEB_MEDIA_FALLBACKS } from "@/features/web-viewer/media/media.constants";
 import { MediaThumb } from "@/features/web-viewer/media/media-thumb";
+import { pickLiveArtwork } from "@/features/web-viewer/media/media.utils";
 import { SectionHeader } from "@/features/web-viewer/ui/section-header";
 
 type GridSlot = {
@@ -127,7 +128,7 @@ function normalizeLiveCategory(channel: GridChannel["channel"]) {
 
 function LiveLaneCard({ lane }: { lane: GridChannel }) {
   const category = normalizeLiveCategory(lane.channel);
-  const artwork = lane.live_stream?.poster || lane.now?.poster || WEB_MEDIA_FALLBACKS.live;
+  const artwork = pickLiveArtwork(lane.now?.poster, lane.live_stream?.poster);
 
   return (
     <Link
@@ -315,7 +316,7 @@ export default function WebLiveHomeClient() {
       <section className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-4 pb-12 pt-6 sm:px-6 lg:px-8">
         <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(7,12,20,0.96),rgba(3,5,9,0.98))] p-5 shadow-[0_40px_120px_rgba(0,0,0,0.42)] sm:rounded-[40px] sm:p-8">
           <MediaThumb
-            src={featured?.live_stream?.poster || featured?.now?.poster || WEB_MEDIA_FALLBACKS.hero}
+            src={pickLiveArtwork(featured?.now?.poster, featured?.live_stream?.poster) || WEB_MEDIA_FALLBACKS.hero}
             fallbackSrc={WEB_MEDIA_FALLBACKS.hero}
             alt={featured?.channel.name || "Oniix"}
             className="absolute inset-0 opacity-26"

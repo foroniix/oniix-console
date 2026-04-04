@@ -261,7 +261,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
 
   const playbackSrc = activeReplay?.hls_url ?? livePlaybackUrl;
   const playbackPoster =
-    activeReplay?.poster || activeLane?.live_stream?.poster || activeLane?.now?.poster || undefined;
+    activeReplay?.poster || pickLiveArtwork(activeLane?.now?.poster, activeLane?.live_stream?.poster) || undefined;
   const heartbeatStreamId = activeReplay ? null : activeStreamId;
   const playbackStartAtSec = activeReplay
     ? activeReplayProgress?.completed
@@ -590,7 +590,7 @@ export default function ViewerClient({ streamId }: { streamId: string }) {
                       >
                         <div className="relative aspect-[16/10] bg-black">
                           <MediaThumb
-                            src={pickLiveArtwork(lane.live_stream?.poster, lane.now?.poster)}
+                            src={pickLiveArtwork(lane.now?.poster, lane.live_stream?.poster)}
                             fallbackSrc={WEB_MEDIA_FALLBACKS.live}
                             alt={lane.channel.name}
                             className="absolute inset-0"

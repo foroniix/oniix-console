@@ -108,7 +108,10 @@ export default function HlsPlayer({
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
+        lowLatencyMode: false,
+        manifestLoadingMaxRetry: 2,
+        levelLoadingMaxRetry: 2,
+        fragLoadingMaxRetry: 2,
       });
 
       hlsRef.current = hls;
@@ -141,11 +144,27 @@ export default function HlsPlayer({
           return;
         }
 
+        const detail = payload.details ? String(payload.details).replaceAll("_", " ") : null;
+        const cause =
+          payload.error instanceof Error
+            ? payload.error.message
+            : typeof payload.error === "string"
+              ? payload.error
+              : null;
         const message =
           payload.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR ||
           payload.details === Hls.ErrorDetails.MANIFEST_PARSING_ERROR
             ? "Impossible de charger le manifest HLS."
-            : "Le flux HLS a rencontre une erreur fatale.";
+            : detail
+              ? `Erreur HLS desktop: ${detail}.`
+              : "Le flux HLS a rencontre une erreur fatale.";
+        console.error("HLS desktop playback error", {
+          src,
+          type: payload.type,
+          details: payload.details,
+          cause,
+          fatal: payload.fatal,
+        });
         setErrorToken({ src, message });
         onErrorChange?.(message);
         hls.destroy();
